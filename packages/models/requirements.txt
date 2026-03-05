@@ -1,0 +1,6 @@
+boto3>=1.34.0
+numpy>=1.26.0
+pandas>=2.2.0
+scikit-learn>=1.4.0
+prophet>=1.1.5
+pytest>=8.0.0

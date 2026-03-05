@@ -1,0 +1,386 @@
+import * as cdk from "aws-cdk-lib";
+import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
+import * as cognito from "aws-cdk-lib/aws-cognito";
+import * as s3 from "aws-cdk-lib/aws-s3";
+import * as apigateway from "aws-cdk-lib/aws-apigateway";
+import * as lambda from "aws-cdk-lib/aws-lambda";
+import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
+import * as events from "aws-cdk-lib/aws-events";
+import * as targets from "aws-cdk-lib/aws-events-targets";
+import * as path from "path";
+import { Construct } from "constructs";
+
+export class FoodwiseStack extends cdk.Stack {
+  public readonly storesTable: dynamodb.Table;
+  public readonly inventoryTable: dynamodb.Table;
+  public readonly transactionsTable: dynamodb.Table;
+  public readonly recipesTable: dynamodb.Table;
+  public readonly forecastsTable: dynamodb.Table;
+  public readonly userPool: cognito.UserPool;
+  public readonly reportsBucket: s3.Bucket;
+  public readonly api: apigateway.RestApi;
+
+  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+    super(scope, id, props);
+
+    // --- DynamoDB Tables ---
+
+    this.storesTable = new dynamodb.Table(this, "StoresTable", {
+      tableName: "stores",
+      partitionKey: { name: "storeId", type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    this.inventoryTable = new dynamodb.Table(this, "InventoryTable", {
+      tableName: "inventory",
+      partitionKey: { name: "storeId", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "itemId", type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    this.transactionsTable = new dynamodb.Table(this, "TransactionsTable", {
+      tableName: "transactions",
+      partitionKey: { name: "storeId", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "transactionId", type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    this.transactionsTable.addGlobalSecondaryIndex({
+      indexName: "timestamp-index",
+      partitionKey: { name: "storeId", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "timestamp", type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
+    this.recipesTable = new dynamodb.Table(this, "RecipesTable", {
+      tableName: "recipes",
+      partitionKey: { name: "recipeId", type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    this.forecastsTable = new dynamodb.Table(this, "ForecastsTable", {
+      tableName: "forecasts",
+      partitionKey: { name: "forecastId", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "storeRecipeKey", type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    // --- Cognito User Pool ---
+
+    this.userPool = new cognito.UserPool(this, "FoodwiseUserPool", {
+      userPoolName: "foodwise-users",
+      selfSignUpEnabled: true,
+      signInAliases: { email: true },
+      autoVerify: { email: true },
+      standardAttributes: {
+        email: { required: true, mutable: true },
+      },
+      passwordPolicy: {
+        minLength: 8,
+        requireUppercase: true,
+        requireLowercase: true,
+        requireDigits: true,
+        requireSymbols: false,
+      },
+      accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    const userPoolClient = this.userPool.addClient("FoodwiseAppClient", {
+      userPoolClientName: "foodwise-app-client",
+      authFlows: {
+        userPassword: true,
+        userSrp: true,
+      },
+    });
+
+    new cognito.CfnUserPoolGroup(this, "OwnerGroup", {
+      userPoolId: this.userPool.userPoolId,
+      groupName: "owner",
+      description: "Store owners with full access",
+    });
+
+    new cognito.CfnUserPoolGroup(this, "ManagerGroup", {
+      userPoolId: this.userPool.userPoolId,
+      groupName: "manager",
+      description: "Store managers",
+    });
+
+    new cognito.CfnUserPoolGroup(this, "StaffGroup", {
+      userPoolId: this.userPool.userPoolId,
+      groupName: "staff",
+      description: "Store staff members",
+    });
+
+    // --- S3 Bucket ---
+
+    this.reportsBucket = new s3.Bucket(this, "ReportsBucket", {
+      bucketName: cdk.Fn.sub("foodwise-reports-${AWS::AccountId}"),
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      autoDeleteObjects: true,
+    });
+
+    // --- Lambda Functions (Node.js with esbuild bundling) ---
+
+    const lambdaEnvironment = {
+      STORES_TABLE: this.storesTable.tableName,
+      INVENTORY_TABLE: this.inventoryTable.tableName,
+      TRANSACTIONS_TABLE: this.transactionsTable.tableName,
+      RECIPES_TABLE: this.recipesTable.tableName,
+      FORECASTS_TABLE: this.forecastsTable.tableName,
+    };
+
+    const handlersPath = path.join(__dirname, "../../api/src/handlers");
+
+    const nodejsFnProps = {
+      runtime: lambda.Runtime.NODEJS_18_X,
+      environment: lambdaEnvironment,
+      bundling: {
+        externalModules: [],
+      },
+    };
+
+    const createStoreFn = new NodejsFunction(this, "CreateStoreFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "createStore.ts"),
+      timeout: cdk.Duration.seconds(10),
+    });
+
+    const listStoresFn = new NodejsFunction(this, "ListStoresFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "listStores.ts"),
+      timeout: cdk.Duration.seconds(10),
+    });
+
+    const getInventoryFn = new NodejsFunction(this, "GetInventoryFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "getInventory.ts"),
+      timeout: cdk.Duration.seconds(10),
+    });
+
+    const updateInventoryFn = new NodejsFunction(this, "UpdateInventoryFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "updateInventory.ts"),
+      timeout: cdk.Duration.seconds(15),
+    });
+
+    const recordTransactionFn = new NodejsFunction(this, "RecordTransactionFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "recordTransaction.ts"),
+      timeout: cdk.Duration.seconds(15),
+    });
+
+    const getDashboardFn = new NodejsFunction(this, "GetDashboardFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "getDashboard.ts"),
+      timeout: cdk.Duration.seconds(15),
+    });
+
+    const createRecipeFn = new NodejsFunction(this, "CreateRecipeFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "createRecipe.ts"),
+      timeout: cdk.Duration.seconds(10),
+    });
+
+    const listRecipesFn = new NodejsFunction(this, "ListRecipesFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "listRecipes.ts"),
+      timeout: cdk.Duration.seconds(10),
+    });
+
+    const getRecipeFn = new NodejsFunction(this, "GetRecipeFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "getRecipe.ts"),
+      timeout: cdk.Duration.seconds(10),
+    });
+
+    const upsertIngredientFn = new NodejsFunction(this, "UpsertIngredientFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "upsertIngredient.ts"),
+      timeout: cdk.Duration.seconds(10),
+    });
+
+    // --- Forecast Lambda (Python, Docker Image) ---
+
+    const modelsCodePath = path.join(__dirname, "../../models");
+
+    const forecastFn = new lambda.DockerImageFunction(this, "ForecastFn", {
+      code: lambda.DockerImageCode.fromImageAsset(modelsCodePath),
+      environment: lambdaEnvironment,
+      timeout: cdk.Duration.minutes(5),
+      memorySize: 1024,
+    });
+
+    // Nightly forecast at 2 AM UTC
+    new events.Rule(this, "NightlyForecastRule", {
+      schedule: events.Schedule.cron({ minute: "0", hour: "2" }),
+      targets: [new targets.LambdaFunction(forecastFn)],
+    });
+
+    // --- DynamoDB Permissions ---
+
+    this.storesTable.grantReadWriteData(createStoreFn);
+    this.storesTable.grantReadData(listStoresFn);
+    this.storesTable.grantReadData(forecastFn);
+
+    this.inventoryTable.grantReadData(getInventoryFn);
+    this.inventoryTable.grantReadWriteData(updateInventoryFn);
+    this.inventoryTable.grantReadWriteData(recordTransactionFn);
+    this.inventoryTable.grantReadData(getDashboardFn);
+    this.inventoryTable.grantReadData(getRecipeFn);
+    this.inventoryTable.grantReadWriteData(upsertIngredientFn);
+    this.inventoryTable.grantReadData(forecastFn);
+
+    this.transactionsTable.grantReadWriteData(recordTransactionFn);
+    this.transactionsTable.grantReadData(getDashboardFn);
+    this.transactionsTable.grantReadData(forecastFn);
+
+    this.recipesTable.grantReadData(recordTransactionFn);
+    this.recipesTable.grantReadWriteData(createRecipeFn);
+    this.recipesTable.grantReadData(listRecipesFn);
+    this.recipesTable.grantReadData(getRecipeFn);
+    this.recipesTable.grantReadData(forecastFn);
+
+    this.forecastsTable.grantReadWriteData(forecastFn);
+
+    // --- API Gateway ---
+
+    const authorizer = new apigateway.CognitoUserPoolsAuthorizer(
+      this,
+      "FoodwiseAuthorizer",
+      {
+        cognitoUserPools: [this.userPool],
+        identitySource: "method.request.header.Authorization",
+      }
+    );
+
+    const authMethodOptions: apigateway.MethodOptions = {
+      authorizer,
+      authorizationType: apigateway.AuthorizationType.COGNITO,
+    };
+
+    this.api = new apigateway.RestApi(this, "FoodwiseApi", {
+      restApiName: "foodwise-api",
+      description: "FoodWise Platform API",
+      deployOptions: {
+        stageName: "v1",
+      },
+      defaultCorsPreflightOptions: {
+        allowOrigins: apigateway.Cors.ALL_ORIGINS,
+        allowMethods: apigateway.Cors.ALL_METHODS,
+        allowHeaders: ["Content-Type", "Authorization"],
+      },
+    });
+
+    // POST /stores & GET /stores
+    const storesResource = this.api.root.addResource("stores");
+    storesResource.addMethod(
+      "POST",
+      new apigateway.LambdaIntegration(createStoreFn),
+      authMethodOptions
+    );
+    storesResource.addMethod(
+      "GET",
+      new apigateway.LambdaIntegration(listStoresFn),
+      authMethodOptions
+    );
+
+    // /stores/{storeId}
+    const singleStoreResource = storesResource.addResource("{storeId}");
+
+    // GET /stores/{storeId}/inventory & POST /stores/{storeId}/inventory
+    const inventoryResource = singleStoreResource.addResource("inventory");
+    inventoryResource.addMethod(
+      "GET",
+      new apigateway.LambdaIntegration(getInventoryFn),
+      authMethodOptions
+    );
+    inventoryResource.addMethod(
+      "POST",
+      new apigateway.LambdaIntegration(updateInventoryFn),
+      authMethodOptions
+    );
+
+    // POST /stores/{storeId}/transactions
+    const transactionsResource = singleStoreResource.addResource("transactions");
+    transactionsResource.addMethod(
+      "POST",
+      new apigateway.LambdaIntegration(recordTransactionFn),
+      authMethodOptions
+    );
+
+    // GET /stores/{storeId}/dashboard
+    const dashboardResource = singleStoreResource.addResource("dashboard");
+    dashboardResource.addMethod(
+      "GET",
+      new apigateway.LambdaIntegration(getDashboardFn),
+      authMethodOptions
+    );
+
+    // POST /recipes & GET /recipes
+    const recipesResource = this.api.root.addResource("recipes");
+    recipesResource.addMethod(
+      "POST",
+      new apigateway.LambdaIntegration(createRecipeFn),
+      authMethodOptions
+    );
+    recipesResource.addMethod(
+      "GET",
+      new apigateway.LambdaIntegration(listRecipesFn),
+      authMethodOptions
+    );
+
+    // GET /recipes/{recipeId}
+    const singleRecipeResource = recipesResource.addResource("{recipeId}");
+    singleRecipeResource.addMethod(
+      "GET",
+      new apigateway.LambdaIntegration(getRecipeFn),
+      authMethodOptions
+    );
+
+    // POST /ingredients
+    const ingredientsResource = this.api.root.addResource("ingredients");
+    ingredientsResource.addMethod(
+      "POST",
+      new apigateway.LambdaIntegration(upsertIngredientFn),
+      authMethodOptions
+    );
+
+    // POST /forecasts (on-demand trigger)
+    const forecastsResource = this.api.root.addResource("forecasts");
+    forecastsResource.addMethod(
+      "POST",
+      new apigateway.LambdaIntegration(forecastFn),
+      authMethodOptions
+    );
+
+    // --- Stack Outputs ---
+
+    new cdk.CfnOutput(this, "ApiUrl", {
+      value: this.api.url,
+      description: "API Gateway URL",
+    });
+
+    new cdk.CfnOutput(this, "UserPoolId", {
+      value: this.userPool.userPoolId,
+      description: "Cognito User Pool ID",
+    });
+
+    new cdk.CfnOutput(this, "UserPoolClientId", {
+      value: userPoolClient.userPoolClientId,
+      description: "Cognito User Pool Client ID",
+    });
+
+    new cdk.CfnOutput(this, "ReportsBucketName", {
+      value: this.reportsBucket.bucketName,
+      description: "S3 Reports Bucket Name",
+    });
+  }
+}

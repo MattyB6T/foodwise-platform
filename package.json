@@ -1,0 +1,19 @@
+{
+  "name": "foodwise-platform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "FoodWise Platform - Monorepo for API, ML models, and infrastructure",
+  "workspaces": [
+    "packages/api",
+    "packages/shared",
+    "packages/infrastructure"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "lint": "npm run lint --workspaces"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
