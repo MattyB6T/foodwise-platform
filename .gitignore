@@ -38,6 +38,12 @@ coverage/
 htmlcov/
 .pytest_cache/
 
+# Expo
+.expo/
+
+# Temp deploy artifacts
+.tmp-deploy/
+
 # Logs
 *.log
 npm-debug.log*

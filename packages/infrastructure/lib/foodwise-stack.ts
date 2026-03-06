@@ -7,6 +7,7 @@ import * as lambda from "aws-cdk-lib/aws-lambda";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import * as events from "aws-cdk-lib/aws-events";
 import * as targets from "aws-cdk-lib/aws-events-targets";
+import * as iam from "aws-cdk-lib/aws-iam";
 import * as path from "path";
 import { Construct } from "constructs";
 
@@ -16,6 +17,10 @@ export class FoodwiseStack extends cdk.Stack {
   public readonly transactionsTable: dynamodb.Table;
   public readonly recipesTable: dynamodb.Table;
   public readonly forecastsTable: dynamodb.Table;
+  public readonly suppliersTable: dynamodb.Table;
+  public readonly purchaseOrdersTable: dynamodb.Table;
+  public readonly receivingLogsTable: dynamodb.Table;
+  public readonly wasteLogsTable: dynamodb.Table;
   public readonly userPool: cognito.UserPool;
   public readonly reportsBucket: s3.Bucket;
   public readonly api: apigateway.RestApi;
@@ -68,6 +73,53 @@ export class FoodwiseStack extends cdk.Stack {
       sortKey: { name: "storeRecipeKey", type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    this.suppliersTable = new dynamodb.Table(this, "SuppliersTable", {
+      tableName: "suppliers",
+      partitionKey: { name: "supplierId", type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    this.purchaseOrdersTable = new dynamodb.Table(this, "PurchaseOrdersTable", {
+      tableName: "purchase-orders",
+      partitionKey: { name: "orderId", type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    this.purchaseOrdersTable.addGlobalSecondaryIndex({
+      indexName: "storeId-index",
+      partitionKey: { name: "storeId", type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
+    this.receivingLogsTable = new dynamodb.Table(this, "ReceivingLogsTable", {
+      tableName: "receiving-logs",
+      partitionKey: { name: "receivingId", type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    this.receivingLogsTable.addGlobalSecondaryIndex({
+      indexName: "storeId-index",
+      partitionKey: { name: "storeId", type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
+    this.wasteLogsTable = new dynamodb.Table(this, "WasteLogsTable", {
+      tableName: "waste-logs",
+      partitionKey: { name: "wasteId", type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    this.wasteLogsTable.addGlobalSecondaryIndex({
+      indexName: "storeId-timestamp-index",
+      partitionKey: { name: "storeId", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "timestamp", type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
     });
 
     // --- Cognito User Pool ---
@@ -135,6 +187,10 @@ export class FoodwiseStack extends cdk.Stack {
       TRANSACTIONS_TABLE: this.transactionsTable.tableName,
       RECIPES_TABLE: this.recipesTable.tableName,
       FORECASTS_TABLE: this.forecastsTable.tableName,
+      SUPPLIERS_TABLE: this.suppliersTable.tableName,
+      PURCHASE_ORDERS_TABLE: this.purchaseOrdersTable.tableName,
+      RECEIVING_LOGS_TABLE: this.receivingLogsTable.tableName,
+      WASTE_LOGS_TABLE: this.wasteLogsTable.tableName,
     };
 
     const handlersPath = path.join(__dirname, "../../api/src/handlers");
@@ -207,6 +263,125 @@ export class FoodwiseStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(10),
     });
 
+    const createSupplierFn = new NodejsFunction(this, "CreateSupplierFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "createSupplier.ts"),
+      timeout: cdk.Duration.seconds(10),
+    });
+
+    const listSuppliersFn = new NodejsFunction(this, "ListSuppliersFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "listSuppliers.ts"),
+      timeout: cdk.Duration.seconds(10),
+    });
+
+    const createPurchaseOrderFn = new NodejsFunction(this, "CreatePurchaseOrderFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "createPurchaseOrder.ts"),
+      timeout: cdk.Duration.seconds(10),
+    });
+
+    const listPurchaseOrdersFn = new NodejsFunction(this, "ListPurchaseOrdersFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "listPurchaseOrders.ts"),
+      timeout: cdk.Duration.seconds(10),
+    });
+
+    const receiveShipmentFn = new NodejsFunction(this, "ReceiveShipmentFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "receiveShipment.ts"),
+      timeout: cdk.Duration.seconds(30),
+    });
+
+    const listReceivingLogsFn = new NodejsFunction(this, "ListReceivingLogsFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "listReceivingLogs.ts"),
+      timeout: cdk.Duration.seconds(10),
+    });
+
+    const lookupBarcodeFn = new NodejsFunction(this, "LookupBarcodeFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "lookupBarcode.ts"),
+      timeout: cdk.Duration.seconds(10),
+    });
+
+    const recordWasteFn = new NodejsFunction(this, "RecordWasteFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "recordWaste.ts"),
+      timeout: cdk.Duration.seconds(10),
+    });
+
+    const listWasteFn = new NodejsFunction(this, "ListWasteFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "listWaste.ts"),
+      timeout: cdk.Duration.seconds(10),
+    });
+
+    const getWasteAnalyticsFn = new NodejsFunction(this, "GetWasteAnalyticsFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "getWasteAnalytics.ts"),
+      timeout: cdk.Duration.seconds(30),
+    });
+
+    const getOwnerDashboardFn = new NodejsFunction(this, "GetOwnerDashboardFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "getOwnerDashboard.ts"),
+      timeout: cdk.Duration.seconds(60),
+      memorySize: 512,
+    });
+
+    const getStoreComparisonFn = new NodejsFunction(this, "GetStoreComparisonFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "getStoreComparison.ts"),
+      timeout: cdk.Duration.seconds(60),
+      memorySize: 512,
+    });
+
+    const getHealthScoreFn = new NodejsFunction(this, "GetHealthScoreFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "getHealthScore.ts"),
+      timeout: cdk.Duration.seconds(30),
+    });
+
+    const generateWeeklyReportFn = new NodejsFunction(this, "GenerateWeeklyReportFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "generateWeeklyReport.ts"),
+      timeout: cdk.Duration.minutes(3),
+      memorySize: 512,
+      environment: {
+        ...lambdaEnvironment,
+        REPORT_EMAIL: "admin@foodwise.io",
+        FROM_EMAIL: "reports@foodwise.io",
+      },
+    });
+
+    const assistantFn = new NodejsFunction(this, "AssistantFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "assistant.ts"),
+      timeout: cdk.Duration.seconds(60),
+      memorySize: 512,
+      environment: {
+        ...lambdaEnvironment,
+        BEDROCK_MODEL_ID: "anthropic.claude-sonnet-4-20250514",
+      },
+    });
+
+    // Bedrock permissions for assistant
+    assistantFn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["bedrock:InvokeModel"],
+        resources: ["arn:aws:bedrock:*::foundation-model/anthropic.*"],
+      })
+    );
+
+    // SES permissions for weekly report
+    generateWeeklyReportFn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["ses:SendEmail", "ses:SendRawEmail"],
+        resources: ["*"],
+      })
+    );
+
     // --- Forecast Lambda (Python, Docker Image) ---
 
     const modelsCodePath = path.join(__dirname, "../../models");
@@ -222,6 +397,12 @@ export class FoodwiseStack extends cdk.Stack {
     new events.Rule(this, "NightlyForecastRule", {
       schedule: events.Schedule.cron({ minute: "0", hour: "2" }),
       targets: [new targets.LambdaFunction(forecastFn)],
+    });
+
+    // Weekly report every Monday at 6 AM UTC
+    new events.Rule(this, "WeeklyReportRule", {
+      schedule: events.Schedule.cron({ minute: "0", hour: "6", weekDay: "MON" }),
+      targets: [new targets.LambdaFunction(generateWeeklyReportFn)],
     });
 
     // --- DynamoDB Permissions ---
@@ -249,6 +430,59 @@ export class FoodwiseStack extends cdk.Stack {
     this.recipesTable.grantReadData(forecastFn);
 
     this.forecastsTable.grantReadWriteData(forecastFn);
+
+    this.suppliersTable.grantReadWriteData(createSupplierFn);
+    this.suppliersTable.grantReadData(listSuppliersFn);
+    this.suppliersTable.grantReadData(lookupBarcodeFn);
+    this.suppliersTable.grantReadData(receiveShipmentFn);
+    this.suppliersTable.grantReadData(createPurchaseOrderFn);
+
+    this.purchaseOrdersTable.grantReadWriteData(createPurchaseOrderFn);
+    this.purchaseOrdersTable.grantReadData(listPurchaseOrdersFn);
+    this.purchaseOrdersTable.grantReadWriteData(receiveShipmentFn);
+    this.purchaseOrdersTable.grantReadData(lookupBarcodeFn);
+
+    this.receivingLogsTable.grantReadWriteData(receiveShipmentFn);
+    this.receivingLogsTable.grantReadData(listReceivingLogsFn);
+
+    this.inventoryTable.grantReadWriteData(receiveShipmentFn);
+    this.inventoryTable.grantReadData(recordWasteFn);
+
+    this.wasteLogsTable.grantReadWriteData(recordWasteFn);
+    this.wasteLogsTable.grantReadData(listWasteFn);
+    this.wasteLogsTable.grantReadData(getWasteAnalyticsFn);
+    this.wasteLogsTable.grantReadData(getDashboardFn);
+
+    this.receivingLogsTable.grantReadData(getWasteAnalyticsFn);
+
+    // Owner dashboard, store comparison, and weekly report need read on all tables
+    const multiStoreReadFns = [getOwnerDashboardFn, getStoreComparisonFn, generateWeeklyReportFn];
+    for (const fn of multiStoreReadFns) {
+      this.storesTable.grantReadData(fn);
+      this.inventoryTable.grantReadData(fn);
+      this.transactionsTable.grantReadData(fn);
+      this.wasteLogsTable.grantReadData(fn);
+      this.forecastsTable.grantReadData(fn);
+    }
+
+    // Health score needs read on individual store data
+    this.storesTable.grantReadData(getHealthScoreFn);
+    this.inventoryTable.grantReadData(getHealthScoreFn);
+    this.transactionsTable.grantReadData(getHealthScoreFn);
+    this.wasteLogsTable.grantReadData(getHealthScoreFn);
+    this.forecastsTable.grantReadData(getHealthScoreFn);
+    this.receivingLogsTable.grantReadData(getHealthScoreFn);
+
+    // Store comparison also needs waste logs for per-ingredient comparison
+    this.wasteLogsTable.grantReadData(getStoreComparisonFn);
+
+    // Assistant needs read on all tables
+    this.storesTable.grantReadData(assistantFn);
+    this.inventoryTable.grantReadData(assistantFn);
+    this.transactionsTable.grantReadData(assistantFn);
+    this.wasteLogsTable.grantReadData(assistantFn);
+    this.forecastsTable.grantReadData(assistantFn);
+    this.purchaseOrdersTable.grantReadData(assistantFn);
 
     // --- API Gateway ---
 
@@ -358,6 +592,113 @@ export class FoodwiseStack extends cdk.Stack {
     forecastsResource.addMethod(
       "POST",
       new apigateway.LambdaIntegration(forecastFn),
+      authMethodOptions
+    );
+
+    // POST /suppliers & GET /suppliers
+    const suppliersResource = this.api.root.addResource("suppliers");
+    suppliersResource.addMethod(
+      "POST",
+      new apigateway.LambdaIntegration(createSupplierFn),
+      authMethodOptions
+    );
+    suppliersResource.addMethod(
+      "GET",
+      new apigateway.LambdaIntegration(listSuppliersFn),
+      authMethodOptions
+    );
+
+    // POST /purchase-orders
+    const purchaseOrdersResource = this.api.root.addResource("purchase-orders");
+    purchaseOrdersResource.addMethod(
+      "POST",
+      new apigateway.LambdaIntegration(createPurchaseOrderFn),
+      authMethodOptions
+    );
+
+    // GET /stores/{storeId}/purchase-orders
+    const storePurchaseOrdersResource = singleStoreResource.addResource("purchase-orders");
+    storePurchaseOrdersResource.addMethod(
+      "GET",
+      new apigateway.LambdaIntegration(listPurchaseOrdersFn),
+      authMethodOptions
+    );
+
+    // POST /stores/{storeId}/receive
+    const receiveResource = singleStoreResource.addResource("receive");
+    receiveResource.addMethod(
+      "POST",
+      new apigateway.LambdaIntegration(receiveShipmentFn),
+      authMethodOptions
+    );
+
+    // GET /stores/{storeId}/receiving-logs
+    const receivingLogsResource = singleStoreResource.addResource("receiving-logs");
+    receivingLogsResource.addMethod(
+      "GET",
+      new apigateway.LambdaIntegration(listReceivingLogsFn),
+      authMethodOptions
+    );
+
+    // GET /barcode/{code}
+    const barcodeResource = this.api.root.addResource("barcode");
+    const barcodeLookupResource = barcodeResource.addResource("{code}");
+    barcodeLookupResource.addMethod(
+      "GET",
+      new apigateway.LambdaIntegration(lookupBarcodeFn),
+      authMethodOptions
+    );
+
+    // POST /stores/{storeId}/waste & GET /stores/{storeId}/waste
+    const wasteResource = singleStoreResource.addResource("waste");
+    wasteResource.addMethod(
+      "POST",
+      new apigateway.LambdaIntegration(recordWasteFn),
+      authMethodOptions
+    );
+    wasteResource.addMethod(
+      "GET",
+      new apigateway.LambdaIntegration(listWasteFn),
+      authMethodOptions
+    );
+
+    // GET /stores/{storeId}/waste/analytics
+    const wasteAnalyticsResource = wasteResource.addResource("analytics");
+    wasteAnalyticsResource.addMethod(
+      "GET",
+      new apigateway.LambdaIntegration(getWasteAnalyticsFn),
+      authMethodOptions
+    );
+
+    // GET /dashboard (owner-level all-stores overview)
+    const ownerDashboardResource = this.api.root.addResource("dashboard");
+    ownerDashboardResource.addMethod(
+      "GET",
+      new apigateway.LambdaIntegration(getOwnerDashboardFn),
+      authMethodOptions
+    );
+
+    // GET /dashboard/comparison
+    const comparisonResource = ownerDashboardResource.addResource("comparison");
+    comparisonResource.addMethod(
+      "GET",
+      new apigateway.LambdaIntegration(getStoreComparisonFn),
+      authMethodOptions
+    );
+
+    // GET /stores/{storeId}/health-score
+    const healthScoreResource = singleStoreResource.addResource("health-score");
+    healthScoreResource.addMethod(
+      "GET",
+      new apigateway.LambdaIntegration(getHealthScoreFn),
+      authMethodOptions
+    );
+
+    // POST /assistant
+    const assistantResource = this.api.root.addResource("assistant");
+    assistantResource.addMethod(
+      "POST",
+      new apigateway.LambdaIntegration(assistantFn),
       authMethodOptions
     );
 

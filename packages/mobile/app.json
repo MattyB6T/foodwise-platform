@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "FoodWise",
+    "slug": "foodwise",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#2c5282"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "io.foodwise.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "FoodWise needs camera access to scan barcodes during shipment receiving."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#2c5282"
+      },
+      "package": "io.foodwise.app",
+      "permissions": ["CAMERA"]
+    }
+  }
+}

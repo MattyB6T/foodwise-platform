@@ -1,6 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { QueryCommand } from "@aws-sdk/lib-dynamodb";
-import { InventoryItem, Transaction, DashboardMetrics } from "@foodwise/shared";
+import { InventoryItem, Transaction, WasteLog, DashboardMetrics } from "@foodwise/shared";
 import { docClient, TABLES } from "../utils/dynamo";
 import { success, error } from "../utils/response";
 import { getUserClaims } from "../utils/auth";
@@ -67,10 +67,58 @@ export const handler = async (
         ? Math.round((totalFoodCost / totalRevenue) * 10000) / 100
         : 0;
 
-    // Calculate waste (items with negative quantity indicate over-deduction)
-    const wasteTotal = inventoryItems
-      .filter((item) => item.quantity < 0)
-      .reduce((sum, item) => sum + Math.abs(item.quantity) * item.costPerUnit, 0);
+    // Fetch waste logs for last 30 days
+    const wasteResult = await docClient.send(
+      new QueryCommand({
+        TableName: TABLES.WASTE_LOGS,
+        IndexName: "storeId-timestamp-index",
+        KeyConditionExpression: "storeId = :storeId AND #ts >= :since",
+        ExpressionAttributeNames: { "#ts": "timestamp" },
+        ExpressionAttributeValues: {
+          ":storeId": storeId,
+          ":since": thirtyDaysAgo,
+        },
+      })
+    );
+    const wasteLogs = (wasteResult.Items || []) as WasteLog[];
+
+    const wasteTotal = wasteLogs.reduce((sum, w) => sum + w.totalCost, 0);
+
+    // Aggregate waste by reason
+    const reasonMap = new Map<string, number>();
+    const ingredientMap = new Map<string, { name: string; cost: number }>();
+    for (const w of wasteLogs) {
+      reasonMap.set(w.reason, (reasonMap.get(w.reason) || 0) + w.totalCost);
+      const existing = ingredientMap.get(w.ingredientId);
+      if (existing) {
+        existing.cost += w.totalCost;
+      } else {
+        ingredientMap.set(w.ingredientId, {
+          name: w.ingredientName,
+          cost: w.totalCost,
+        });
+      }
+    }
+
+    const topReasons = Array.from(reasonMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([reason, cost]) => ({ reason, cost: Math.round(cost * 100) / 100 }));
+
+    const topIngredients = Array.from(ingredientMap.values())
+      .sort((a, b) => b.cost - a.cost)
+      .slice(0, 5)
+      .map((i) => ({
+        ingredientName: i.name,
+        cost: Math.round(i.cost * 100) / 100,
+      }));
+
+    const waste30d = {
+      totalCost: Math.round(wasteTotal * 100) / 100,
+      totalEntries: wasteLogs.length,
+      topReasons,
+      topIngredients,
+    };
 
     // Low stock alerts
     const lowStockAlerts = inventoryItems
@@ -89,7 +137,8 @@ export const handler = async (
       storeId,
       inventorySummary: { totalItems, totalValue },
       foodCostPercentage,
-      wasteTotal,
+      wasteTotal: Math.round(wasteTotal * 100) / 100,
+      waste30d,
       lowStockAlerts,
       generatedAt: new Date().toISOString(),
     };
