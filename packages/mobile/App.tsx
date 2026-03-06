@@ -1,5 +1,6 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Platform, Text, ActivityIndicator, View, TouchableOpacity } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StatusBar } from "expo-status-bar";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -24,6 +25,11 @@ import { ScheduleScreen } from "./src/screens/ScheduleScreen";
 import { TempLogScreen } from "./src/screens/TempLogScreen";
 import { ForecastScreen } from "./src/screens/ForecastScreen";
 import { SettingsScreen } from "./src/screens/SettingsScreen";
+import { ModeSelectionScreen } from "./src/screens/ModeSelectionScreen";
+import { KioskScreen } from "./src/screens/KioskScreen";
+import { TimesheetScreen } from "./src/screens/TimesheetScreen";
+import { TimeEntryDetailScreen } from "./src/screens/TimeEntryDetailScreen";
+import { LiveStaffScreen } from "./src/screens/LiveStaffScreen";
 import type { RootStackParamList, TabParamList } from "./src/navigation/types";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -33,6 +39,8 @@ const linking: any = {
   prefixes: [],
   config: {
     screens: {
+      ModeSelection: "mode",
+      Kiosk: "kiosk",
       Login: "login",
       MainTabs: {
         screens: {
@@ -59,6 +67,9 @@ const linking: any = {
       Schedule: "schedule",
       TempLog: "temp-log",
       Forecast: "forecast",
+      Timesheet: "timesheet",
+      TimeEntryDetail: "time-entry",
+      LiveStaff: "live-staff",
     },
   },
 };
@@ -156,7 +167,16 @@ function MainTabs() {
 
 function AppNavigator() {
   const { isLoading, isAuthenticated } = useAuth();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
+  const [kioskEnabled, setKioskEnabled] = useState<boolean | null>(null);
+  const [showModeSelection, setShowModeSelection] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const enabled = await AsyncStorage.getItem("kiosk_enabled");
+      setKioskEnabled(enabled === "true");
+    })();
+  }, []);
 
   const stackScreenOptions = ({ navigation }: { navigation: any }) => ({
     headerStyle: { backgroundColor: colors.primary },
@@ -172,7 +192,7 @@ function AppNavigator() {
     ),
   });
 
-  if (isLoading) {
+  if (isLoading || kioskEnabled === null) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.primary }}>
         <ActivityIndicator size="large" color="#fff" />
@@ -180,14 +200,52 @@ function AppNavigator() {
     );
   }
 
+  // Kiosk mode: go straight to kiosk screen
+  if (kioskEnabled) {
+    return (
+      <KioskScreen
+        onExitKiosk={() => {
+          setKioskEnabled(false);
+          setShowModeSelection(true);
+        }}
+      />
+    );
+  }
+
+  // Mode selection (shown when exiting kiosk or first open before auth)
+  if (!isAuthenticated && showModeSelection) {
+    return (
+      <ModeSelectionScreen
+        onManagerLogin={() => setShowModeSelection(false)}
+        onKioskMode={async () => {
+          // Can't enter kiosk without registering — go to login first, then settings
+          setShowModeSelection(false);
+        }}
+      />
+    );
+  }
+
   return (
     <Stack.Navigator screenOptions={stackScreenOptions}>
       {!isAuthenticated ? (
-        <Stack.Screen
-          name="Login"
-          component={LoginScreen}
-          options={{ headerShown: false }}
-        />
+        <>
+          <Stack.Screen
+            name="ModeSelection"
+            options={{ headerShown: false }}
+          >
+            {() => (
+              <ModeSelectionScreen
+                onManagerLogin={() => {}}
+                onKioskMode={() => {}}
+              />
+            )}
+          </Stack.Screen>
+          <Stack.Screen
+            name="Login"
+            component={LoginScreen}
+            options={{ headerShown: false }}
+          />
+        </>
       ) : (
         <>
           <Stack.Screen
@@ -195,66 +253,21 @@ function AppNavigator() {
             component={MainTabs}
             options={{ headerShown: false }}
           />
-          <Stack.Screen
-            name="StoreDetail"
-            component={StoreDetailScreen}
-            options={{ title: "Store Details" }}
-          />
-          <Stack.Screen
-            name="BarcodeScanner"
-            component={BarcodeScannerScreen}
-            options={{ title: "Receive Shipment" }}
-          />
-          <Stack.Screen
-            name="WasteLog"
-            component={WasteLogScreen}
-            options={{ title: "Log Waste" }}
-          />
-          <Stack.Screen
-            name="OrderReview"
-            component={OrderReviewScreen}
-            options={{ title: "Purchase Orders" }}
-          />
-          <Stack.Screen
-            name="Assistant"
-            component={AssistantScreen}
-            options={{ title: "AI Assistant" }}
-          />
-          <Stack.Screen
-            name="Security"
-            component={SecurityScreen}
-            options={{ title: "Security" }}
-          />
-          <Stack.Screen
-            name="TransactionDetail"
-            component={TransactionDetailScreen}
-            options={{ title: "Transaction Detail" }}
-          />
-          <Stack.Screen
-            name="Reports"
-            component={ReportsScreen}
-            options={{ title: "Reports" }}
-          />
-          <Stack.Screen
-            name="Expiration"
-            component={ExpirationScreen}
-            options={{ title: "Expiration Tracking" }}
-          />
-          <Stack.Screen
-            name="Schedule"
-            component={ScheduleScreen}
-            options={{ title: "Schedule & Time Clock" }}
-          />
-          <Stack.Screen
-            name="TempLog"
-            component={TempLogScreen}
-            options={{ title: "Temperature Logs" }}
-          />
-          <Stack.Screen
-            name="Forecast"
-            component={ForecastScreen}
-            options={{ title: "Demand Forecasts" }}
-          />
+          <Stack.Screen name="StoreDetail" component={StoreDetailScreen} options={{ title: "Store Details" }} />
+          <Stack.Screen name="BarcodeScanner" component={BarcodeScannerScreen} options={{ title: "Receive Shipment" }} />
+          <Stack.Screen name="WasteLog" component={WasteLogScreen} options={{ title: "Log Waste" }} />
+          <Stack.Screen name="OrderReview" component={OrderReviewScreen} options={{ title: "Purchase Orders" }} />
+          <Stack.Screen name="Assistant" component={AssistantScreen} options={{ title: "AI Assistant" }} />
+          <Stack.Screen name="Security" component={SecurityScreen} options={{ title: "Security" }} />
+          <Stack.Screen name="TransactionDetail" component={TransactionDetailScreen} options={{ title: "Transaction Detail" }} />
+          <Stack.Screen name="Reports" component={ReportsScreen} options={{ title: "Reports" }} />
+          <Stack.Screen name="Expiration" component={ExpirationScreen} options={{ title: "Expiration Tracking" }} />
+          <Stack.Screen name="Schedule" component={ScheduleScreen} options={{ title: "Staff Schedule" }} />
+          <Stack.Screen name="TempLog" component={TempLogScreen} options={{ title: "Temperature Logs" }} />
+          <Stack.Screen name="Forecast" component={ForecastScreen} options={{ title: "Demand Forecasts" }} />
+          <Stack.Screen name="Timesheet" component={TimesheetScreen} options={{ title: "Timesheets" }} />
+          <Stack.Screen name="TimeEntryDetail" component={TimeEntryDetailScreen} options={{ title: "Entry Detail" }} />
+          <Stack.Screen name="LiveStaff" component={LiveStaffScreen} options={{ title: "Who's In" }} />
         </>
       )}
     </Stack.Navigator>

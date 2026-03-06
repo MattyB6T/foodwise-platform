@@ -28,6 +28,7 @@ export class FoodwiseStack extends cdk.Stack {
   public readonly staffTable: dynamodb.Table;
   public readonly schedulesTable: dynamodb.Table;
   public readonly timeClockTable: dynamodb.Table;
+  public readonly kioskDevicesTable: dynamodb.Table;
   public readonly tempLogsTable: dynamodb.Table;
   public readonly priceHistoryTable: dynamodb.Table;
   public readonly prepListsTable: dynamodb.Table;
@@ -222,10 +223,17 @@ export class FoodwiseStack extends cdk.Stack {
     });
 
     this.timeClockTable.addGlobalSecondaryIndex({
-      indexName: "storeId-clockIn-index",
+      indexName: "storeId-clockInTime-index",
       partitionKey: { name: "storeId", type: dynamodb.AttributeType.STRING },
-      sortKey: { name: "clockIn", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "clockInTime", type: dynamodb.AttributeType.STRING },
       projectionType: dynamodb.ProjectionType.ALL,
+    });
+
+    this.kioskDevicesTable = new dynamodb.Table(this, "KioskDevicesTable", {
+      tableName: "kiosk-devices",
+      partitionKey: { name: "deviceId", type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     this.tempLogsTable = new dynamodb.Table(this, "TempLogsTable", {
@@ -366,6 +374,7 @@ export class FoodwiseStack extends cdk.Stack {
       STAFF_TABLE: this.staffTable.tableName,
       SCHEDULES_TABLE: this.schedulesTable.tableName,
       TIME_CLOCK_TABLE: this.timeClockTable.tableName,
+      KIOSK_DEVICES_TABLE: this.kioskDevicesTable.tableName,
       TEMP_LOGS_TABLE: this.tempLogsTable.tableName,
       PRICE_HISTORY_TABLE: this.priceHistoryTable.tableName,
       PREP_LISTS_TABLE: this.prepListsTable.tableName,
@@ -713,9 +722,54 @@ export class FoodwiseStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(10),
     });
 
-    const timeClockFn = new NodejsFunction(this, "TimeClockFn", {
+    // Kiosk endpoints (API key auth, no Cognito)
+    const kioskRegisterFn = new NodejsFunction(this, "KioskRegisterFn", {
       ...nodejsFnProps,
-      entry: path.join(handlersPath, "timeClock.ts"),
+      entry: path.join(handlersPath, "kioskRegister.ts"),
+      timeout: cdk.Duration.seconds(10),
+    });
+
+    const kioskLookupFn = new NodejsFunction(this, "KioskLookupFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "kioskLookup.ts"),
+      timeout: cdk.Duration.seconds(10),
+    });
+
+    const kioskClockInFn = new NodejsFunction(this, "KioskClockInFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "kioskClockIn.ts"),
+      timeout: cdk.Duration.seconds(15),
+    });
+
+    const kioskClockOutFn = new NodejsFunction(this, "KioskClockOutFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "kioskClockOut.ts"),
+      timeout: cdk.Duration.seconds(10),
+    });
+
+    const kioskBreakFn = new NodejsFunction(this, "KioskBreakFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "kioskBreak.ts"),
+      timeout: cdk.Duration.seconds(10),
+    });
+
+    const kioskActiveFn = new NodejsFunction(this, "KioskActiveFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "kioskActive.ts"),
+      timeout: cdk.Duration.seconds(10),
+    });
+
+    // Timesheet management (Cognito auth)
+    const timesheetManagementFn = new NodejsFunction(this, "TimesheetManagementFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "timesheetManagement.ts"),
+      timeout: cdk.Duration.seconds(15),
+    });
+
+    // Staff PIN management
+    const staffPinFn = new NodejsFunction(this, "StaffPinFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "staffPin.ts"),
       timeout: cdk.Duration.seconds(10),
     });
 
@@ -866,9 +920,34 @@ export class FoodwiseStack extends cdk.Stack {
     this.notificationsTable.grantReadData(getNotificationPrefsFn);
     this.notificationsTable.grantReadData(sendNotificationFn);
 
-    // Schedule & Time Clock permissions
+    // Schedule permissions
     this.schedulesTable.grantReadWriteData(manageScheduleFn);
-    this.timeClockTable.grantReadWriteData(timeClockFn);
+
+    // Kiosk permissions
+    this.kioskDevicesTable.grantReadWriteData(kioskRegisterFn);
+    this.kioskDevicesTable.grantReadData(kioskLookupFn);
+    this.kioskDevicesTable.grantReadData(kioskClockInFn);
+    this.kioskDevicesTable.grantReadData(kioskClockOutFn);
+    this.kioskDevicesTable.grantReadData(kioskBreakFn);
+    this.kioskDevicesTable.grantReadData(kioskActiveFn);
+
+    this.timeClockTable.grantReadWriteData(kioskClockInFn);
+    this.timeClockTable.grantReadWriteData(kioskClockOutFn);
+    this.timeClockTable.grantReadWriteData(kioskBreakFn);
+    this.timeClockTable.grantReadData(kioskLookupFn);
+    this.timeClockTable.grantReadData(kioskActiveFn);
+
+    this.staffTable.grantReadData(kioskLookupFn);
+
+    this.auditTrailTable.grantReadWriteData(kioskClockInFn);
+
+    // Timesheet management permissions
+    this.timeClockTable.grantReadWriteData(timesheetManagementFn);
+    this.auditTrailTable.grantReadWriteData(timesheetManagementFn);
+    this.reportsBucket.grantRead(timesheetManagementFn);
+
+    // Staff PIN permissions
+    this.staffTable.grantReadWriteData(staffPinFn);
 
     // Staff permissions
     this.staffTable.grantReadData(listStaffFn);
@@ -1229,10 +1308,59 @@ export class FoodwiseStack extends cdk.Stack {
     const singleShiftResource = scheduleResource.addResource("{shiftId}");
     singleShiftResource.addMethod("DELETE", new apigateway.LambdaIntegration(manageScheduleFn), authMethodOptions);
 
-    // GET/POST /stores/{storeId}/time-clock
-    const timeClockResource = singleStoreResource.addResource("time-clock");
-    timeClockResource.addMethod("GET", new apigateway.LambdaIntegration(timeClockFn), authMethodOptions);
-    timeClockResource.addMethod("POST", new apigateway.LambdaIntegration(timeClockFn), authMethodOptions);
+    // --- Kiosk API endpoints (no Cognito auth — use API key) ---
+    const kioskResource = this.api.root.addResource("kiosk");
+
+    // POST /kiosk/register (Cognito auth — manager sets up kiosk)
+    const kioskRegisterResource = kioskResource.addResource("register");
+    kioskRegisterResource.addMethod("POST", new apigateway.LambdaIntegration(kioskRegisterFn), authMethodOptions);
+
+    // POST /kiosk/lookup (no auth — kiosk device uses API key header)
+    const kioskLookupResource = kioskResource.addResource("lookup");
+    kioskLookupResource.addMethod("POST", new apigateway.LambdaIntegration(kioskLookupFn));
+
+    // POST /kiosk/clockin
+    const kioskClockInResource = kioskResource.addResource("clockin");
+    kioskClockInResource.addMethod("POST", new apigateway.LambdaIntegration(kioskClockInFn));
+
+    // POST /kiosk/clockout
+    const kioskClockOutResource = kioskResource.addResource("clockout");
+    kioskClockOutResource.addMethod("POST", new apigateway.LambdaIntegration(kioskClockOutFn));
+
+    // POST /kiosk/break/{action}
+    const kioskBreakResource = kioskResource.addResource("break");
+    const kioskBreakActionResource = kioskBreakResource.addResource("{action}");
+    kioskBreakActionResource.addMethod("POST", new apigateway.LambdaIntegration(kioskBreakFn));
+
+    // GET /kiosk/active?storeId=
+    const kioskActiveResource = kioskResource.addResource("active");
+    kioskActiveResource.addMethod("GET", new apigateway.LambdaIntegration(kioskActiveFn));
+
+    // --- Timesheet management API (Cognito auth) ---
+    const timeclockResource = singleStoreResource.addResource("timeclock");
+    // GET /stores/{storeId}/timeclock
+    timeclockResource.addMethod("GET", new apigateway.LambdaIntegration(timesheetManagementFn), authMethodOptions);
+
+    // GET /stores/{storeId}/timeclock/live
+    const timeclockLiveResource = timeclockResource.addResource("live");
+    timeclockLiveResource.addMethod("GET", new apigateway.LambdaIntegration(timesheetManagementFn), authMethodOptions);
+
+    // GET /stores/{storeId}/timeclock/export
+    const timeclockExportResource = timeclockResource.addResource("export");
+    timeclockExportResource.addMethod("GET", new apigateway.LambdaIntegration(timesheetManagementFn), authMethodOptions);
+
+    // GET/PUT /stores/{storeId}/timeclock/{entryId}
+    const timeclockEntryResource = timeclockResource.addResource("{entryId}");
+    timeclockEntryResource.addMethod("GET", new apigateway.LambdaIntegration(timesheetManagementFn), authMethodOptions);
+    timeclockEntryResource.addMethod("PUT", new apigateway.LambdaIntegration(timesheetManagementFn), authMethodOptions);
+
+    // POST /stores/{storeId}/timeclock/{entryId}/approve
+    const timeclockApproveResource = timeclockEntryResource.addResource("approve");
+    timeclockApproveResource.addMethod("POST", new apigateway.LambdaIntegration(timesheetManagementFn), authMethodOptions);
+
+    // GET /stores/{storeId}/timeclock/{entryId}/photo
+    const timeclockPhotoResource = timeclockEntryResource.addResource("photo");
+    timeclockPhotoResource.addMethod("GET", new apigateway.LambdaIntegration(timesheetManagementFn), authMethodOptions);
 
     // GET /stores/{storeId}/staff & POST /stores/{storeId}/staff
     const staffResource = singleStoreResource.addResource("staff");
@@ -1258,6 +1386,10 @@ export class FoodwiseStack extends cdk.Stack {
       new apigateway.LambdaIntegration(manageStaffFn),
       authMethodOptions
     );
+
+    // POST /stores/{storeId}/staff/{staffId}/pin
+    const staffPinResource = singleStaffResource.addResource("pin");
+    staffPinResource.addMethod("POST", new apigateway.LambdaIntegration(staffPinFn), authMethodOptions);
 
     // POST /stores/{storeId}/expiration & GET /stores/{storeId}/expiration/alerts
     const expirationResource = singleStoreResource.addResource("expiration");

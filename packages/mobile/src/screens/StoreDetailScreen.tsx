@@ -157,8 +157,8 @@ export function StoreDetailScreen() {
           { icon: "📦", label: "Receive", screen: "BarcodeScanner" },
           { icon: "🗑️", label: "Log Waste", screen: "WasteLog" },
           { icon: "📋", label: "Orders", screen: "OrderReview" },
+          { icon: "👥", label: "Who's In", screen: "LiveStaff" },
           { icon: "🤖", label: "Assistant", screen: "Assistant" },
-          { icon: "🛡", label: "Security", screen: "Security" },
         ].map((action) => (
           <TouchableOpacity
             key={action.screen}

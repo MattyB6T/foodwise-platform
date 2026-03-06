@@ -27,4 +27,5 @@ export const TABLES = {
   PRICE_HISTORY: process.env.PRICE_HISTORY_TABLE!,
   PREP_LISTS: process.env.PREP_LISTS_TABLE!,
   AUDIT_TRAIL: process.env.AUDIT_TRAIL_TABLE!,
+  KIOSK_DEVICES: process.env.KIOSK_DEVICES_TABLE!,
 };

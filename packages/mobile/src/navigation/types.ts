@@ -12,6 +12,8 @@ export type TabParamList = {
 };
 
 export type RootStackParamList = {
+  ModeSelection: undefined;
+  Kiosk: undefined;
   Login: undefined;
   MainTabs: NavigatorScreenParams<TabParamList>;
   StoreDetail: undefined;
@@ -31,4 +33,12 @@ export type RootStackParamList = {
   Schedule: undefined;
   TempLog: undefined;
   Forecast: undefined;
+  Timesheet: undefined;
+  TimeEntryDetail: {
+    staffId: string;
+    staffName: string;
+    storeId: string;
+    week: string;
+  };
+  LiveStaff: undefined;
 };

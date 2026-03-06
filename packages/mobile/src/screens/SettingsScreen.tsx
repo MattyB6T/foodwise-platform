@@ -8,19 +8,26 @@ import {
   Switch,
   TextInput,
   Alert,
+  Platform,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useAuth } from "../contexts/AuthContext";
 import { useStore } from "../contexts/StoreContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { api } from "../utils/api";
 import { fontSize, spacing, type ColorScheme } from "../utils/theme";
+import type { RootStackParamList } from "../navigation/types";
 
+type NavProp = NativeStackNavigationProp<RootStackParamList>;
 const APP_VERSION = "1.0.0";
 
 export function SettingsScreen() {
   const { user, logout } = useAuth();
   const { stores, selectedStoreId } = useStore();
   const { colors, isDark, toggleTheme } = useTheme();
+  const navigation = useNavigation<NavProp>();
   const s = makeStyles(colors);
 
   // Notification preferences
@@ -33,6 +40,16 @@ export function SettingsScreen() {
   const [showPasswordChange, setShowPasswordChange] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
+
+  // Kiosk mode
+  const [showKioskSetup, setShowKioskSetup] = useState(false);
+  const [kioskStoreId, setKioskStoreId] = useState(selectedStoreId || "");
+  const [kioskDeviceName, setKioskDeviceName] = useState("Front Counter Tablet");
+  const [kioskHoursOpen, setKioskHoursOpen] = useState("06:00");
+  const [kioskHoursClose, setKioskHoursClose] = useState("23:00");
+  const [kioskAddress, setKioskAddress] = useState("");
+  const [kioskManagerPin, setKioskManagerPin] = useState("");
+  const [kioskEnabling, setKioskEnabling] = useState(false);
 
   const handleChangePassword = () => {
     if (!currentPassword || !newPassword) {
@@ -47,6 +64,58 @@ export function SettingsScreen() {
     setShowPasswordChange(false);
     setCurrentPassword("");
     setNewPassword("");
+  };
+
+  const handleEnableKiosk = async () => {
+    if (!kioskStoreId) {
+      Alert.alert("Required", "Select a store for this kiosk.");
+      return;
+    }
+    if (!kioskManagerPin || kioskManagerPin.length !== 6 || !/^\d+$/.test(kioskManagerPin)) {
+      Alert.alert("Required", "Manager exit PIN must be exactly 6 digits.");
+      return;
+    }
+
+    Alert.alert(
+      "Enable Kiosk Mode",
+      "Once kiosk mode is enabled on this device, employees will only see the clock-in screen. To exit kiosk mode, tap the logo 5 times and enter your manager PIN.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Enable",
+          style: "destructive",
+          onPress: async () => {
+            setKioskEnabling(true);
+            try {
+              const storeName = stores.find(s => s.storeId === kioskStoreId)?.name || "Store";
+              const data = await api.registerKioskDevice({
+                storeId: kioskStoreId,
+                deviceName: kioskDeviceName,
+                storeHoursOpen: kioskHoursOpen,
+                storeHoursClose: kioskHoursClose,
+                storeAddress: kioskAddress,
+                managerExitPin: kioskManagerPin,
+              });
+
+              await AsyncStorage.setItem("kiosk_enabled", "true");
+              await AsyncStorage.setItem("kiosk_device_id", data.deviceId);
+              await AsyncStorage.setItem("kiosk_api_key", data.apiKey);
+              await AsyncStorage.setItem("kiosk_store_id", kioskStoreId);
+              await AsyncStorage.setItem("kiosk_store_name", storeName);
+              await AsyncStorage.setItem("kiosk_manager_pin", kioskManagerPin);
+
+              Alert.alert("Kiosk Mode Enabled", "Device is now in kiosk mode. App will switch to the employee clock-in screen.");
+              // Force reload by navigating to ModeSelection which will detect kiosk_enabled
+              navigation.reset({ index: 0, routes: [{ name: "ModeSelection" as any }] });
+            } catch (err: any) {
+              Alert.alert("Error", err.message || "Failed to register kiosk device");
+            } finally {
+              setKioskEnabling(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -151,6 +220,123 @@ export function SettingsScreen() {
             <Text style={s.rowIcon}>➕</Text>
             <Text style={[s.rowLabel, { color: colors.primary }]}>Add Store</Text>
           </View>
+        </TouchableOpacity>
+      </View>
+
+      {/* Kiosk Mode */}
+      <View style={[s.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Text style={[s.sectionTitle, { color: colors.text }]}>Kiosk Mode</Text>
+        {!showKioskSetup ? (
+          <TouchableOpacity style={s.row} onPress={() => setShowKioskSetup(true)}>
+            <View style={s.rowLeft}>
+              <Text style={s.rowIcon}>⏱</Text>
+              <View>
+                <Text style={[s.rowLabel, { color: colors.primary }]}>Enable Kiosk Mode</Text>
+                <Text style={[s.rowSub, { color: colors.textSecondary }]}>Turn this device into an employee time clock</Text>
+              </View>
+            </View>
+            <Text style={[s.rowArrow, { color: colors.textSecondary }]}>→</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={s.passwordForm}>
+            <Text style={[s.kioskWarning, { color: colors.warning }]}>
+              This will lock the device to the clock-in screen. Only a manager PIN can exit kiosk mode.
+            </Text>
+
+            <Text style={[s.fieldLabel, { color: colors.textSecondary }]}>Select Store</Text>
+            {stores.map((store) => (
+              <TouchableOpacity
+                key={store.storeId}
+                style={[s.storeOption, { borderColor: kioskStoreId === store.storeId ? colors.primary : colors.border }]}
+                onPress={() => setKioskStoreId(store.storeId)}
+              >
+                <Text style={[s.storeOptionText, { color: kioskStoreId === store.storeId ? colors.primary : colors.text }]}>
+                  {kioskStoreId === store.storeId ? "● " : "○ "}{store.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+
+            <Text style={[s.fieldLabel, { color: colors.textSecondary }]}>Device Name</Text>
+            <TextInput
+              style={[s.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+              value={kioskDeviceName}
+              onChangeText={setKioskDeviceName}
+              placeholder="e.g. Front Counter Tablet"
+              placeholderTextColor={colors.textSecondary}
+            />
+
+            <Text style={[s.fieldLabel, { color: colors.textSecondary }]}>Store Hours</Text>
+            <View style={{ flexDirection: "row", gap: spacing.sm }}>
+              <TextInput
+                style={[s.input, { flex: 1, backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                value={kioskHoursOpen}
+                onChangeText={setKioskHoursOpen}
+                placeholder="Open (HH:MM)"
+                placeholderTextColor={colors.textSecondary}
+              />
+              <TextInput
+                style={[s.input, { flex: 1, backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                value={kioskHoursClose}
+                onChangeText={setKioskHoursClose}
+                placeholder="Close (HH:MM)"
+                placeholderTextColor={colors.textSecondary}
+              />
+            </View>
+
+            <Text style={[s.fieldLabel, { color: colors.textSecondary }]}>Store Address (for GPS verification)</Text>
+            <TextInput
+              style={[s.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+              value={kioskAddress}
+              onChangeText={setKioskAddress}
+              placeholder="123 Main St, City, State"
+              placeholderTextColor={colors.textSecondary}
+            />
+
+            <Text style={[s.fieldLabel, { color: colors.textSecondary }]}>Manager Exit PIN (6 digits)</Text>
+            <TextInput
+              style={[s.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+              value={kioskManagerPin}
+              onChangeText={(t) => setKioskManagerPin(t.replace(/[^0-9]/g, "").slice(0, 6))}
+              placeholder="6-digit PIN"
+              placeholderTextColor={colors.textSecondary}
+              keyboardType="number-pad"
+              maxLength={6}
+              secureTextEntry
+            />
+
+            <Text style={[s.kioskNote, { color: colors.textSecondary }]}>
+              Camera: Used for fraud prevention — captures a photo on every clock-in.{"\n"}
+              Location: Captures GPS to verify clock-in happens at the store.
+            </Text>
+
+            <View style={s.passwordActions}>
+              <TouchableOpacity
+                style={[s.cancelBtn, { borderColor: colors.border }]}
+                onPress={() => setShowKioskSetup(false)}
+              >
+                <Text style={[s.cancelText, { color: colors.textSecondary }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.saveBtn, { backgroundColor: colors.danger }]}
+                onPress={handleEnableKiosk}
+                disabled={kioskEnabling}
+              >
+                <Text style={s.saveText}>{kioskEnabling ? "Enabling..." : "Enable Kiosk"}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      </View>
+
+      {/* Timesheets */}
+      <View style={[s.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Text style={[s.sectionTitle, { color: colors.text }]}>Timesheets</Text>
+        <TouchableOpacity style={s.row} onPress={() => navigation.navigate("Timesheet" as any)}>
+          <View style={s.rowLeft}>
+            <Text style={s.rowIcon}>📋</Text>
+            <Text style={[s.rowLabel, { color: colors.primary }]}>View Timesheets</Text>
+          </View>
+          <Text style={[s.rowArrow, { color: colors.textSecondary }]}>→</Text>
         </TouchableOpacity>
       </View>
 
@@ -283,6 +469,12 @@ const makeStyles = (colors: ColorScheme) =>
       alignItems: "center",
     },
     saveText: { color: "#fff", fontWeight: "700" },
+
+    kioskWarning: { fontSize: fontSize.sm, marginBottom: spacing.md, lineHeight: 20 },
+    kioskNote: { fontSize: fontSize.xs, marginBottom: spacing.md, lineHeight: 18 },
+    fieldLabel: { fontSize: fontSize.xs, fontWeight: "600", marginBottom: 4, marginTop: spacing.xs },
+    storeOption: { borderWidth: 1, borderRadius: 8, padding: spacing.sm, marginBottom: spacing.xs },
+    storeOptionText: { fontSize: fontSize.sm, fontWeight: "600" },
 
     logoutBtn: {
       margin: spacing.md,

@@ -166,11 +166,27 @@ export const api = {
   deleteShift: (storeId: string, shiftId: string) =>
     request<any>("DELETE", `/stores/${storeId}/schedule/${shiftId}`),
 
-  // Time Clock
-  getTimeEntries: (storeId: string, date?: string) =>
-    request<any>("GET", `/stores/${storeId}/time-clock${date ? `?date=${date}` : ""}`),
-  clockAction: (storeId: string, body: { action: string; entryId?: string; staffName?: string }) =>
-    request<any>("POST", `/stores/${storeId}/time-clock`, body),
+  // Timesheets (manager)
+  getTimesheetWeek: (storeId: string, week?: string) =>
+    request<any>("GET", `/stores/${storeId}/timeclock${week ? `?week=${week}` : ""}`),
+  getTimesheetLive: (storeId: string) =>
+    request<any>("GET", `/stores/${storeId}/timeclock/live`),
+  approveTimeEntry: (storeId: string, entryId: string) =>
+    request<any>("POST", `/stores/${storeId}/timeclock/${entryId}/approve`),
+  editTimeEntry: (storeId: string, entryId: string, body: { reason: string; clockInTime?: string; clockOutTime?: string; notes?: string }) =>
+    request<any>("PUT", `/stores/${storeId}/timeclock/${entryId}`, body),
+  getTimeEntryPhoto: (storeId: string, entryId: string) =>
+    request<any>("GET", `/stores/${storeId}/timeclock/${entryId}/photo`),
+  exportTimesheet: (storeId: string, week?: string) =>
+    request<any>("GET", `/stores/${storeId}/timeclock/export${week ? `?week=${week}` : ""}`),
+
+  // Kiosk device registration (manager auth)
+  registerKioskDevice: (body: { storeId: string; deviceName: string; storeHoursOpen?: string; storeHoursClose?: string; storeAddress?: string; storeLat?: number; storeLng?: number; managerExitPin: string }) =>
+    request<any>("POST", "/kiosk/register", body),
+
+  // Staff PIN
+  setStaffPin: (storeId: string, staffId: string, pin: string) =>
+    request<any>("POST", `/stores/${storeId}/staff/${staffId}/pin`, { pin }),
 
   // Vendor Communication
   emailPurchaseOrder: (orderId: string) =>
