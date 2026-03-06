@@ -16,7 +16,7 @@ import { success, error } from "../utils/response";
 import { getUserClaims } from "../utils/auth";
 
 const bedrock = new BedrockRuntimeClient({});
-const MODEL_ID = process.env.BEDROCK_MODEL_ID || "anthropic.claude-sonnet-4-20250514";
+const MODEL_ID = process.env.BEDROCK_MODEL_ID || "us.anthropic.claude-sonnet-4-20250514-v1:0";
 
 interface AssistantBody {
   question: string;
@@ -488,6 +488,13 @@ export const handler = async (
   } catch (err) {
     if (err instanceof SyntaxError) {
       return error("Invalid JSON in request body", 400);
+    }
+    const errName = (err as any)?.name || "";
+    if (errName === "ThrottlingException") {
+      return error("AI assistant is temporarily unavailable due to high usage. Please try again later.", 429, "THROTTLED");
+    }
+    if (errName === "AccessDeniedException") {
+      return error("AI assistant model access is not configured. Please contact support.", 503, "MODEL_ACCESS_DENIED");
     }
     console.error("Assistant error:", err);
     return error("Internal server error", 500, "INTERNAL_ERROR");

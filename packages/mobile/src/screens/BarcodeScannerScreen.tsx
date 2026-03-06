@@ -11,8 +11,9 @@ import {
 } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useStore } from "../contexts/StoreContext";
+import { useTheme } from "../contexts/ThemeContext";
 import { api } from "../utils/api";
-import { colors, fontSize, spacing } from "../utils/theme";
+import { fontSize, spacing, type ColorScheme } from "../utils/theme";
 import { StorePicker } from "../components/StorePicker";
 
 interface ScannedItem {
@@ -27,12 +28,14 @@ interface ScannedItem {
 
 export function BarcodeScannerScreen() {
   const { selectedStoreId } = useStore();
+  const { colors } = useTheme();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanning, setScanning] = useState(true);
   const [scannedItems, setScannedItems] = useState<ScannedItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [lastScanned, setLastScanned] = useState<string | null>(null);
+  const s = makeStyles(colors);
 
   useEffect(() => {
     requestPermission();
@@ -45,7 +48,6 @@ export function BarcodeScannerScreen() {
 
     try {
       const result = await api.lookupBarcode(data, selectedStoreId || undefined);
-
       const newItem: ScannedItem = {
         barcode: data,
         itemName: result.ingredient.itemName,
@@ -55,7 +57,6 @@ export function BarcodeScannerScreen() {
         quantity: result.casePack || 1,
         orderId: result.openPurchaseOrders?.[0]?.orderId,
       };
-
       setScannedItems((prev) => [...prev, newItem]);
       setScanning(false);
     } catch (err: any) {
@@ -86,14 +87,8 @@ export function BarcodeScannerScreen() {
         barcode: item.barcode,
         quantity: item.quantity,
       }));
-
       const orderId = scannedItems.find((i) => i.orderId)?.orderId;
-
-      const result = await api.receiveShipment(selectedStoreId, {
-        orderId,
-        scans,
-      });
-
+      const result = await api.receiveShipment(selectedStoreId, { orderId, scans });
       const discCount = result.discrepancies?.length || 0;
       Alert.alert(
         "Shipment Received",
@@ -110,7 +105,7 @@ export function BarcodeScannerScreen() {
 
   if (!selectedStoreId) {
     return (
-      <View style={styles.centered}>
+      <View style={[s.centered, { backgroundColor: colors.background }]}>
         <Text style={{ fontSize: fontSize.md, color: colors.textSecondary, textAlign: "center" }}>
           Select a store from the Dashboard first
         </Text>
@@ -120,29 +115,29 @@ export function BarcodeScannerScreen() {
 
   if (!permission) {
     return (
-      <View style={styles.centered}>
+      <View style={[s.centered, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.permText}>Requesting camera permission...</Text>
+        <Text style={[s.permText, { color: colors.textSecondary }]}>Requesting camera permission...</Text>
       </View>
     );
   }
 
   if (!permission.granted) {
     return (
-      <View style={styles.centered}>
-        <Text style={styles.permText}>Camera permission is required to scan barcodes.</Text>
-        <TouchableOpacity style={styles.viewListBtn} onPress={requestPermission}>
-          <Text style={styles.viewListText}>Grant Permission</Text>
+      <View style={[s.centered, { backgroundColor: colors.background }]}>
+        <Text style={[s.permText, { color: colors.textSecondary }]}>Camera permission is required to scan barcodes.</Text>
+        <TouchableOpacity style={[s.viewListBtn, { backgroundColor: colors.primary }]} onPress={requestPermission}>
+          <Text style={s.viewListText}>Grant Permission</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[s.container, { backgroundColor: colors.background }]}>
       <StorePicker />
       {scanning ? (
-        <View style={styles.scannerContainer}>
+        <View style={s.scannerContainer}>
           <CameraView
             onBarcodeScanned={scanning ? handleBarCodeScanned : undefined}
             style={StyleSheet.absoluteFillObject}
@@ -150,37 +145,30 @@ export function BarcodeScannerScreen() {
               barcodeTypes: ["ean13", "ean8", "upc_a", "upc_e", "code128"],
             }}
           />
-          <View style={styles.overlay}>
-            <View style={styles.scanFrame} />
-            <Text style={styles.scanText}>
+          <View style={s.overlay}>
+            <View style={s.scanFrame} />
+            <Text style={s.scanText}>
               {loading ? "Looking up barcode..." : "Point at a barcode to scan"}
             </Text>
           </View>
           {scannedItems.length > 0 && (
             <TouchableOpacity
-              style={styles.viewListBtn}
+              style={[s.viewListBtn, { backgroundColor: colors.primary }]}
               onPress={() => setScanning(false)}
             >
-              <Text style={styles.viewListText}>
-                View Scanned ({scannedItems.length})
-              </Text>
+              <Text style={s.viewListText}>View Scanned ({scannedItems.length})</Text>
             </TouchableOpacity>
           )}
         </View>
       ) : (
-        <View style={styles.listContainer}>
-          <View style={styles.listHeader}>
-            <Text style={styles.listTitle}>
-              Scanned Items ({scannedItems.length})
-            </Text>
+        <View style={s.listContainer}>
+          <View style={s.listHeader}>
+            <Text style={[s.listTitle, { color: colors.text }]}>Scanned Items ({scannedItems.length})</Text>
             <TouchableOpacity
-              style={styles.scanMoreBtn}
-              onPress={() => {
-                setScanning(true);
-                setLastScanned(null);
-              }}
+              style={[s.scanMoreBtn, { backgroundColor: colors.primaryLight }]}
+              onPress={() => { setScanning(true); setLastScanned(null); }}
             >
-              <Text style={styles.scanMoreText}>+ Scan More</Text>
+              <Text style={s.scanMoreText}>+ Scan More</Text>
             </TouchableOpacity>
           </View>
 
@@ -188,31 +176,28 @@ export function BarcodeScannerScreen() {
             data={scannedItems}
             keyExtractor={(_, i) => i.toString()}
             renderItem={({ item, index }) => (
-              <View style={styles.itemCard}>
-                <View style={styles.itemRow}>
-                  <View style={styles.itemInfo}>
-                    <Text style={styles.itemName}>{item.itemName}</Text>
-                    <Text style={styles.itemDetail}>
+              <View style={[s.itemCard, { backgroundColor: colors.surface }]}>
+                <View style={s.itemRow}>
+                  <View style={s.itemInfo}>
+                    <Text style={[s.itemName, { color: colors.text }]}>{item.itemName}</Text>
+                    <Text style={[s.itemDetail, { color: colors.textSecondary }]}>
                       {item.supplierName} | ${item.expectedPrice}/{item.unit}
                     </Text>
                     {item.orderId && (
-                      <Text style={styles.poTag}>On PO</Text>
+                      <Text style={[s.poTag, { color: colors.secondary }]}>On PO</Text>
                     )}
                   </View>
-                  <View style={styles.qtyContainer}>
+                  <View style={s.qtyContainer}>
                     <TextInput
-                      style={styles.qtyInput}
+                      style={[s.qtyInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
                       value={item.quantity.toString()}
                       onChangeText={(val) => updateQuantity(index, val)}
                       keyboardType="numeric"
                     />
-                    <Text style={styles.unitLabel}>{item.unit}</Text>
+                    <Text style={[s.unitLabel, { color: colors.textSecondary }]}>{item.unit}</Text>
                   </View>
-                  <TouchableOpacity
-                    onPress={() => removeItem(index)}
-                    style={styles.removeBtn}
-                  >
-                    <Text style={styles.removeText}>✕</Text>
+                  <TouchableOpacity onPress={() => removeItem(index)} style={s.removeBtn}>
+                    <Text style={[s.removeText, { color: colors.danger }]}>✕</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -220,16 +205,14 @@ export function BarcodeScannerScreen() {
           />
 
           <TouchableOpacity
-            style={[styles.submitBtn, submitting && styles.submitDisabled]}
+            style={[s.submitBtn, { backgroundColor: colors.secondary }, submitting && s.submitDisabled]}
             onPress={submitReceiving}
             disabled={submitting}
           >
             {submitting ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.submitText}>
-                Confirm Receiving ({scannedItems.length} items)
-              </Text>
+              <Text style={s.submitText}>Confirm Receiving ({scannedItems.length} items)</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -238,97 +221,34 @@ export function BarcodeScannerScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  centered: { flex: 1, justifyContent: "center", alignItems: "center", padding: spacing.lg },
-  permText: { fontSize: fontSize.md, color: colors.textSecondary, textAlign: "center", marginTop: spacing.md },
-  scannerContainer: { flex: 1 },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  scanFrame: {
-    width: 250,
-    height: 250,
-    borderWidth: 2,
-    borderColor: "#fff",
-    borderRadius: 12,
-  },
-  scanText: {
-    color: "#fff",
-    fontSize: fontSize.md,
-    marginTop: spacing.md,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: 8,
-  },
-  viewListBtn: {
-    position: "absolute",
-    bottom: 40,
-    alignSelf: "center",
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderRadius: 25,
-  },
-  viewListText: { color: "#fff", fontWeight: "700", fontSize: fontSize.md },
-  listContainer: { flex: 1, paddingTop: spacing.md },
-  listHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.sm,
-  },
-  listTitle: { fontSize: fontSize.lg, fontWeight: "700", color: colors.text },
-  scanMoreBtn: {
-    backgroundColor: colors.primaryLight,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: 8,
-  },
-  scanMoreText: { color: "#fff", fontWeight: "600", fontSize: fontSize.sm },
-  itemCard: {
-    backgroundColor: colors.surface,
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.sm,
-    borderRadius: 10,
-    padding: spacing.md,
-  },
-  itemRow: { flexDirection: "row", alignItems: "center" },
-  itemInfo: { flex: 1 },
-  itemName: { fontSize: fontSize.md, fontWeight: "600", color: colors.text },
-  itemDetail: { fontSize: fontSize.xs, color: colors.textSecondary, marginTop: 2 },
-  poTag: {
-    fontSize: fontSize.xs,
-    color: colors.secondary,
-    fontWeight: "600",
-    marginTop: 2,
-  },
-  qtyContainer: { alignItems: "center", marginRight: spacing.sm },
-  qtyInput: {
-    backgroundColor: colors.background,
-    borderRadius: 8,
-    width: 60,
-    textAlign: "center",
-    padding: spacing.sm,
-    fontSize: fontSize.md,
-    fontWeight: "700",
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  unitLabel: { fontSize: fontSize.xs, color: colors.textSecondary, marginTop: 2 },
-  removeBtn: { padding: spacing.sm },
-  removeText: { fontSize: fontSize.lg, color: colors.danger },
-  submitBtn: {
-    backgroundColor: colors.secondary,
-    margin: spacing.lg,
-    padding: spacing.md,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  submitDisabled: { opacity: 0.6 },
-  submitText: { color: "#fff", fontSize: fontSize.md, fontWeight: "700" },
-});
+const makeStyles = (colors: ColorScheme) =>
+  StyleSheet.create({
+    container: { flex: 1 },
+    centered: { flex: 1, justifyContent: "center", alignItems: "center", padding: spacing.lg },
+    permText: { fontSize: fontSize.md, textAlign: "center", marginTop: spacing.md },
+    scannerContainer: { flex: 1 },
+    overlay: { ...StyleSheet.absoluteFillObject, justifyContent: "center", alignItems: "center" },
+    scanFrame: { width: 250, height: 250, borderWidth: 2, borderColor: "#fff", borderRadius: 12 },
+    scanText: { color: "#fff", fontSize: fontSize.md, marginTop: spacing.md, backgroundColor: "rgba(0,0,0,0.5)", paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: 8 },
+    viewListBtn: { position: "absolute", bottom: 40, alignSelf: "center", paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderRadius: 25 },
+    viewListText: { color: "#fff", fontWeight: "700", fontSize: fontSize.md },
+    listContainer: { flex: 1, paddingTop: spacing.md },
+    listHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: spacing.lg, marginBottom: spacing.sm },
+    listTitle: { fontSize: fontSize.lg, fontWeight: "700" },
+    scanMoreBtn: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: 8 },
+    scanMoreText: { color: "#fff", fontWeight: "600", fontSize: fontSize.sm },
+    itemCard: { marginHorizontal: spacing.lg, marginBottom: spacing.sm, borderRadius: 10, padding: spacing.md },
+    itemRow: { flexDirection: "row", alignItems: "center" },
+    itemInfo: { flex: 1 },
+    itemName: { fontSize: fontSize.md, fontWeight: "600" },
+    itemDetail: { fontSize: fontSize.xs, marginTop: 2 },
+    poTag: { fontSize: fontSize.xs, fontWeight: "600", marginTop: 2 },
+    qtyContainer: { alignItems: "center", marginRight: spacing.sm },
+    qtyInput: { borderRadius: 8, width: 60, textAlign: "center", padding: spacing.sm, fontSize: fontSize.md, fontWeight: "700", borderWidth: 1 },
+    unitLabel: { fontSize: fontSize.xs, marginTop: 2 },
+    removeBtn: { padding: spacing.sm },
+    removeText: { fontSize: fontSize.lg },
+    submitBtn: { margin: spacing.lg, padding: spacing.md, borderRadius: 12, alignItems: "center" },
+    submitDisabled: { opacity: 0.6 },
+    submitText: { color: "#fff", fontSize: fontSize.md, fontWeight: "700" },
+  });

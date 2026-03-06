@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { colors, fontSize, spacing } from "../utils/theme";
+import { useTheme } from "../contexts/ThemeContext";
+import { fontSize, spacing } from "../utils/theme";
 
 interface StatusBadgeProps {
   status: "green" | "yellow" | "red";
@@ -9,6 +10,7 @@ interface StatusBadgeProps {
 }
 
 export function StatusBadge({ status, label, size = "md" }: StatusBadgeProps) {
+  const { colors } = useTheme();
   const color = colors[status];
   const dotSize = size === "sm" ? 8 : 10;
 
@@ -21,7 +23,7 @@ export function StatusBadge({ status, label, size = "md" }: StatusBadgeProps) {
         ]}
       />
       {label && (
-        <Text style={[styles.label, size === "sm" && styles.labelSm]}>
+        <Text style={[styles.label, { color: colors.textSecondary }, size === "sm" && styles.labelSm]}>
           {label}
         </Text>
       )}
@@ -38,7 +40,6 @@ const styles = StyleSheet.create({
   dot: {},
   label: {
     fontSize: fontSize.sm,
-    color: colors.textSecondary,
   },
   labelSm: {
     fontSize: fontSize.xs,

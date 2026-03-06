@@ -10,8 +10,9 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useStore } from "../contexts/StoreContext";
+import { useTheme } from "../contexts/ThemeContext";
 import { api } from "../utils/api";
-import { colors, fontSize, spacing } from "../utils/theme";
+import { fontSize, spacing, type ColorScheme } from "../utils/theme";
 import { StorePicker } from "../components/StorePicker";
 
 const REASONS = [
@@ -24,6 +25,7 @@ const REASONS = [
 
 export function WasteLogScreen() {
   const { selectedStoreId } = useStore();
+  const { colors } = useTheme();
   const [inventory, setInventory] = useState<any[]>([]);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [quantity, setQuantity] = useState("");
@@ -32,6 +34,7 @@ export function WasteLogScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const s = makeStyles(colors);
 
   useEffect(() => {
     if (!selectedStoreId) return;
@@ -72,7 +75,6 @@ export function WasteLogScreen() {
         `${qty} ${selectedItem.unit} of ${selectedItem.name} logged as ${reason}.`
       );
 
-      // Reset form
       setSelectedItem(null);
       setQuantity("");
       setReason("");
@@ -87,7 +89,7 @@ export function WasteLogScreen() {
 
   if (!selectedStoreId) {
     return (
-      <View style={styles.centered}>
+      <View style={[s.centered, { backgroundColor: colors.background }]}>
         <Text style={{ fontSize: fontSize.md, color: colors.textSecondary, textAlign: "center" }}>
           Select a store from the Dashboard first
         </Text>
@@ -97,50 +99,49 @@ export function WasteLogScreen() {
 
   if (loading) {
     return (
-      <View style={styles.centered}>
+      <View style={[s.centered, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
+    <ScrollView style={[s.container, { backgroundColor: colors.background }]} keyboardShouldPersistTaps="handled">
       <StorePicker />
-      <Text style={styles.title}>Log Waste</Text>
+      <Text style={[s.title, { color: colors.text }]}>Log Waste</Text>
 
-      {/* Ingredient Selection */}
-      <Text style={styles.label}>Ingredient</Text>
+      <Text style={[s.label, { color: colors.text }]}>Ingredient</Text>
       {selectedItem ? (
         <TouchableOpacity
-          style={styles.selectedItem}
+          style={[s.selectedItem, { borderColor: colors.primaryLight }]}
           onPress={() => setSelectedItem(null)}
         >
-          <Text style={styles.selectedName}>{selectedItem.name}</Text>
-          <Text style={styles.selectedDetail}>
+          <Text style={[s.selectedName, { color: colors.primary }]}>{selectedItem.name}</Text>
+          <Text style={[s.selectedDetail, { color: colors.textSecondary }]}>
             {selectedItem.quantity} {selectedItem.unit} in stock | Tap to change
           </Text>
         </TouchableOpacity>
       ) : (
         <>
           <TextInput
-            style={styles.searchInput}
+            style={[s.searchInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
             placeholder="Search ingredients..."
             placeholderTextColor={colors.textSecondary}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
-          <View style={styles.itemList}>
+          <View style={s.itemList}>
             {filteredItems.slice(0, 8).map((item) => (
               <TouchableOpacity
                 key={item.itemId}
-                style={styles.itemOption}
+                style={[s.itemOption, { backgroundColor: colors.surface }]}
                 onPress={() => {
                   setSelectedItem(item);
                   setSearchQuery("");
                 }}
               >
-                <Text style={styles.itemName}>{item.name}</Text>
-                <Text style={styles.itemStock}>
+                <Text style={[s.itemName, { color: colors.text }]}>{item.name}</Text>
+                <Text style={[s.itemStock, { color: colors.textSecondary }]}>
                   {item.quantity} {item.unit}
                 </Text>
               </TouchableOpacity>
@@ -149,11 +150,10 @@ export function WasteLogScreen() {
         </>
       )}
 
-      {/* Quantity */}
-      <Text style={styles.label}>Quantity</Text>
-      <View style={styles.qtyRow}>
+      <Text style={[s.label, { color: colors.text }]}>Quantity</Text>
+      <View style={s.qtyRow}>
         <TextInput
-          style={styles.qtyInput}
+          style={[s.qtyInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
           value={quantity}
           onChangeText={setQuantity}
           keyboardType="decimal-pad"
@@ -161,27 +161,28 @@ export function WasteLogScreen() {
           placeholderTextColor={colors.textSecondary}
         />
         {selectedItem && (
-          <Text style={styles.unitLabel}>{selectedItem.unit}</Text>
+          <Text style={[s.unitLabel, { color: colors.textSecondary }]}>{selectedItem.unit}</Text>
         )}
       </View>
 
-      {/* Reason */}
-      <Text style={styles.label}>Reason</Text>
-      <View style={styles.reasonGrid}>
+      <Text style={[s.label, { color: colors.text }]}>Reason</Text>
+      <View style={s.reasonGrid}>
         {REASONS.map((r) => (
           <TouchableOpacity
             key={r.key}
             style={[
-              styles.reasonBtn,
-              reason === r.key && styles.reasonBtnActive,
+              s.reasonBtn,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+              reason === r.key && { borderColor: colors.primary },
             ]}
             onPress={() => setReason(r.key)}
           >
-            <Text style={styles.reasonIcon}>{r.icon}</Text>
+            <Text style={s.reasonIcon}>{r.icon}</Text>
             <Text
               style={[
-                styles.reasonLabel,
-                reason === r.key && styles.reasonLabelActive,
+                s.reasonLabel,
+                { color: colors.textSecondary },
+                reason === r.key && { color: colors.primary },
               ]}
             >
               {r.label}
@@ -190,10 +191,9 @@ export function WasteLogScreen() {
         ))}
       </View>
 
-      {/* Notes */}
-      <Text style={styles.label}>Notes (optional)</Text>
+      <Text style={[s.label, { color: colors.text }]}>Notes (optional)</Text>
       <TextInput
-        style={styles.notesInput}
+        style={[s.notesInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
         value={notes}
         onChangeText={setNotes}
         placeholder="Add details..."
@@ -202,12 +202,11 @@ export function WasteLogScreen() {
         numberOfLines={3}
       />
 
-      {/* Submit */}
       <TouchableOpacity
         style={[
-          styles.submitBtn,
-          (!selectedItem || !quantity || !reason || submitting) &&
-            styles.submitDisabled,
+          s.submitBtn,
+          { backgroundColor: colors.danger },
+          (!selectedItem || !quantity || !reason || submitting) && s.submitDisabled,
         ]}
         onPress={handleSubmit}
         disabled={!selectedItem || !quantity || !reason || submitting}
@@ -215,7 +214,7 @@ export function WasteLogScreen() {
         {submitting ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={styles.submitText}>Log Waste</Text>
+          <Text style={s.submitText}>Log Waste</Text>
         )}
       </TouchableOpacity>
 
@@ -224,97 +223,29 @@ export function WasteLogScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background, padding: spacing.lg },
-  centered: { flex: 1, justifyContent: "center", alignItems: "center" },
-  title: { fontSize: fontSize.xl, fontWeight: "800", color: colors.text, marginBottom: spacing.lg },
-  label: {
-    fontSize: fontSize.sm,
-    fontWeight: "600",
-    color: colors.text,
-    marginTop: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  searchInput: {
-    backgroundColor: colors.surface,
-    borderRadius: 10,
-    padding: spacing.md,
-    fontSize: fontSize.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  itemList: { marginTop: spacing.sm },
-  itemOption: {
-    backgroundColor: colors.surface,
-    padding: spacing.md,
-    borderRadius: 8,
-    marginBottom: spacing.xs,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  itemName: { fontSize: fontSize.md, color: colors.text },
-  itemStock: { fontSize: fontSize.sm, color: colors.textSecondary },
-  selectedItem: {
-    backgroundColor: "#EBF8FF",
-    borderRadius: 10,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.primaryLight,
-  },
-  selectedName: { fontSize: fontSize.md, fontWeight: "700", color: colors.primary },
-  selectedDetail: { fontSize: fontSize.sm, color: colors.textSecondary, marginTop: 2 },
-  qtyRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  qtyInput: {
-    backgroundColor: colors.surface,
-    borderRadius: 10,
-    padding: spacing.md,
-    fontSize: fontSize.xl,
-    fontWeight: "700",
-    width: 120,
-    textAlign: "center",
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  unitLabel: { fontSize: fontSize.md, color: colors.textSecondary },
-  reasonGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-  },
-  reasonBtn: {
-    backgroundColor: colors.surface,
-    borderRadius: 10,
-    padding: spacing.md,
-    alignItems: "center",
-    width: "30%",
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  reasonBtnActive: {
-    borderColor: colors.primary,
-    backgroundColor: "#EBF8FF",
-  },
-  reasonIcon: { fontSize: 24, marginBottom: spacing.xs },
-  reasonLabel: { fontSize: fontSize.xs, color: colors.textSecondary, fontWeight: "600" },
-  reasonLabelActive: { color: colors.primary },
-  notesInput: {
-    backgroundColor: colors.surface,
-    borderRadius: 10,
-    padding: spacing.md,
-    fontSize: fontSize.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    textAlignVertical: "top",
-    minHeight: 80,
-  },
-  submitBtn: {
-    backgroundColor: colors.danger,
-    padding: spacing.md,
-    borderRadius: 12,
-    alignItems: "center",
-    marginTop: spacing.lg,
-  },
-  submitDisabled: { opacity: 0.5 },
-  submitText: { color: "#fff", fontSize: fontSize.md, fontWeight: "700" },
-});
+const makeStyles = (colors: ColorScheme) =>
+  StyleSheet.create({
+    container: { flex: 1, padding: spacing.lg },
+    centered: { flex: 1, justifyContent: "center", alignItems: "center" },
+    title: { fontSize: fontSize.xl, fontWeight: "800", marginBottom: spacing.lg },
+    label: { fontSize: fontSize.sm, fontWeight: "600", marginTop: spacing.md, marginBottom: spacing.sm },
+    searchInput: { borderRadius: 10, padding: spacing.md, fontSize: fontSize.md, borderWidth: 1 },
+    itemList: { marginTop: spacing.sm },
+    itemOption: { padding: spacing.md, borderRadius: 8, marginBottom: spacing.xs, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+    itemName: { fontSize: fontSize.md },
+    itemStock: { fontSize: fontSize.sm },
+    selectedItem: { borderRadius: 10, padding: spacing.md, borderWidth: 1, backgroundColor: "rgba(66,153,225,0.1)" },
+    selectedName: { fontSize: fontSize.md, fontWeight: "700" },
+    selectedDetail: { fontSize: fontSize.sm, marginTop: 2 },
+    qtyRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+    qtyInput: { borderRadius: 10, padding: spacing.md, fontSize: fontSize.xl, fontWeight: "700", width: 120, textAlign: "center", borderWidth: 1 },
+    unitLabel: { fontSize: fontSize.md },
+    reasonGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+    reasonBtn: { borderRadius: 10, padding: spacing.md, alignItems: "center", width: "30%", borderWidth: 1 },
+    reasonIcon: { fontSize: 24, marginBottom: spacing.xs },
+    reasonLabel: { fontSize: fontSize.xs, fontWeight: "600" },
+    notesInput: { borderRadius: 10, padding: spacing.md, fontSize: fontSize.md, borderWidth: 1, textAlignVertical: "top", minHeight: 80 },
+    submitBtn: { padding: spacing.md, borderRadius: 12, alignItems: "center", marginTop: spacing.lg },
+    submitDisabled: { opacity: 0.5 },
+    submitText: { color: "#fff", fontSize: fontSize.md, fontWeight: "700" },
+  });

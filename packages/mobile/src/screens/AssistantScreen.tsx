@@ -11,8 +11,9 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useStore } from "../contexts/StoreContext";
+import { useTheme } from "../contexts/ThemeContext";
 import { api } from "../utils/api";
-import { colors, fontSize, spacing } from "../utils/theme";
+import { fontSize, spacing, type ColorScheme } from "../utils/theme";
 import { StorePicker } from "../components/StorePicker";
 
 interface Message {
@@ -34,10 +35,12 @@ const SUGGESTIONS = [
 
 export function AssistantScreen() {
   const { selectedStoreId } = useStore();
+  const { colors } = useTheme();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const flatListRef = useRef<FlatList>(null);
+  const s = makeStyles(colors);
 
   const sendMessage = async (text: string) => {
     if (!text.trim() || !selectedStoreId || loading) return;
@@ -55,7 +58,6 @@ export function AssistantScreen() {
 
     try {
       const result = await api.askAssistant(selectedStoreId, text.trim());
-
       const assistantMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
@@ -63,7 +65,6 @@ export function AssistantScreen() {
         timestamp: result.timestamp,
         topics: result.topicsAnalyzed,
       };
-
       setMessages((prev) => [...prev, assistantMsg]);
     } catch (err: any) {
       const errorMsg: Message = {
@@ -81,23 +82,25 @@ export function AssistantScreen() {
   const renderMessage = ({ item }: { item: Message }) => (
     <View
       style={[
-        styles.messageBubble,
-        item.role === "user" ? styles.userBubble : styles.assistantBubble,
+        s.messageBubble,
+        item.role === "user"
+          ? [s.userBubble, { backgroundColor: colors.primary }]
+          : [s.assistantBubble, { backgroundColor: colors.surface, borderColor: colors.border }],
       ]}
     >
       <Text
         style={[
-          styles.messageText,
-          item.role === "user" ? styles.userText : styles.assistantText,
+          s.messageText,
+          item.role === "user" ? s.userText : { color: colors.text },
         ]}
       >
         {item.text}
       </Text>
       {item.topics && (
-        <View style={styles.topicsRow}>
+        <View style={s.topicsRow}>
           {item.topics.map((topic) => (
-            <View key={topic} style={styles.topicTag}>
-              <Text style={styles.topicText}>{topic}</Text>
+            <View key={topic} style={[s.topicTag, { backgroundColor: colors.background }]}>
+              <Text style={[s.topicText, { color: colors.textSecondary }]}>{topic}</Text>
             </View>
           ))}
         </View>
@@ -107,10 +110,10 @@ export function AssistantScreen() {
 
   if (!selectedStoreId) {
     return (
-      <View style={styles.container}>
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>FoodWise Assistant</Text>
-          <Text style={styles.emptySubtitle}>
+      <View style={[s.container, { backgroundColor: colors.background }]}>
+        <View style={s.emptyState}>
+          <Text style={[s.emptyTitle, { color: colors.text }]}>FoodWise Assistant</Text>
+          <Text style={[s.emptySubtitle, { color: colors.textSecondary }]}>
             Select a store from the Dashboard to start asking questions
           </Text>
         </View>
@@ -120,26 +123,26 @@ export function AssistantScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[s.container, { backgroundColor: colors.background }]}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={90}
     >
       <StorePicker />
 
       {messages.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>FoodWise Assistant</Text>
-          <Text style={styles.emptySubtitle}>
+        <View style={s.emptyState}>
+          <Text style={[s.emptyTitle, { color: colors.text }]}>FoodWise Assistant</Text>
+          <Text style={[s.emptySubtitle, { color: colors.textSecondary }]}>
             Ask me anything about your store's operations
           </Text>
-          <View style={styles.suggestionsGrid}>
+          <View style={s.suggestionsGrid}>
             {SUGGESTIONS.map((suggestion) => (
               <TouchableOpacity
                 key={suggestion}
-                style={styles.suggestionBtn}
+                style={[s.suggestionBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
                 onPress={() => sendMessage(suggestion)}
               >
-                <Text style={styles.suggestionText}>{suggestion}</Text>
+                <Text style={[s.suggestionText, { color: colors.primary }]}>{suggestion}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -150,23 +153,21 @@ export function AssistantScreen() {
           data={messages}
           keyExtractor={(item) => item.id}
           renderItem={renderMessage}
-          contentContainerStyle={styles.messageList}
-          onContentSizeChange={() =>
-            flatListRef.current?.scrollToEnd({ animated: true })
-          }
+          contentContainerStyle={s.messageList}
+          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
         />
       )}
 
       {loading && (
-        <View style={styles.typingIndicator}>
+        <View style={s.typingIndicator}>
           <ActivityIndicator size="small" color={colors.primary} />
-          <Text style={styles.typingText}>Analyzing your data...</Text>
+          <Text style={[s.typingText, { color: colors.textSecondary }]}>Analyzing your data...</Text>
         </View>
       )}
 
-      <View style={styles.inputBar}>
+      <View style={[s.inputBar, { borderTopColor: colors.border, backgroundColor: colors.surface }]}>
         <TextInput
-          style={styles.input}
+          style={[s.input, { backgroundColor: colors.background, color: colors.text }]}
           value={input}
           onChangeText={setInput}
           placeholder="Ask a question..."
@@ -176,117 +177,40 @@ export function AssistantScreen() {
           editable={!loading}
         />
         <TouchableOpacity
-          style={[styles.sendBtn, (!input.trim() || loading) && styles.sendDisabled]}
+          style={[s.sendBtn, { backgroundColor: colors.primary }, (!input.trim() || loading) && s.sendDisabled]}
           onPress={() => sendMessage(input)}
           disabled={!input.trim() || loading}
         >
-          <Text style={styles.sendText}>→</Text>
+          <Text style={s.sendText}>→</Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  emptyState: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: spacing.lg,
-  },
-  emptyTitle: {
-    fontSize: fontSize.xl,
-    fontWeight: "800",
-    color: colors.text,
-    marginBottom: spacing.xs,
-  },
-  emptySubtitle: {
-    fontSize: fontSize.md,
-    color: colors.textSecondary,
-    marginBottom: spacing.xl,
-    textAlign: "center",
-  },
-  suggestionsGrid: { width: "100%" },
-  suggestionBtn: {
-    backgroundColor: colors.surface,
-    borderRadius: 10,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  suggestionText: { fontSize: fontSize.sm, color: colors.primary },
-  messageList: { padding: spacing.md },
-  messageBubble: {
-    maxWidth: "85%",
-    borderRadius: 16,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  userBubble: {
-    backgroundColor: colors.primary,
-    alignSelf: "flex-end",
-    borderBottomRightRadius: 4,
-  },
-  assistantBubble: {
-    backgroundColor: colors.surface,
-    alignSelf: "flex-start",
-    borderBottomLeftRadius: 4,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  messageText: { fontSize: fontSize.md, lineHeight: 22 },
-  userText: { color: "#fff" },
-  assistantText: { color: colors.text },
-  topicsRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginTop: spacing.sm,
-    gap: spacing.xs,
-  },
-  topicTag: {
-    backgroundColor: colors.background,
-    borderRadius: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  topicText: { fontSize: fontSize.xs, color: colors.textSecondary },
-  typingIndicator: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    gap: spacing.sm,
-  },
-  typingText: { fontSize: fontSize.sm, color: colors.textSecondary },
-  inputBar: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    padding: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  input: {
-    flex: 1,
-    backgroundColor: colors.background,
-    borderRadius: 20,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    fontSize: fontSize.md,
-    maxHeight: 100,
-    color: colors.text,
-  },
-  sendBtn: {
-    backgroundColor: colors.primary,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
-    marginLeft: spacing.sm,
-  },
-  sendDisabled: { opacity: 0.4 },
-  sendText: { color: "#fff", fontSize: fontSize.lg, fontWeight: "700" },
-});
+const makeStyles = (colors: ColorScheme) =>
+  StyleSheet.create({
+    container: { flex: 1 },
+    emptyState: { flex: 1, justifyContent: "center", alignItems: "center", padding: spacing.lg },
+    emptyTitle: { fontSize: fontSize.xl, fontWeight: "800", marginBottom: spacing.xs },
+    emptySubtitle: { fontSize: fontSize.md, marginBottom: spacing.xl, textAlign: "center" },
+    suggestionsGrid: { width: "100%" },
+    suggestionBtn: { borderRadius: 10, padding: spacing.md, marginBottom: spacing.sm, borderWidth: 1 },
+    suggestionText: { fontSize: fontSize.sm },
+    messageList: { padding: spacing.md },
+    messageBubble: { maxWidth: "85%", borderRadius: 16, padding: spacing.md, marginBottom: spacing.sm },
+    userBubble: { alignSelf: "flex-end", borderBottomRightRadius: 4 },
+    assistantBubble: { alignSelf: "flex-start", borderBottomLeftRadius: 4, borderWidth: 1 },
+    messageText: { fontSize: fontSize.md, lineHeight: 22 },
+    userText: { color: "#fff" },
+    topicsRow: { flexDirection: "row", flexWrap: "wrap", marginTop: spacing.sm, gap: spacing.xs },
+    topicTag: { borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
+    topicText: { fontSize: fontSize.xs },
+    typingIndicator: { flexDirection: "row", alignItems: "center", paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, gap: spacing.sm },
+    typingText: { fontSize: fontSize.sm },
+    inputBar: { flexDirection: "row", alignItems: "flex-end", padding: spacing.md, borderTopWidth: 1 },
+    input: { flex: 1, borderRadius: 20, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, fontSize: fontSize.md, maxHeight: 100 },
+    sendBtn: { width: 40, height: 40, borderRadius: 20, justifyContent: "center", alignItems: "center", marginLeft: spacing.sm },
+    sendDisabled: { opacity: 0.4 },
+    sendText: { color: "#fff", fontSize: fontSize.lg, fontWeight: "700" },
+  });

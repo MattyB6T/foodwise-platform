@@ -8,43 +8,47 @@ import {
   FlatList,
 } from "react-native";
 import { useStore } from "../contexts/StoreContext";
-import { colors, fontSize, spacing } from "../utils/theme";
+import { useTheme } from "../contexts/ThemeContext";
+import { fontSize, spacing, type ColorScheme } from "../utils/theme";
 
 export function StorePicker() {
   const { selectedStoreId, selectedStoreName, stores, setSelectedStore } = useStore();
+  const { colors } = useTheme();
   const [showPicker, setShowPicker] = useState(false);
+  const s = makeStyles(colors);
 
   if (stores.length <= 1) {
     return selectedStoreName ? (
-      <View style={styles.bar}>
-        <Text style={styles.storeName}>{selectedStoreName}</Text>
+      <View style={[s.bar, { backgroundColor: colors.primary }]}>
+        <Text style={s.storeName}>{selectedStoreName}</Text>
       </View>
     ) : null;
   }
 
   return (
     <>
-      <TouchableOpacity style={styles.bar} onPress={() => setShowPicker(true)}>
-        <Text style={styles.storeName}>{selectedStoreName || "Select Store"}</Text>
-        <Text style={styles.arrow}>▼</Text>
+      <TouchableOpacity style={[s.bar, { backgroundColor: colors.primary }]} onPress={() => setShowPicker(true)}>
+        <Text style={s.storeName}>{selectedStoreName || "Select Store"}</Text>
+        <Text style={s.arrow}>▼</Text>
       </TouchableOpacity>
 
       <Modal visible={showPicker} transparent animationType="fade">
         <TouchableOpacity
-          style={styles.overlay}
+          style={s.overlay}
           activeOpacity={1}
           onPress={() => setShowPicker(false)}
         >
-          <View style={styles.dropdown}>
-            <Text style={styles.dropdownTitle}>Select Store</Text>
+          <View style={[s.dropdown, { backgroundColor: colors.surface }]}>
+            <Text style={[s.dropdownTitle, { color: colors.text, borderBottomColor: colors.border }]}>Select Store</Text>
             <FlatList
               data={stores}
               keyExtractor={(item) => item.storeId}
               renderItem={({ item }) => (
                 <TouchableOpacity
                   style={[
-                    styles.option,
-                    item.storeId === selectedStoreId && styles.optionActive,
+                    s.option,
+                    { borderBottomColor: colors.border },
+                    item.storeId === selectedStoreId && { backgroundColor: colors.primary + "15" },
                   ]}
                   onPress={() => {
                     setSelectedStore(item.storeId, item.name);
@@ -53,14 +57,15 @@ export function StorePicker() {
                 >
                   <Text
                     style={[
-                      styles.optionText,
-                      item.storeId === selectedStoreId && styles.optionTextActive,
+                      s.optionText,
+                      { color: colors.text },
+                      item.storeId === selectedStoreId && { color: colors.primary, fontWeight: "700" },
                     ]}
                   >
                     {item.name}
                   </Text>
                   {item.storeId === selectedStoreId && (
-                    <Text style={styles.check}>✓</Text>
+                    <Text style={[s.check, { color: colors.primary }]}>✓</Text>
                   )}
                 </TouchableOpacity>
               )}
@@ -72,52 +77,22 @@ export function StorePicker() {
   );
 }
 
-const styles = StyleSheet.create({
-  bar: {
-    backgroundColor: colors.primary,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    gap: spacing.xs,
-  },
-  storeName: {
-    color: "#fff",
-    fontSize: fontSize.sm,
-    fontWeight: "600",
-  },
-  arrow: { color: "rgba(255,255,255,0.7)", fontSize: 10 },
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    padding: spacing.xl,
-  },
-  dropdown: {
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    maxHeight: 400,
-    overflow: "hidden",
-  },
-  dropdownTitle: {
-    fontSize: fontSize.lg,
-    fontWeight: "700",
-    color: colors.text,
-    padding: spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  option: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  optionActive: { backgroundColor: "#EBF8FF" },
-  optionText: { fontSize: fontSize.md, color: colors.text },
-  optionTextActive: { color: colors.primary, fontWeight: "700" },
-  check: { color: colors.primary, fontSize: fontSize.lg, fontWeight: "700" },
-});
+const makeStyles = (colors: ColorScheme) =>
+  StyleSheet.create({
+    bar: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.lg,
+      gap: spacing.xs,
+    },
+    storeName: { color: "#fff", fontSize: fontSize.sm, fontWeight: "600" },
+    arrow: { color: "rgba(255,255,255,0.7)", fontSize: 10 },
+    overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", padding: spacing.xl },
+    dropdown: { borderRadius: 16, maxHeight: 400, overflow: "hidden" },
+    dropdownTitle: { fontSize: fontSize.lg, fontWeight: "700", padding: spacing.lg, borderBottomWidth: 1 },
+    option: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: spacing.lg, borderBottomWidth: 1 },
+    optionText: { fontSize: fontSize.md },
+    check: { fontSize: fontSize.lg, fontWeight: "700" },
+  });

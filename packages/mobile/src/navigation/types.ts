@@ -7,6 +7,7 @@ export type TabParamList = {
   OrdersTab: undefined;
   SecurityTab: undefined;
   AssistantTab: undefined;
+  SettingsTab: undefined;
 };
 
 export type RootStackParamList = {

@@ -15,7 +15,6 @@ export const handler = async (
       return error("storeId is required", 400);
     }
 
-    const status = event.queryStringParameters?.status;
     const startDate = event.queryStringParameters?.startDate;
     const endDate = event.queryStringParameters?.endDate;
 
@@ -23,42 +22,32 @@ export const handler = async (
     const exprValues: Record<string, any> = { ":storeId": storeId };
     const exprNames: Record<string, string> = {};
 
-    // Use the GSI with timestamp sort key for date filtering
     if (startDate && endDate) {
       keyCondition += " AND #ts BETWEEN :start AND :end";
       exprValues[":start"] = startDate;
       exprValues[":end"] = endDate;
       exprNames["#ts"] = "timestamp";
-
     } else if (startDate) {
       keyCondition += " AND #ts >= :start";
       exprValues[":start"] = startDate;
       exprNames["#ts"] = "timestamp";
-
-    }
-
-    let filterExpression: string | undefined;
-    if (status) {
-      filterExpression = "#status = :status";
-      exprValues[":status"] = status;
-      exprNames["#status"] = "status";
     }
 
     const result = await docClient.send(
       new QueryCommand({
-        TableName: TABLES.INCIDENTS,
-        IndexName: "storeId-timestamp-index",
+        TableName: TABLES.TRANSACTIONS,
+        IndexName: "timestamp-index",
         KeyConditionExpression: keyCondition,
         ...(Object.keys(exprNames).length > 0 ? { ExpressionAttributeNames: exprNames } : {}),
         ExpressionAttributeValues: exprValues,
-        FilterExpression: filterExpression,
         ScanIndexForward: false,
+        Limit: 100,
       })
     );
 
-    return success({ incidents: result.Items || [] });
+    return success({ transactions: result.Items || [] });
   } catch (err) {
-    console.error("ListIncidents error:", err);
+    console.error("ListTransactions error:", err);
     return error("Internal server error", 500, "INTERNAL_ERROR");
   }
 };

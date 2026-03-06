@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Platform, Text, ActivityIndicator, View } from "react-native";
+import { Platform, Text, ActivityIndicator, View, TouchableOpacity } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -7,6 +7,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
 import { StoreProvider } from "./src/contexts/StoreContext";
+import { ThemeProvider, useTheme } from "./src/contexts/ThemeContext";
 import { LoginScreen } from "./src/screens/LoginScreen";
 import { DashboardScreen } from "./src/screens/DashboardScreen";
 import { StoreDetailScreen } from "./src/screens/StoreDetailScreen";
@@ -16,7 +17,7 @@ import { OrderReviewScreen } from "./src/screens/OrderReviewScreen";
 import { AssistantScreen } from "./src/screens/AssistantScreen";
 import { SecurityScreen } from "./src/screens/SecurityScreen";
 import { TransactionDetailScreen } from "./src/screens/TransactionDetailScreen";
-import { colors } from "./src/utils/theme";
+import { SettingsScreen } from "./src/screens/SettingsScreen";
 import type { RootStackParamList, TabParamList } from "./src/navigation/types";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -35,6 +36,7 @@ const linking = {
           OrdersTab: "orders",
           SecurityTab: "security",
           AssistantTab: "assistant",
+          SettingsTab: "settings",
         },
       },
       StoreDetail: "store",
@@ -48,13 +50,9 @@ const linking = {
   },
 };
 
-const stackScreenOptions = {
-  headerStyle: { backgroundColor: colors.primary },
-  headerTintColor: "#fff",
-  headerTitleStyle: { fontWeight: "700" as const },
-};
-
 function MainTabs() {
+  const { colors, isDark } = useTheme();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -82,6 +80,7 @@ function MainTabs() {
           else if (route.name === "OrdersTab") iconName = "clipboard";
           else if (route.name === "SecurityTab") iconName = "shield-checkmark";
           else if (route.name === "AssistantTab") iconName = "chatbubble-ellipses";
+          else if (route.name === "SettingsTab") iconName = "settings";
           return <Ionicons name={iconName} size={size} color={color} />;
         },
       })}
@@ -89,7 +88,18 @@ function MainTabs() {
       <Tab.Screen
         name="DashboardTab"
         component={DashboardScreen}
-        options={{ title: "Dashboard", headerTitle: "FoodWise" }}
+        options={({ navigation }) => ({
+          title: "Dashboard",
+          headerTitle: "FoodWise",
+          headerRight: () => (
+            <TouchableOpacity
+              onPress={() => navigation.navigate("SettingsTab")}
+              style={{ marginRight: 12 }}
+            >
+              <Ionicons name="settings-outline" size={22} color="#fff" />
+            </TouchableOpacity>
+          ),
+        })}
       />
       <Tab.Screen
         name="ScannerTab"
@@ -116,12 +126,32 @@ function MainTabs() {
         component={AssistantScreen}
         options={{ title: "Assistant", headerTitle: "AI Assistant" }}
       />
+      <Tab.Screen
+        name="SettingsTab"
+        component={SettingsScreen}
+        options={{ title: "Settings", headerTitle: "Settings" }}
+      />
     </Tab.Navigator>
   );
 }
 
 function AppNavigator() {
   const { isLoading, isAuthenticated } = useAuth();
+  const { colors, isDark } = useTheme();
+
+  const stackScreenOptions = ({ navigation }: { navigation: any }) => ({
+    headerStyle: { backgroundColor: colors.primary },
+    headerTintColor: "#fff",
+    headerTitleStyle: { fontWeight: "700" as const },
+    headerRight: () => (
+      <TouchableOpacity
+        onPress={() => navigation.navigate("MainTabs", { screen: "SettingsTab" })}
+        style={{ marginRight: 8 }}
+      >
+        <Ionicons name="settings-outline" size={22} color="#fff" />
+      </TouchableOpacity>
+    ),
+  });
 
   if (isLoading) {
     return (
@@ -197,13 +227,15 @@ export default function App() {
   }, []);
 
   return (
-    <AuthProvider>
-      <StoreProvider>
-        <NavigationContainer linking={linking}>
-          <AppNavigator />
-          <StatusBar style="light" />
-        </NavigationContainer>
-      </StoreProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <StoreProvider>
+          <NavigationContainer linking={linking}>
+            <AppNavigator />
+            <StatusBar style="light" />
+          </NavigationContainer>
+        </StoreProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

@@ -12,8 +12,9 @@ import {
   FlatList,
 } from "react-native";
 import { useStore } from "../contexts/StoreContext";
+import { useTheme } from "../contexts/ThemeContext";
 import { api } from "../utils/api";
-import { colors, fontSize, spacing } from "../utils/theme";
+import { fontSize, spacing, type ColorScheme } from "../utils/theme";
 import { StorePicker } from "../components/StorePicker";
 
 type TabKey = "cameras" | "timeline" | "incidents";
@@ -56,13 +57,6 @@ const LOCATION_ICONS: Record<string, string> = {
   entrance: "🚪",
 };
 
-const STATUS_COLORS: Record<string, string> = {
-  open: colors.danger,
-  investigating: colors.warning,
-  resolved: colors.green,
-  dismissed: colors.textSecondary,
-};
-
 const INCIDENT_TYPES = [
   { key: "theft", label: "Theft", icon: "🚨" },
   { key: "waste-verification", label: "Waste Check", icon: "🔍" },
@@ -73,12 +67,21 @@ const INCIDENT_TYPES = [
 
 export function SecurityScreen({ navigation }: { navigation: any }) {
   const { selectedStoreId } = useStore();
+  const { colors } = useTheme();
   const [activeTab, setActiveTab] = useState<TabKey>("cameras");
   const [cameras, setCameras] = useState<CameraItem[]>([]);
   const [transactions, setTransactions] = useState<TransactionItem[]>([]);
   const [incidents, setIncidents] = useState<IncidentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNewIncident, setShowNewIncident] = useState(false);
+  const s = makeStyles(colors);
+
+  const STATUS_COLORS: Record<string, string> = {
+    open: colors.danger,
+    investigating: colors.warning,
+    resolved: colors.green,
+    dismissed: colors.textSecondary,
+  };
 
   const loadData = useCallback(async () => {
     if (!selectedStoreId) return;
@@ -106,11 +109,7 @@ export function SecurityScreen({ navigation }: { navigation: any }) {
     try {
       const now = new Date();
       const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-      const res = await api.getTransactions(
-        selectedStoreId,
-        dayAgo.toISOString(),
-        now.toISOString()
-      );
+      const res = await api.getTransactions(selectedStoreId, dayAgo.toISOString(), now.toISOString());
       setTransactions(res.transactions || []);
     } catch (err) {
       console.error("Timeline load error:", err);
@@ -118,40 +117,37 @@ export function SecurityScreen({ navigation }: { navigation: any }) {
   }, [selectedStoreId]);
 
   useEffect(() => {
-    if (activeTab === "timeline") {
-      loadTimeline();
-    }
+    if (activeTab === "timeline") loadTimeline();
   }, [activeTab, loadTimeline]);
 
   if (!selectedStoreId) {
     return (
-      <View style={styles.centered}>
-        <Text style={styles.emptyText}>Select a store from the Dashboard first</Text>
+      <View style={[s.centered, { backgroundColor: colors.background }]}>
+        <Text style={[s.emptyText, { color: colors.textSecondary }]}>Select a store from the Dashboard first</Text>
       </View>
     );
   }
 
   if (loading) {
     return (
-      <View style={styles.centered}>
+      <View style={[s.centered, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[s.container, { backgroundColor: colors.background }]}>
       <StorePicker />
 
-      {/* Tab Bar */}
-      <View style={styles.tabBar}>
+      <View style={[s.tabBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         {(["cameras", "timeline", "incidents"] as TabKey[]).map((tab) => (
           <TouchableOpacity
             key={tab}
-            style={[styles.tab, activeTab === tab && styles.tabActive]}
+            style={[s.tab, activeTab === tab && { borderBottomColor: colors.primary, borderBottomWidth: 2 }]}
             onPress={() => setActiveTab(tab)}
           >
-            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
+            <Text style={[s.tabText, { color: colors.textSecondary }, activeTab === tab && { color: colors.primary }]}>
               {tab === "cameras" ? `Cameras (${cameras.length})` :
                tab === "timeline" ? "Timeline" :
                `Incidents (${incidents.length})`}
@@ -161,62 +157,41 @@ export function SecurityScreen({ navigation }: { navigation: any }) {
       </View>
 
       {activeTab === "cameras" && (
-        <CamerasTab
-          cameras={cameras}
-          storeId={selectedStoreId}
-          onRefresh={loadData}
-        />
+        <CamerasTab cameras={cameras} storeId={selectedStoreId} onRefresh={loadData} colors={colors} s={s} />
       )}
 
       {activeTab === "timeline" && (
         <TimelineTab
-          transactions={transactions}
-          cameras={cameras}
-          storeId={selectedStoreId}
-          navigation={navigation}
-          onCreateIncident={(txn) => {
-            setShowNewIncident(true);
-          }}
+          transactions={transactions} cameras={cameras} storeId={selectedStoreId}
+          navigation={navigation} colors={colors} s={s}
+          onCreateIncident={() => setShowNewIncident(true)}
         />
       )}
 
       {activeTab === "incidents" && (
         <IncidentsTab
-          incidents={incidents}
-          cameras={cameras}
-          storeId={selectedStoreId}
+          incidents={incidents} cameras={cameras} storeId={selectedStoreId}
+          colors={colors} s={s} STATUS_COLORS={STATUS_COLORS}
           onNewIncident={() => setShowNewIncident(false)}
         />
       )}
 
-      {/* New Incident FAB */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => setShowNewIncident(true)}
-      >
-        <Text style={styles.fabText}>+ Report</Text>
+      <TouchableOpacity style={[s.fab, { backgroundColor: colors.danger }]} onPress={() => setShowNewIncident(true)}>
+        <Text style={s.fabText}>+ Report</Text>
       </TouchableOpacity>
 
       <NewIncidentModal
-        visible={showNewIncident}
-        storeId={selectedStoreId}
-        cameras={cameras}
+        visible={showNewIncident} storeId={selectedStoreId} cameras={cameras}
+        colors={colors} s={s}
         onClose={() => setShowNewIncident(false)}
-        onCreated={() => {
-          setShowNewIncident(false);
-          loadData();
-        }}
+        onCreated={() => { setShowNewIncident(false); loadData(); }}
       />
     </View>
   );
 }
 
-// --- Cameras Tab ---
-
-function CamerasTab({ cameras, storeId, onRefresh }: {
-  cameras: CameraItem[];
-  storeId: string;
-  onRefresh: () => void;
+function CamerasTab({ cameras, storeId, onRefresh, colors, s }: {
+  cameras: CameraItem[]; storeId: string; onRefresh: () => void; colors: any; s: any;
 }) {
   const [addingCamera, setAddingCamera] = useState(false);
   const [newCam, setNewCam] = useState({ name: "", location: "register", wyzeDeviceId: "", wyzeDeviceMac: "" });
@@ -240,12 +215,7 @@ function CamerasTab({ cameras, storeId, onRefresh }: {
     const now = new Date();
     const fiveMinAgo = new Date(now.getTime() - 5 * 60 * 1000);
     try {
-      const result = await api.getCameraFootage(
-        storeId,
-        camera.cameraId,
-        fiveMinAgo.toISOString(),
-        now.toISOString()
-      );
+      const result = await api.getCameraFootage(storeId, camera.cameraId, fiveMinAgo.toISOString(), now.toISOString());
       if (result.status === "camera_offline") {
         Alert.alert("Camera Offline", `${camera.name} is currently offline.`);
       } else {
@@ -257,13 +227,13 @@ function CamerasTab({ cameras, storeId, onRefresh }: {
   };
 
   return (
-    <ScrollView style={styles.tabContent}>
+    <ScrollView style={s.tabContent}>
       {cameras.length === 0 && !addingCamera ? (
-        <View style={styles.emptySection}>
-          <Text style={styles.emptySectionTitle}>No Cameras Registered</Text>
-          <Text style={styles.emptySectionSub}>Add your Wyze cameras to enable surveillance features.</Text>
-          <TouchableOpacity style={styles.addBtn} onPress={() => setAddingCamera(true)}>
-            <Text style={styles.addBtnText}>+ Add Camera</Text>
+        <View style={s.emptySection}>
+          <Text style={[s.emptySectionTitle, { color: colors.text }]}>No Cameras Registered</Text>
+          <Text style={[s.emptySectionSub, { color: colors.textSecondary }]}>Add your Wyze cameras to enable surveillance features.</Text>
+          <TouchableOpacity style={[s.addBtn, { backgroundColor: colors.primary }]} onPress={() => setAddingCamera(true)}>
+            <Text style={s.addBtnText}>+ Add Camera</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -271,79 +241,55 @@ function CamerasTab({ cameras, storeId, onRefresh }: {
           {cameras.map((cam) => (
             <TouchableOpacity
               key={cam.cameraId}
-              style={styles.cameraCard}
+              style={[s.cameraCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
               onPress={() => requestFootage(cam)}
             >
-              <View style={styles.cameraHeader}>
-                <Text style={styles.cameraIcon}>
-                  {LOCATION_ICONS[cam.location] || "📷"}
-                </Text>
-                <View style={styles.cameraInfo}>
-                  <Text style={styles.cameraName}>{cam.name}</Text>
-                  <Text style={styles.cameraLocation}>{cam.location}</Text>
+              <View style={s.cameraHeader}>
+                <Text style={s.cameraIcon}>{LOCATION_ICONS[cam.location] || "📷"}</Text>
+                <View style={s.cameraInfo}>
+                  <Text style={[s.cameraName, { color: colors.text }]}>{cam.name}</Text>
+                  <Text style={[s.cameraLocation, { color: colors.textSecondary }]}>{cam.location}</Text>
                 </View>
-                <View style={[styles.statusDot, cam.isOnline ? styles.statusOnline : styles.statusOffline]} />
-                <Text style={styles.statusText}>{cam.isOnline ? "Online" : "Offline"}</Text>
+                <View style={[s.statusDot, { backgroundColor: cam.isOnline ? colors.green : colors.red }]} />
+                <Text style={[s.statusLabelText, { color: colors.textSecondary }]}>{cam.isOnline ? "Online" : "Offline"}</Text>
               </View>
-              <View style={styles.cameraThumbnail}>
-                <Text style={styles.thumbnailText}>
-                  {cam.isOnline ? "Tap to view footage" : "Camera offline"}
-                </Text>
+              <View style={s.cameraThumbnail}>
+                <Text style={s.thumbnailText}>{cam.isOnline ? "Tap to view footage" : "Camera offline"}</Text>
               </View>
             </TouchableOpacity>
           ))}
           {!addingCamera && (
-            <TouchableOpacity style={styles.addBtn} onPress={() => setAddingCamera(true)}>
-              <Text style={styles.addBtnText}>+ Add Camera</Text>
+            <TouchableOpacity style={[s.addBtn, { backgroundColor: colors.primary }]} onPress={() => setAddingCamera(true)}>
+              <Text style={s.addBtnText}>+ Add Camera</Text>
             </TouchableOpacity>
           )}
         </>
       )}
 
       {addingCamera && (
-        <View style={styles.addCameraForm}>
-          <Text style={styles.formTitle}>Register Wyze Camera</Text>
-          <TextInput
-            style={styles.formInput}
-            placeholder="Camera name (e.g. Front Register)"
-            placeholderTextColor={colors.textSecondary}
-            value={newCam.name}
-            onChangeText={(t) => setNewCam({ ...newCam, name: t })}
-          />
-          <View style={styles.locationPicker}>
+        <View style={[s.addCameraForm, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Text style={[s.formTitle, { color: colors.text }]}>Register Wyze Camera</Text>
+          <TextInput style={[s.formInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]} placeholder="Camera name (e.g. Front Register)" placeholderTextColor={colors.textSecondary} value={newCam.name} onChangeText={(t) => setNewCam({ ...newCam, name: t })} />
+          <View style={s.locationPicker}>
             {Object.entries(LOCATION_ICONS).map(([loc, icon]) => (
               <TouchableOpacity
                 key={loc}
-                style={[styles.locationBtn, newCam.location === loc && styles.locationBtnActive]}
+                style={[s.locationBtn, { backgroundColor: colors.background, borderColor: colors.border }, newCam.location === loc && { borderColor: colors.primary }]}
                 onPress={() => setNewCam({ ...newCam, location: loc })}
               >
-                <Text style={styles.locationIcon}>{icon}</Text>
-                <Text style={[styles.locationLabel, newCam.location === loc && styles.locationLabelActive]}>
-                  {loc.replace("-", " ")}
-                </Text>
+                <Text style={s.locationIcon}>{icon}</Text>
+                <Text style={[s.locationLabel, { color: colors.textSecondary }, newCam.location === loc && { color: colors.primary }]}>{loc.replace("-", " ")}</Text>
               </TouchableOpacity>
             ))}
           </View>
-          <TextInput
-            style={styles.formInput}
-            placeholder="Wyze Device ID"
-            placeholderTextColor={colors.textSecondary}
-            value={newCam.wyzeDeviceId}
-            onChangeText={(t) => setNewCam({ ...newCam, wyzeDeviceId: t })}
-          />
-          <TextInput
-            style={styles.formInput}
-            placeholder="Wyze Device MAC"
-            placeholderTextColor={colors.textSecondary}
-            value={newCam.wyzeDeviceMac}
-            onChangeText={(t) => setNewCam({ ...newCam, wyzeDeviceMac: t })}
-          />
-          <View style={styles.formActions}>
-            <TouchableOpacity style={styles.cancelBtn} onPress={() => setAddingCamera(false)}>
-              <Text style={styles.cancelBtnText}>Cancel</Text>
+          <TextInput style={[s.formInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]} placeholder="Wyze Device ID" placeholderTextColor={colors.textSecondary} value={newCam.wyzeDeviceId} onChangeText={(t) => setNewCam({ ...newCam, wyzeDeviceId: t })} />
+          <TextInput style={[s.formInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]} placeholder="Wyze Device MAC" placeholderTextColor={colors.textSecondary} value={newCam.wyzeDeviceMac} onChangeText={(t) => setNewCam({ ...newCam, wyzeDeviceMac: t })} />
+          <View style={s.formActions}>
+            <TouchableOpacity style={[s.cancelBtn, { backgroundColor: colors.background, borderColor: colors.border }]} onPress={() => setAddingCamera(false)}>
+              <Text style={[s.cancelBtnText, { color: colors.textSecondary }]}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.saveBtn} onPress={handleAddCamera}>
-              <Text style={styles.saveBtnText}>Save Camera</Text>
+            <TouchableOpacity style={[s.saveBtn, { backgroundColor: colors.primary }]} onPress={handleAddCamera}>
+              <Text style={s.saveBtnText}>Save Camera</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -353,26 +299,17 @@ function CamerasTab({ cameras, storeId, onRefresh }: {
   );
 }
 
-// --- Timeline Tab ---
-
-function TimelineTab({ transactions, cameras, storeId, navigation, onCreateIncident }: {
-  transactions: TransactionItem[];
-  cameras: CameraItem[];
-  storeId: string;
-  navigation: any;
-  onCreateIncident: (txn: TransactionItem) => void;
+function TimelineTab({ transactions, cameras, storeId, navigation, onCreateIncident, colors, s }: {
+  transactions: TransactionItem[]; cameras: CameraItem[]; storeId: string;
+  navigation: any; onCreateIncident: (txn: TransactionItem) => void; colors: any; s: any;
 }) {
-  const formatTime = (ts: string) => {
-    const d = new Date(ts);
-    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  };
-
+  const formatTime = (ts: string) => new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   const formatAmount = (n: number) => `$${n.toFixed(2)}`;
 
   if (transactions.length === 0) {
     return (
-      <View style={[styles.tabContent, styles.centered]}>
-        <Text style={styles.emptyText}>No transactions in the last 24 hours</Text>
+      <View style={[s.tabContent, s.centered]}>
+        <Text style={[s.emptyText, { color: colors.textSecondary }]}>No transactions in the last 24 hours</Text>
       </View>
     );
   }
@@ -386,38 +323,27 @@ function TimelineTab({ transactions, cameras, storeId, navigation, onCreateIncid
         const highCost = item.foodCostPercentage > 35;
         return (
           <TouchableOpacity
-            style={[styles.timelineCard, highCost && styles.timelineCardAlert]}
-            onPress={() => {
-              navigation.navigate("TransactionDetail", {
-                transaction: item,
-                storeId,
-                cameras,
-              });
-            }}
+            style={s.timelineCard}
+            onPress={() => navigation.navigate("TransactionDetail", { transaction: item, storeId, cameras })}
           >
-            <View style={styles.timelineDot}>
-              <View style={[styles.dot, highCost ? styles.dotAlert : styles.dotNormal]} />
-              <View style={styles.timelineLine} />
+            <View style={s.timelineDot}>
+              <View style={[s.dot, { backgroundColor: highCost ? colors.danger : colors.primary }]} />
+              <View style={[s.timelineLine, { backgroundColor: colors.border }]} />
             </View>
-            <View style={styles.timelineContent}>
-              <View style={styles.timelineHeader}>
-                <Text style={styles.timelineTime}>{formatTime(item.timestamp)}</Text>
-                <Text style={[styles.timelineAmount, highCost && { color: colors.danger }]}>
-                  {formatAmount(item.totalAmount)}
-                </Text>
+            <View style={[s.timelineContent, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <View style={s.timelineHeader}>
+                <Text style={[s.timelineTime, { color: colors.text }]}>{formatTime(item.timestamp)}</Text>
+                <Text style={[s.timelineAmount, { color: highCost ? colors.danger : colors.text }]}>{formatAmount(item.totalAmount)}</Text>
               </View>
-              <Text style={styles.timelineItems}>
+              <Text style={[s.timelineItems, { color: colors.textSecondary }]}>
                 {item.lineItems.map((li) => `${li.quantity}x ${li.recipeName}`).join(", ")}
               </Text>
-              <View style={styles.timelineFooter}>
-                <Text style={[styles.foodCostBadge, highCost && styles.foodCostHigh]}>
+              <View style={s.timelineFooter}>
+                <Text style={[s.foodCostBadge, { color: colors.textSecondary, backgroundColor: colors.background }, highCost && { backgroundColor: colors.danger + "20", color: colors.danger }]}>
                   {item.foodCostPercentage.toFixed(1)}% food cost
                 </Text>
-                <TouchableOpacity
-                  style={styles.flagBtn}
-                  onPress={() => onCreateIncident(item)}
-                >
-                  <Text style={styles.flagText}>🚩 Flag</Text>
+                <TouchableOpacity style={s.flagBtn} onPress={() => onCreateIncident(item)}>
+                  <Text style={s.flagText}>🚩 Flag</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -428,54 +354,39 @@ function TimelineTab({ transactions, cameras, storeId, navigation, onCreateIncid
   );
 }
 
-// --- Incidents Tab ---
-
-function IncidentsTab({ incidents, cameras, storeId, onNewIncident }: {
-  incidents: IncidentItem[];
-  cameras: CameraItem[];
-  storeId: string;
-  onNewIncident: () => void;
+function IncidentsTab({ incidents, cameras, storeId, onNewIncident, colors, s, STATUS_COLORS }: {
+  incidents: IncidentItem[]; cameras: CameraItem[]; storeId: string;
+  onNewIncident: () => void; colors: any; s: any; STATUS_COLORS: Record<string, string>;
 }) {
   const [filter, setFilter] = useState<string>("all");
-
-  const filtered = filter === "all"
-    ? incidents
-    : incidents.filter((i) => i.status === filter);
-
-  const getCameraName = (cameraId?: string) => {
-    if (!cameraId) return null;
-    return cameras.find((c) => c.cameraId === cameraId)?.name || "Unknown Camera";
-  };
-
+  const filtered = filter === "all" ? incidents : incidents.filter((i) => i.status === filter);
+  const getCameraName = (cameraId?: string) => cameraId ? cameras.find((c) => c.cameraId === cameraId)?.name || "Unknown Camera" : null;
   const formatDate = (ts: string) => {
     const d = new Date(ts);
     return `${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
   };
-
-  const typeIcon = (type: string) =>
-    INCIDENT_TYPES.find((t) => t.key === type)?.icon || "📝";
+  const typeIcon = (type: string) => INCIDENT_TYPES.find((t) => t.key === type)?.icon || "📝";
 
   return (
-    <View style={styles.tabContent}>
-      {/* Status Filters */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow}>
-        {["all", "open", "investigating", "resolved", "dismissed"].map((s) => (
+    <View style={s.tabContent}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.filterRow}>
+        {["all", "open", "investigating", "resolved", "dismissed"].map((st) => (
           <TouchableOpacity
-            key={s}
-            style={[styles.filterBtn, filter === s && styles.filterBtnActive]}
-            onPress={() => setFilter(s)}
+            key={st}
+            style={[s.filterBtn, { backgroundColor: colors.surface, borderColor: colors.border }, filter === st && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+            onPress={() => setFilter(st)}
           >
-            <Text style={[styles.filterText, filter === s && styles.filterTextActive]}>
-              {s.charAt(0).toUpperCase() + s.slice(1)}
+            <Text style={[s.filterText, { color: colors.textSecondary }, filter === st && { color: "#fff" }]}>
+              {st.charAt(0).toUpperCase() + st.slice(1)}
             </Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
 
       {filtered.length === 0 ? (
-        <View style={styles.emptySection}>
-          <Text style={styles.emptySectionTitle}>No Incidents</Text>
-          <Text style={styles.emptySectionSub}>
+        <View style={s.emptySection}>
+          <Text style={[s.emptySectionTitle, { color: colors.text }]}>No Incidents</Text>
+          <Text style={[s.emptySectionSub, { color: colors.textSecondary }]}>
             {filter === "all" ? "No incidents reported yet." : `No ${filter} incidents.`}
           </Text>
         </View>
@@ -485,29 +396,23 @@ function IncidentsTab({ incidents, cameras, storeId, onNewIncident }: {
           keyExtractor={(item) => item.incidentId}
           contentContainerStyle={{ paddingBottom: 80 }}
           renderItem={({ item }) => (
-            <View style={styles.incidentCard}>
-              <View style={styles.incidentHeader}>
-                <Text style={styles.incidentIcon}>{typeIcon(item.type)}</Text>
-                <View style={styles.incidentInfo}>
-                  <Text style={styles.incidentTitle}>{item.title}</Text>
-                  <Text style={styles.incidentDate}>{formatDate(item.timestamp)}</Text>
+            <View style={[s.incidentCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <View style={s.incidentHeader}>
+                <Text style={s.incidentIcon}>{typeIcon(item.type)}</Text>
+                <View style={s.incidentInfo}>
+                  <Text style={[s.incidentTitle, { color: colors.text }]}>{item.title}</Text>
+                  <Text style={[s.incidentDate, { color: colors.textSecondary }]}>{formatDate(item.timestamp)}</Text>
                 </View>
-                <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[item.status] || colors.textSecondary }]}>
-                  <Text style={styles.statusBadgeText}>{item.status}</Text>
+                <View style={[s.statusBadge, { backgroundColor: STATUS_COLORS[item.status] || colors.textSecondary }]}>
+                  <Text style={s.statusBadgeText}>{item.status}</Text>
                 </View>
               </View>
-              {item.notes ? <Text style={styles.incidentNotes}>{item.notes}</Text> : null}
-              <View style={styles.incidentMeta}>
-                {item.cameraId && (
-                  <Text style={styles.metaTag}>📷 {getCameraName(item.cameraId)}</Text>
-                )}
-                {item.transactionId && (
-                  <Text style={styles.metaTag}>💳 Transaction linked</Text>
-                )}
-                {item.wasteId && (
-                  <Text style={styles.metaTag}>🗑 Waste log linked</Text>
-                )}
-                <Text style={styles.metaTag}>By: {item.createdBy}</Text>
+              {item.notes ? <Text style={[s.incidentNotes, { color: colors.textSecondary }]}>{item.notes}</Text> : null}
+              <View style={s.incidentMeta}>
+                {item.cameraId && <Text style={[s.metaTag, { color: colors.textSecondary, backgroundColor: colors.background }]}>📷 {getCameraName(item.cameraId)}</Text>}
+                {item.transactionId && <Text style={[s.metaTag, { color: colors.textSecondary, backgroundColor: colors.background }]}>💳 Transaction linked</Text>}
+                {item.wasteId && <Text style={[s.metaTag, { color: colors.textSecondary, backgroundColor: colors.background }]}>🗑 Waste log linked</Text>}
+                <Text style={[s.metaTag, { color: colors.textSecondary, backgroundColor: colors.background }]}>By: {item.createdBy}</Text>
               </View>
             </View>
           )}
@@ -517,14 +422,9 @@ function IncidentsTab({ incidents, cameras, storeId, onNewIncident }: {
   );
 }
 
-// --- New Incident Modal ---
-
-function NewIncidentModal({ visible, storeId, cameras, onClose, onCreated }: {
-  visible: boolean;
-  storeId: string;
-  cameras: CameraItem[];
-  onClose: () => void;
-  onCreated: () => void;
+function NewIncidentModal({ visible, storeId, cameras, onClose, onCreated, colors, s }: {
+  visible: boolean; storeId: string; cameras: CameraItem[];
+  onClose: () => void; onCreated: () => void; colors: any; s: any;
 }) {
   const [type, setType] = useState("");
   const [title, setTitle] = useState("");
@@ -533,23 +433,11 @@ function NewIncidentModal({ visible, storeId, cameras, onClose, onCreated }: {
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async () => {
-    if (!type || !title) {
-      Alert.alert("Missing Info", "Select a type and add a title.");
-      return;
-    }
+    if (!type || !title) { Alert.alert("Missing Info", "Select a type and add a title."); return; }
     setSubmitting(true);
     try {
-      await api.createIncident(storeId, {
-        type,
-        title,
-        notes,
-        timestamp: new Date().toISOString(),
-        cameraId: selectedCamera || undefined,
-      });
-      setType("");
-      setTitle("");
-      setNotes("");
-      setSelectedCamera("");
+      await api.createIncident(storeId, { type, title, notes, timestamp: new Date().toISOString(), cameraId: selectedCamera || undefined });
+      setType(""); setTitle(""); setNotes(""); setSelectedCamera("");
       onCreated();
     } catch (err: any) {
       Alert.alert("Error", err.message || "Failed to create incident");
@@ -560,66 +448,47 @@ function NewIncidentModal({ visible, storeId, cameras, onClose, onCreated }: {
 
   return (
     <Modal visible={visible} transparent animationType="slide">
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Report Incident</Text>
+      <View style={s.modalOverlay}>
+        <View style={[s.modalContent, { backgroundColor: colors.surface }]}>
+          <View style={s.modalHeader}>
+            <Text style={[s.modalTitle, { color: colors.text }]}>Report Incident</Text>
             <TouchableOpacity onPress={onClose}>
-              <Text style={styles.modalClose}>✕</Text>
+              <Text style={[s.modalClose, { color: colors.textSecondary }]}>✕</Text>
             </TouchableOpacity>
           </View>
 
           <ScrollView>
-            <Text style={styles.formLabel}>Type</Text>
-            <View style={styles.typeGrid}>
+            <Text style={[s.formLabel, { color: colors.text }]}>Type</Text>
+            <View style={s.typeGrid}>
               {INCIDENT_TYPES.map((t) => (
                 <TouchableOpacity
                   key={t.key}
-                  style={[styles.typeBtn, type === t.key && styles.typeBtnActive]}
+                  style={[s.typeBtn, { backgroundColor: colors.background, borderColor: colors.border }, type === t.key && { borderColor: colors.primary }]}
                   onPress={() => setType(t.key)}
                 >
-                  <Text style={styles.typeIcon}>{t.icon}</Text>
-                  <Text style={[styles.typeLabel, type === t.key && styles.typeLabelActive]}>
-                    {t.label}
-                  </Text>
+                  <Text style={s.typeIcon}>{t.icon}</Text>
+                  <Text style={[s.typeLabel, { color: colors.textSecondary }, type === t.key && { color: colors.primary }]}>{t.label}</Text>
                 </TouchableOpacity>
               ))}
             </View>
 
-            <Text style={styles.formLabel}>Title</Text>
-            <TextInput
-              style={styles.formInput}
-              placeholder="Brief description..."
-              placeholderTextColor={colors.textSecondary}
-              value={title}
-              onChangeText={setTitle}
-            />
+            <Text style={[s.formLabel, { color: colors.text }]}>Title</Text>
+            <TextInput style={[s.formInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]} placeholder="Brief description..." placeholderTextColor={colors.textSecondary} value={title} onChangeText={setTitle} />
 
-            <Text style={styles.formLabel}>Notes</Text>
-            <TextInput
-              style={[styles.formInput, { minHeight: 80, textAlignVertical: "top" }]}
-              placeholder="Details..."
-              placeholderTextColor={colors.textSecondary}
-              value={notes}
-              onChangeText={setNotes}
-              multiline
-            />
+            <Text style={[s.formLabel, { color: colors.text }]}>Notes</Text>
+            <TextInput style={[s.formInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text, minHeight: 80, textAlignVertical: "top" }]} placeholder="Details..." placeholderTextColor={colors.textSecondary} value={notes} onChangeText={setNotes} multiline />
 
             {cameras.length > 0 && (
               <>
-                <Text style={styles.formLabel}>Link Camera (optional)</Text>
+                <Text style={[s.formLabel, { color: colors.text }]}>Link Camera (optional)</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   {cameras.map((cam) => (
                     <TouchableOpacity
                       key={cam.cameraId}
-                      style={[styles.camChip, selectedCamera === cam.cameraId && styles.camChipActive]}
-                      onPress={() => setSelectedCamera(
-                        selectedCamera === cam.cameraId ? "" : cam.cameraId
-                      )}
+                      style={[s.camChip, { backgroundColor: colors.background, borderColor: colors.border }, selectedCamera === cam.cameraId && { borderColor: colors.primary }]}
+                      onPress={() => setSelectedCamera(selectedCamera === cam.cameraId ? "" : cam.cameraId)}
                     >
-                      <Text style={styles.camChipText}>
-                        {LOCATION_ICONS[cam.location] || "📷"} {cam.name}
-                      </Text>
+                      <Text style={[s.camChipText, { color: colors.text }]}>{LOCATION_ICONS[cam.location] || "📷"} {cam.name}</Text>
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
@@ -627,15 +496,10 @@ function NewIncidentModal({ visible, storeId, cameras, onClose, onCreated }: {
             )}
 
             <TouchableOpacity
-              style={[styles.submitBtn, submitting && styles.submitDisabled]}
-              onPress={handleSubmit}
-              disabled={submitting}
+              style={[s.submitBtn, { backgroundColor: colors.danger }, submitting && s.submitDisabled]}
+              onPress={handleSubmit} disabled={submitting}
             >
-              {submitting ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.submitText}>Create Incident</Text>
-              )}
+              {submitting ? <ActivityIndicator color="#fff" /> : <Text style={s.submitText}>Create Incident</Text>}
             </TouchableOpacity>
           </ScrollView>
         </View>
@@ -644,243 +508,84 @@ function NewIncidentModal({ visible, storeId, cameras, onClose, onCreated }: {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  centered: { flex: 1, justifyContent: "center", alignItems: "center", padding: spacing.lg },
-  emptyText: { fontSize: fontSize.md, color: colors.textSecondary, textAlign: "center" },
-
-  // Tab Bar
-  tabBar: { flexDirection: "row", backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border },
-  tab: { flex: 1, paddingVertical: spacing.md, alignItems: "center" },
-  tabActive: { borderBottomWidth: 2, borderBottomColor: colors.primary },
-  tabText: { fontSize: fontSize.sm, fontWeight: "600", color: colors.textSecondary },
-  tabTextActive: { color: colors.primary },
-
-  tabContent: { flex: 1 },
-
-  // Camera Cards
-  cameraCard: {
-    backgroundColor: colors.surface,
-    margin: spacing.md,
-    marginBottom: 0,
-    borderRadius: 12,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  cameraHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: spacing.md,
-  },
-  cameraIcon: { fontSize: 28, marginRight: spacing.sm },
-  cameraInfo: { flex: 1 },
-  cameraName: { fontSize: fontSize.md, fontWeight: "700", color: colors.text },
-  cameraLocation: { fontSize: fontSize.sm, color: colors.textSecondary, textTransform: "capitalize" },
-  statusDot: { width: 10, height: 10, borderRadius: 5, marginRight: spacing.xs },
-  statusOnline: { backgroundColor: colors.green },
-  statusOffline: { backgroundColor: colors.red },
-  statusText: { fontSize: fontSize.xs, color: colors.textSecondary },
-  cameraThumbnail: {
-    backgroundColor: "#1a202c",
-    height: 120,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  thumbnailText: { color: "rgba(255,255,255,0.6)", fontSize: fontSize.sm },
-
-  // Empty Section
-  emptySection: { alignItems: "center", padding: spacing.xl, marginTop: spacing.xl },
-  emptySectionTitle: { fontSize: fontSize.lg, fontWeight: "700", color: colors.text, marginBottom: spacing.xs },
-  emptySectionSub: { fontSize: fontSize.sm, color: colors.textSecondary, textAlign: "center", marginBottom: spacing.lg },
-
-  // Add Camera
-  addBtn: {
-    backgroundColor: colors.primary,
-    margin: spacing.md,
-    padding: spacing.md,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  addBtnText: { color: "#fff", fontWeight: "700", fontSize: fontSize.md },
-
-  addCameraForm: {
-    backgroundColor: colors.surface,
-    margin: spacing.md,
-    padding: spacing.lg,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  formTitle: { fontSize: fontSize.lg, fontWeight: "700", color: colors.text, marginBottom: spacing.md },
-  formInput: {
-    backgroundColor: colors.background,
-    borderRadius: 10,
-    padding: spacing.md,
-    fontSize: fontSize.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    color: colors.text,
-    marginBottom: spacing.sm,
-  },
-  formLabel: {
-    fontSize: fontSize.sm,
-    fontWeight: "600",
-    color: colors.text,
-    marginTop: spacing.md,
-    marginBottom: spacing.sm,
-  },
-
-  locationPicker: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs, marginBottom: spacing.sm },
-  locationBtn: {
-    backgroundColor: colors.background,
-    borderRadius: 8,
-    padding: spacing.sm,
-    alignItems: "center",
-    width: "30%",
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  locationBtnActive: { borderColor: colors.primary, backgroundColor: "#EBF8FF" },
-  locationIcon: { fontSize: 20 },
-  locationLabel: { fontSize: fontSize.xs, color: colors.textSecondary, textTransform: "capitalize", marginTop: 2 },
-  locationLabelActive: { color: colors.primary },
-
-  formActions: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.md },
-  cancelBtn: { flex: 1, padding: spacing.md, borderRadius: 10, alignItems: "center", backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border },
-  cancelBtnText: { color: colors.textSecondary, fontWeight: "600" },
-  saveBtn: { flex: 1, padding: spacing.md, borderRadius: 10, alignItems: "center", backgroundColor: colors.primary },
-  saveBtnText: { color: "#fff", fontWeight: "700" },
-
-  // Timeline
-  timelineCard: {
-    flexDirection: "row",
-    marginBottom: spacing.sm,
-  },
-  timelineCardAlert: {},
-  timelineDot: { width: 24, alignItems: "center", marginRight: spacing.sm },
-  dot: { width: 12, height: 12, borderRadius: 6, marginTop: 4 },
-  dotNormal: { backgroundColor: colors.primary },
-  dotAlert: { backgroundColor: colors.danger },
-  timelineLine: { width: 2, flex: 1, backgroundColor: colors.border, marginTop: 4 },
-  timelineContent: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: 10,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  timelineHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: spacing.xs },
-  timelineTime: { fontSize: fontSize.sm, fontWeight: "700", color: colors.text },
-  timelineAmount: { fontSize: fontSize.md, fontWeight: "700", color: colors.text },
-  timelineItems: { fontSize: fontSize.sm, color: colors.textSecondary, marginBottom: spacing.sm },
-  timelineFooter: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  foodCostBadge: { fontSize: fontSize.xs, color: colors.textSecondary, backgroundColor: colors.background, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
-  foodCostHigh: { backgroundColor: "#FED7D7", color: colors.danger },
-  flagBtn: { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
-  flagText: { fontSize: fontSize.sm },
-
-  // Incidents
-  filterRow: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
-  filterBtn: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: 20,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginRight: spacing.xs,
-  },
-  filterBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  filterText: { fontSize: fontSize.sm, color: colors.textSecondary },
-  filterTextActive: { color: "#fff" },
-
-  incidentCard: {
-    backgroundColor: colors.surface,
-    marginHorizontal: spacing.md,
-    marginBottom: spacing.sm,
-    borderRadius: 12,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  incidentHeader: { flexDirection: "row", alignItems: "center", marginBottom: spacing.sm },
-  incidentIcon: { fontSize: 24, marginRight: spacing.sm },
-  incidentInfo: { flex: 1 },
-  incidentTitle: { fontSize: fontSize.md, fontWeight: "700", color: colors.text },
-  incidentDate: { fontSize: fontSize.xs, color: colors.textSecondary },
-  statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 4 },
-  statusBadgeText: { fontSize: fontSize.xs, color: "#fff", fontWeight: "700", textTransform: "capitalize" },
-  incidentNotes: { fontSize: fontSize.sm, color: colors.textSecondary, marginBottom: spacing.sm },
-  incidentMeta: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
-  metaTag: { fontSize: fontSize.xs, color: colors.textSecondary, backgroundColor: colors.background, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
-
-  // FAB
-  fab: {
-    position: "absolute",
-    bottom: 20,
-    right: 20,
-    backgroundColor: colors.danger,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderRadius: 25,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-  },
-  fabText: { color: "#fff", fontWeight: "700", fontSize: fontSize.md },
-
-  // Modal
-  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
-  modalContent: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: "85%",
-    padding: spacing.lg,
-  },
-  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: spacing.md },
-  modalTitle: { fontSize: fontSize.xl, fontWeight: "800", color: colors.text },
-  modalClose: { fontSize: fontSize.xl, color: colors.textSecondary, padding: spacing.sm },
-
-  typeGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
-  typeBtn: {
-    backgroundColor: colors.background,
-    borderRadius: 10,
-    padding: spacing.sm,
-    alignItems: "center",
-    width: "30%",
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  typeBtnActive: { borderColor: colors.primary, backgroundColor: "#EBF8FF" },
-  typeIcon: { fontSize: 24, marginBottom: 2 },
-  typeLabel: { fontSize: fontSize.xs, color: colors.textSecondary, fontWeight: "600" },
-  typeLabelActive: { color: colors.primary },
-
-  camChip: {
-    backgroundColor: colors.background,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: 20,
-    marginRight: spacing.xs,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  camChipActive: { borderColor: colors.primary, backgroundColor: "#EBF8FF" },
-  camChipText: { fontSize: fontSize.sm, color: colors.text },
-
-  submitBtn: {
-    backgroundColor: colors.danger,
-    padding: spacing.md,
-    borderRadius: 12,
-    alignItems: "center",
-    marginTop: spacing.lg,
-    marginBottom: spacing.xl,
-  },
-  submitDisabled: { opacity: 0.5 },
-  submitText: { color: "#fff", fontSize: fontSize.md, fontWeight: "700" },
-});
+const makeStyles = (colors: ColorScheme) =>
+  StyleSheet.create({
+    container: { flex: 1 },
+    centered: { flex: 1, justifyContent: "center", alignItems: "center", padding: spacing.lg },
+    emptyText: { fontSize: fontSize.md, textAlign: "center" },
+    tabBar: { flexDirection: "row", borderBottomWidth: 1 },
+    tab: { flex: 1, paddingVertical: spacing.md, alignItems: "center" },
+    tabText: { fontSize: fontSize.sm, fontWeight: "600" },
+    tabContent: { flex: 1 },
+    cameraCard: { margin: spacing.md, marginBottom: 0, borderRadius: 12, overflow: "hidden", borderWidth: 1 },
+    cameraHeader: { flexDirection: "row", alignItems: "center", padding: spacing.md },
+    cameraIcon: { fontSize: 28, marginRight: spacing.sm },
+    cameraInfo: { flex: 1 },
+    cameraName: { fontSize: fontSize.md, fontWeight: "700" },
+    cameraLocation: { fontSize: fontSize.sm, textTransform: "capitalize" },
+    statusDot: { width: 10, height: 10, borderRadius: 5, marginRight: spacing.xs },
+    statusLabelText: { fontSize: fontSize.xs },
+    cameraThumbnail: { backgroundColor: colors.text + "15", height: 120, justifyContent: "center", alignItems: "center" },
+    thumbnailText: { color: "rgba(255,255,255,0.6)", fontSize: fontSize.sm },
+    emptySection: { alignItems: "center", padding: spacing.xl, marginTop: spacing.xl },
+    emptySectionTitle: { fontSize: fontSize.lg, fontWeight: "700", marginBottom: spacing.xs },
+    emptySectionSub: { fontSize: fontSize.sm, textAlign: "center", marginBottom: spacing.lg },
+    addBtn: { margin: spacing.md, padding: spacing.md, borderRadius: 10, alignItems: "center" },
+    addBtnText: { color: "#fff", fontWeight: "700", fontSize: fontSize.md },
+    addCameraForm: { margin: spacing.md, padding: spacing.lg, borderRadius: 12, borderWidth: 1 },
+    formTitle: { fontSize: fontSize.lg, fontWeight: "700", marginBottom: spacing.md },
+    formInput: { borderRadius: 10, padding: spacing.md, fontSize: fontSize.md, borderWidth: 1, marginBottom: spacing.sm },
+    formLabel: { fontSize: fontSize.sm, fontWeight: "600", marginTop: spacing.md, marginBottom: spacing.sm },
+    locationPicker: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs, marginBottom: spacing.sm },
+    locationBtn: { borderRadius: 8, padding: spacing.sm, alignItems: "center", width: "30%", borderWidth: 1 },
+    locationIcon: { fontSize: 20 },
+    locationLabel: { fontSize: fontSize.xs, textTransform: "capitalize", marginTop: 2 },
+    formActions: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.md },
+    cancelBtn: { flex: 1, padding: spacing.md, borderRadius: 10, alignItems: "center", borderWidth: 1 },
+    cancelBtnText: { fontWeight: "600" },
+    saveBtn: { flex: 1, padding: spacing.md, borderRadius: 10, alignItems: "center" },
+    saveBtnText: { color: "#fff", fontWeight: "700" },
+    timelineCard: { flexDirection: "row", marginBottom: spacing.sm },
+    timelineDot: { width: 24, alignItems: "center", marginRight: spacing.sm },
+    dot: { width: 12, height: 12, borderRadius: 6, marginTop: 4 },
+    timelineLine: { width: 2, flex: 1, marginTop: 4 },
+    timelineContent: { flex: 1, borderRadius: 10, padding: spacing.md, borderWidth: 1 },
+    timelineHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: spacing.xs },
+    timelineTime: { fontSize: fontSize.sm, fontWeight: "700" },
+    timelineAmount: { fontSize: fontSize.md, fontWeight: "700" },
+    timelineItems: { fontSize: fontSize.sm, marginBottom: spacing.sm },
+    timelineFooter: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+    foodCostBadge: { fontSize: fontSize.xs, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
+    flagBtn: { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
+    flagText: { fontSize: fontSize.sm },
+    filterRow: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+    filterBtn: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: 20, borderWidth: 1, marginRight: spacing.xs },
+    filterText: { fontSize: fontSize.sm },
+    incidentCard: { marginHorizontal: spacing.md, marginBottom: spacing.sm, borderRadius: 12, padding: spacing.md, borderWidth: 1 },
+    incidentHeader: { flexDirection: "row", alignItems: "center", marginBottom: spacing.sm },
+    incidentIcon: { fontSize: 24, marginRight: spacing.sm },
+    incidentInfo: { flex: 1 },
+    incidentTitle: { fontSize: fontSize.md, fontWeight: "700" },
+    incidentDate: { fontSize: fontSize.xs },
+    statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 4 },
+    statusBadgeText: { fontSize: fontSize.xs, color: "#fff", fontWeight: "700", textTransform: "capitalize" },
+    incidentNotes: { fontSize: fontSize.sm, marginBottom: spacing.sm },
+    incidentMeta: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
+    metaTag: { fontSize: fontSize.xs, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+    fab: { position: "absolute", bottom: 20, right: 20, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderRadius: 25, elevation: 4, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4 },
+    fabText: { color: "#fff", fontWeight: "700", fontSize: fontSize.md },
+    modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
+    modalContent: { borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: "85%", padding: spacing.lg },
+    modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: spacing.md },
+    modalTitle: { fontSize: fontSize.xl, fontWeight: "800" },
+    modalClose: { fontSize: fontSize.xl, padding: spacing.sm },
+    typeGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
+    typeBtn: { borderRadius: 10, padding: spacing.sm, alignItems: "center", width: "30%", borderWidth: 1 },
+    typeIcon: { fontSize: 24, marginBottom: 2 },
+    typeLabel: { fontSize: fontSize.xs, fontWeight: "600" },
+    camChip: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: 20, marginRight: spacing.xs, borderWidth: 1 },
+    camChipText: { fontSize: fontSize.sm },
+    submitBtn: { padding: spacing.md, borderRadius: 12, alignItems: "center", marginTop: spacing.lg, marginBottom: spacing.xl },
+    submitDisabled: { opacity: 0.5 },
+    submitText: { color: "#fff", fontSize: fontSize.md, fontWeight: "700" },
+  });

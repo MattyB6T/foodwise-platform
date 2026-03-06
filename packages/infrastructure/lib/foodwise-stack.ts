@@ -227,7 +227,7 @@ export class FoodwiseStack extends cdk.Stack {
     const handlersPath = path.join(__dirname, "../../api/src/handlers");
 
     const nodejsFnProps = {
-      runtime: lambda.Runtime.NODEJS_18_X,
+      runtime: lambda.Runtime.NODEJS_20_X,
       environment: lambdaEnvironment,
       bundling: {
         externalModules: [],
@@ -393,7 +393,7 @@ export class FoodwiseStack extends cdk.Stack {
       memorySize: 512,
       environment: {
         ...lambdaEnvironment,
-        BEDROCK_MODEL_ID: "anthropic.claude-sonnet-4-20250514",
+        BEDROCK_MODEL_ID: "us.anthropic.claude-sonnet-4-20250514-v1:0",
       },
     });
 
@@ -427,11 +427,20 @@ export class FoodwiseStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(10),
     });
 
+    const listTransactionsFn = new NodejsFunction(this, "ListTransactionsFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "listTransactions.ts"),
+      timeout: cdk.Duration.seconds(10),
+    });
+
     // Bedrock permissions for assistant
     assistantFn.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ["bedrock:InvokeModel"],
-        resources: ["arn:aws:bedrock:*::foundation-model/anthropic.*"],
+        resources: [
+          "arn:aws:bedrock:*::foundation-model/anthropic.*",
+          "arn:aws:bedrock:*:*:inference-profile/us.anthropic.*",
+        ],
       })
     );
 
@@ -544,6 +553,7 @@ export class FoodwiseStack extends cdk.Stack {
     this.camerasTable.grantReadData(createIncidentFn);
     this.incidentsTable.grantReadWriteData(createIncidentFn);
     this.incidentsTable.grantReadData(listIncidentsFn);
+    this.transactionsTable.grantReadData(listTransactionsFn);
 
     // Assistant needs read on all tables
     this.storesTable.grantReadData(assistantFn);
@@ -616,6 +626,11 @@ export class FoodwiseStack extends cdk.Stack {
     transactionsResource.addMethod(
       "POST",
       new apigateway.LambdaIntegration(recordTransactionFn),
+      authMethodOptions
+    );
+    transactionsResource.addMethod(
+      "GET",
+      new apigateway.LambdaIntegration(listTransactionsFn),
       authMethodOptions
     );
 

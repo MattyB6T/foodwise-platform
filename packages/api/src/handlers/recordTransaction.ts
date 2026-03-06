@@ -118,13 +118,14 @@ export const handler = async (
       const itemName = inventoryItem?.name || itemId;
       const costPerUnit = inventoryItem?.costPerUnit || 0;
 
+      const newQty = Math.max(0, (inventoryItem?.quantity || 0) - deduction.quantity);
       await docClient.send(
         new UpdateCommand({
           TableName: TABLES.INVENTORY,
           Key: { storeId, itemId },
-          UpdateExpression: "SET quantity = quantity - :qty, updatedAt = :now",
+          UpdateExpression: "SET quantity = :newQty, updatedAt = :now",
           ExpressionAttributeValues: {
-            ":qty": deduction.quantity,
+            ":newQty": newQty,
             ":now": new Date().toISOString(),
           },
         })
