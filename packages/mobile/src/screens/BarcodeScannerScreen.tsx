@@ -8,6 +8,7 @@ import {
   FlatList,
   TextInput,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useStore } from "../contexts/StoreContext";
@@ -30,6 +31,7 @@ export function BarcodeScannerScreen() {
   const { selectedStoreId } = useStore();
   const { colors } = useTheme();
   const [permission, requestPermission] = useCameraPermissions();
+  const [webPermission, setWebPermission] = useState<boolean | null>(null);
   const [scanning, setScanning] = useState(true);
   const [scannedItems, setScannedItems] = useState<ScannedItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -38,8 +40,27 @@ export function BarcodeScannerScreen() {
   const s = makeStyles(colors);
 
   useEffect(() => {
-    requestPermission();
+    if (Platform.OS === "web") {
+      navigator.mediaDevices
+        .getUserMedia({ video: true })
+        .then(() => setWebPermission(true))
+        .catch(() => setWebPermission(false));
+    } else {
+      requestPermission();
+    }
   }, [requestPermission]);
+
+  const requestWebPermission = async () => {
+    try {
+      await navigator.mediaDevices.getUserMedia({ video: true });
+      setWebPermission(true);
+    } catch {
+      Alert.alert("Permission Denied", "Please allow camera access in your browser settings and refresh.");
+    }
+  };
+
+  const isGranted = Platform.OS === "web" ? webPermission === true : permission?.granted;
+  const isLoading = Platform.OS === "web" ? webPermission === null : !permission;
 
   const handleBarCodeScanned = async ({ data }: { data: string }) => {
     if (data === lastScanned || loading) return;
@@ -113,7 +134,7 @@ export function BarcodeScannerScreen() {
     );
   }
 
-  if (!permission) {
+  if (isLoading) {
     return (
       <View style={[s.centered, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -122,11 +143,14 @@ export function BarcodeScannerScreen() {
     );
   }
 
-  if (!permission.granted) {
+  if (!isGranted) {
     return (
       <View style={[s.centered, { backgroundColor: colors.background }]}>
         <Text style={[s.permText, { color: colors.textSecondary }]}>Camera permission is required to scan barcodes.</Text>
-        <TouchableOpacity style={[s.viewListBtn, { backgroundColor: colors.primary }]} onPress={requestPermission}>
+        <TouchableOpacity
+          style={[s.viewListBtn, { backgroundColor: colors.primary, position: "relative", bottom: "auto", marginTop: spacing.lg }]}
+          onPress={Platform.OS === "web" ? requestWebPermission : requestPermission}
+        >
           <Text style={s.viewListText}>Grant Permission</Text>
         </TouchableOpacity>
       </View>
