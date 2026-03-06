@@ -219,6 +219,20 @@ export const api = {
   logAudit: (storeId: string, body: { action: string; resourceType: string; resourceId: string; details?: any }) =>
     request<any>("POST", `/stores/${storeId}/audit-trail`, body),
 
+  // Photos
+  getPhotoUrl: (key: string) =>
+    request<any>("GET", `/photos?key=${encodeURIComponent(key)}`),
+  requestPhotoUpload: (body: { fileName: string; contentType: string; storeId?: string; context?: string; resourceId?: string }) =>
+    request<any>("POST", "/photos", body),
+
+  // Supplier Portal
+  getSupplierPortal: (supplierId: string) =>
+    request<any>("GET", `/supplier-portal/${supplierId}`),
+  getSupplierOrders: (supplierId: string) =>
+    request<any>("GET", `/supplier-portal/${supplierId}/orders`),
+  updateSupplierOrder: (supplierId: string, orderId: string, body: { status?: string; expectedDelivery?: string; supplierNotes?: string }) =>
+    request<any>("PUT", `/supplier-portal/${supplierId}/orders/${orderId}`, body),
+
   // Transactions (for timeline view)
   getTransactions: (storeId: string, startDate?: string, endDate?: string) => {
     const qs = new URLSearchParams();

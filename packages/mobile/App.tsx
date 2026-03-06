@@ -22,6 +22,7 @@ import { ReportsScreen } from "./src/screens/ReportsScreen";
 import { ExpirationScreen } from "./src/screens/ExpirationScreen";
 import { ScheduleScreen } from "./src/screens/ScheduleScreen";
 import { TempLogScreen } from "./src/screens/TempLogScreen";
+import { ForecastScreen } from "./src/screens/ForecastScreen";
 import { SettingsScreen } from "./src/screens/SettingsScreen";
 import type { RootStackParamList, TabParamList } from "./src/navigation/types";
 
@@ -242,6 +243,11 @@ function AppNavigator() {
             name="TempLog"
             component={TempLogScreen}
             options={{ title: "Temperature Logs" }}
+          />
+          <Stack.Screen
+            name="Forecast"
+            component={ForecastScreen}
+            options={{ title: "Demand Forecasts" }}
           />
         </>
       )}

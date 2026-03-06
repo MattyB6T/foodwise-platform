@@ -30,4 +30,5 @@ export type RootStackParamList = {
   Expiration: undefined;
   Schedule: undefined;
   TempLog: undefined;
+  Forecast: undefined;
 };

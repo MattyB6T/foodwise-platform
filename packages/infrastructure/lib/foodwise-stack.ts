@@ -654,6 +654,22 @@ export class FoodwiseStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(10),
     });
 
+    const photoUploadFn = new NodejsFunction(this, "PhotoUploadFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "photoUpload.ts"),
+      timeout: cdk.Duration.seconds(15),
+      environment: {
+        ...lambdaEnvironment,
+        REPORTS_BUCKET: this.reportsBucket.bucketName,
+      },
+    });
+
+    const supplierPortalFn = new NodejsFunction(this, "SupplierPortalFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "supplierPortal.ts"),
+      timeout: cdk.Duration.seconds(15),
+    });
+
     const emailPurchaseOrderFn = new NodejsFunction(this, "EmailPurchaseOrderFn", {
       ...nodejsFnProps,
       entry: path.join(handlersPath, "emailPurchaseOrder.ts"),
@@ -878,6 +894,13 @@ export class FoodwiseStack extends cdk.Stack {
     // Audit Trail permissions
     this.auditTrailTable.grantReadWriteData(auditTrailFn);
 
+    // Photo Upload permissions
+    this.reportsBucket.grantReadWrite(photoUploadFn);
+
+    // Supplier Portal permissions
+    this.suppliersTable.grantReadData(supplierPortalFn);
+    this.purchaseOrdersTable.grantReadWriteData(supplierPortalFn);
+
     // Vendor Communication permissions
     this.purchaseOrdersTable.grantReadData(emailPurchaseOrderFn);
     this.suppliersTable.grantReadData(emailPurchaseOrderFn);
@@ -1027,6 +1050,20 @@ export class FoodwiseStack extends cdk.Stack {
     const auditResource = singleStoreResource.addResource("audit-trail");
     auditResource.addMethod("GET", new apigateway.LambdaIntegration(auditTrailFn), authMethodOptions);
     auditResource.addMethod("POST", new apigateway.LambdaIntegration(auditTrailFn), authMethodOptions);
+
+    // GET/POST /photos
+    const photosResource = this.api.root.addResource("photos");
+    photosResource.addMethod("GET", new apigateway.LambdaIntegration(photoUploadFn), authMethodOptions);
+    photosResource.addMethod("POST", new apigateway.LambdaIntegration(photoUploadFn), authMethodOptions);
+
+    // GET /supplier-portal/{supplierId} & GET /supplier-portal/{supplierId}/orders & PUT /supplier-portal/{supplierId}/orders/{orderId}
+    const supplierPortalResource = this.api.root.addResource("supplier-portal");
+    const singleSupplierPortalResource = supplierPortalResource.addResource("{supplierId}");
+    singleSupplierPortalResource.addMethod("GET", new apigateway.LambdaIntegration(supplierPortalFn), authMethodOptions);
+    const supplierOrdersResource = singleSupplierPortalResource.addResource("orders");
+    supplierOrdersResource.addMethod("GET", new apigateway.LambdaIntegration(supplierPortalFn), authMethodOptions);
+    const supplierSingleOrderResource = supplierOrdersResource.addResource("{orderId}");
+    supplierSingleOrderResource.addMethod("PUT", new apigateway.LambdaIntegration(supplierPortalFn), authMethodOptions);
 
     // POST /forecasts (on-demand trigger)
     const forecastsResource = this.api.root.addResource("forecasts");
