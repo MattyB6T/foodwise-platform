@@ -30,6 +30,8 @@ export class FoodwiseStack extends cdk.Stack {
   public readonly timeClockTable: dynamodb.Table;
   public readonly tempLogsTable: dynamodb.Table;
   public readonly priceHistoryTable: dynamodb.Table;
+  public readonly prepListsTable: dynamodb.Table;
+  public readonly auditTrailTable: dynamodb.Table;
   public readonly userPool: cognito.UserPool;
   public readonly reportsBucket: s3.Bucket;
   public readonly api: apigateway.RestApi;
@@ -254,6 +256,34 @@ export class FoodwiseStack extends cdk.Stack {
       projectionType: dynamodb.ProjectionType.ALL,
     });
 
+    this.prepListsTable = new dynamodb.Table(this, "PrepListsTable", {
+      tableName: "prep-lists",
+      partitionKey: { name: "prepListId", type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    this.prepListsTable.addGlobalSecondaryIndex({
+      indexName: "storeId-date-index",
+      partitionKey: { name: "storeId", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "date", type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
+    this.auditTrailTable = new dynamodb.Table(this, "AuditTrailTable", {
+      tableName: "audit-trail",
+      partitionKey: { name: "auditId", type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    this.auditTrailTable.addGlobalSecondaryIndex({
+      indexName: "storeId-timestamp-index",
+      partitionKey: { name: "storeId", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "timestamp", type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
     // --- Cognito User Pool ---
 
     this.userPool = new cognito.UserPool(this, "FoodwiseUserPool", {
@@ -338,6 +368,8 @@ export class FoodwiseStack extends cdk.Stack {
       TIME_CLOCK_TABLE: this.timeClockTable.tableName,
       TEMP_LOGS_TABLE: this.tempLogsTable.tableName,
       PRICE_HISTORY_TABLE: this.priceHistoryTable.tableName,
+      PREP_LISTS_TABLE: this.prepListsTable.tableName,
+      AUDIT_TRAIL_TABLE: this.auditTrailTable.tableName,
     };
 
     const handlersPath = path.join(__dirname, "../../api/src/handlers");
@@ -597,6 +629,31 @@ export class FoodwiseStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(15),
     });
 
+    const menuEngineeringFn = new NodejsFunction(this, "MenuEngineeringFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "menuEngineering.ts"),
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 512,
+    });
+
+    const prepListsFn = new NodejsFunction(this, "PrepListsFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "prepLists.ts"),
+      timeout: cdk.Duration.seconds(15),
+    });
+
+    const recipeScalingFn = new NodejsFunction(this, "RecipeScalingFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "recipeScaling.ts"),
+      timeout: cdk.Duration.seconds(10),
+    });
+
+    const auditTrailFn = new NodejsFunction(this, "AuditTrailFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "auditTrail.ts"),
+      timeout: cdk.Duration.seconds(10),
+    });
+
     const emailPurchaseOrderFn = new NodejsFunction(this, "EmailPurchaseOrderFn", {
       ...nodejsFnProps,
       entry: path.join(handlersPath, "emailPurchaseOrder.ts"),
@@ -805,6 +862,22 @@ export class FoodwiseStack extends cdk.Stack {
     this.inventoryTable.grantReadWriteData(setExpirationFn);
     this.inventoryTable.grantReadData(getExpirationAlertsFn);
 
+    // Menu Engineering permissions
+    this.transactionsTable.grantReadData(menuEngineeringFn);
+    this.recipesTable.grantReadData(menuEngineeringFn);
+
+    // Prep Lists permissions
+    this.prepListsTable.grantReadWriteData(prepListsFn);
+    this.recipesTable.grantReadData(prepListsFn);
+    this.inventoryTable.grantReadData(prepListsFn);
+
+    // Recipe Scaling permissions
+    this.recipesTable.grantReadData(recipeScalingFn);
+    this.inventoryTable.grantReadData(recipeScalingFn);
+
+    // Audit Trail permissions
+    this.auditTrailTable.grantReadWriteData(auditTrailFn);
+
     // Vendor Communication permissions
     this.purchaseOrdersTable.grantReadData(emailPurchaseOrderFn);
     this.suppliersTable.grantReadData(emailPurchaseOrderFn);
@@ -936,6 +1009,24 @@ export class FoodwiseStack extends cdk.Stack {
       new apigateway.LambdaIntegration(upsertIngredientFn),
       authMethodOptions
     );
+
+    // GET /stores/{storeId}/menu-engineering
+    const menuEngResource = singleStoreResource.addResource("menu-engineering");
+    menuEngResource.addMethod("GET", new apigateway.LambdaIntegration(menuEngineeringFn), authMethodOptions);
+
+    // GET/POST /stores/{storeId}/prep-lists
+    const prepListsResource = singleStoreResource.addResource("prep-lists");
+    prepListsResource.addMethod("GET", new apigateway.LambdaIntegration(prepListsFn), authMethodOptions);
+    prepListsResource.addMethod("POST", new apigateway.LambdaIntegration(prepListsFn), authMethodOptions);
+
+    // GET /recipes/{recipeId}/scale
+    const scaleResource = singleRecipeResource.addResource("scale");
+    scaleResource.addMethod("GET", new apigateway.LambdaIntegration(recipeScalingFn), authMethodOptions);
+
+    // GET/POST /stores/{storeId}/audit-trail
+    const auditResource = singleStoreResource.addResource("audit-trail");
+    auditResource.addMethod("GET", new apigateway.LambdaIntegration(auditTrailFn), authMethodOptions);
+    auditResource.addMethod("POST", new apigateway.LambdaIntegration(auditTrailFn), authMethodOptions);
 
     // POST /forecasts (on-demand trigger)
     const forecastsResource = this.api.root.addResource("forecasts");

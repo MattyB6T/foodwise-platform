@@ -25,4 +25,6 @@ export const TABLES = {
   TIME_CLOCK: process.env.TIME_CLOCK_TABLE!,
   TEMP_LOGS: process.env.TEMP_LOGS_TABLE!,
   PRICE_HISTORY: process.env.PRICE_HISTORY_TABLE!,
+  PREP_LISTS: process.env.PREP_LISTS_TABLE!,
+  AUDIT_TRAIL: process.env.AUDIT_TRAIL_TABLE!,
 };

@@ -192,6 +192,33 @@ export const api = {
   generateReport: (body: { storeId: string; reportType: string; startDate?: string; endDate?: string; format?: string }) =>
     request<any>("POST", "/reports", body),
 
+  // Menu Engineering
+  getMenuEngineering: (storeId: string, days?: number) =>
+    request<any>("GET", `/stores/${storeId}/menu-engineering${days ? `?days=${days}` : ""}`),
+
+  // Prep Lists
+  getPrepLists: (storeId: string, date?: string) =>
+    request<any>("GET", `/stores/${storeId}/prep-lists${date ? `?date=${date}` : ""}`),
+  generatePrepList: (storeId: string, body: { action: string; date?: string }) =>
+    request<any>("POST", `/stores/${storeId}/prep-lists`, body),
+  updatePrepList: (storeId: string, body: { prepListId: string; items: any[]; status?: string }) =>
+    request<any>("POST", `/stores/${storeId}/prep-lists`, body),
+
+  // Recipe Scaling
+  scaleRecipe: (recipeId: string, servings: number, storeId?: string) =>
+    request<any>("GET", `/recipes/${recipeId}/scale?servings=${servings}${storeId ? `&storeId=${storeId}` : ""}`),
+
+  // Audit Trail
+  getAuditTrail: (storeId: string, params?: { resourceType?: string; startDate?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.resourceType) qs.set("resourceType", params.resourceType);
+    if (params?.startDate) qs.set("startDate", params.startDate);
+    const query = qs.toString();
+    return request<any>("GET", `/stores/${storeId}/audit-trail${query ? `?${query}` : ""}`);
+  },
+  logAudit: (storeId: string, body: { action: string; resourceType: string; resourceId: string; details?: any }) =>
+    request<any>("POST", `/stores/${storeId}/audit-trail`, body),
+
   // Transactions (for timeline view)
   getTransactions: (storeId: string, startDate?: string, endDate?: string) => {
     const qs = new URLSearchParams();
