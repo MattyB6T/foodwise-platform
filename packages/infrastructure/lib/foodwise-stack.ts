@@ -26,6 +26,8 @@ export class FoodwiseStack extends cdk.Stack {
   public readonly inventoryCountsTable: dynamodb.Table;
   public readonly notificationsTable: dynamodb.Table;
   public readonly staffTable: dynamodb.Table;
+  public readonly schedulesTable: dynamodb.Table;
+  public readonly timeClockTable: dynamodb.Table;
   public readonly userPool: cognito.UserPool;
   public readonly reportsBucket: s3.Bucket;
   public readonly api: apigateway.RestApi;
@@ -194,6 +196,34 @@ export class FoodwiseStack extends cdk.Stack {
       projectionType: dynamodb.ProjectionType.ALL,
     });
 
+    this.schedulesTable = new dynamodb.Table(this, "SchedulesTable", {
+      tableName: "schedules",
+      partitionKey: { name: "shiftId", type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    this.schedulesTable.addGlobalSecondaryIndex({
+      indexName: "storeId-date-index",
+      partitionKey: { name: "storeId", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "date", type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
+    this.timeClockTable = new dynamodb.Table(this, "TimeClockTable", {
+      tableName: "time-clock",
+      partitionKey: { name: "entryId", type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    this.timeClockTable.addGlobalSecondaryIndex({
+      indexName: "storeId-clockIn-index",
+      partitionKey: { name: "storeId", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "clockIn", type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
     // --- Cognito User Pool ---
 
     this.userPool = new cognito.UserPool(this, "FoodwiseUserPool", {
@@ -274,6 +304,8 @@ export class FoodwiseStack extends cdk.Stack {
       INVENTORY_COUNTS_TABLE: this.inventoryCountsTable.tableName,
       NOTIFICATIONS_TABLE: this.notificationsTable.tableName,
       STAFF_TABLE: this.staffTable.tableName,
+      SCHEDULES_TABLE: this.schedulesTable.tableName,
+      TIME_CLOCK_TABLE: this.timeClockTable.tableName,
     };
 
     const handlersPath = path.join(__dirname, "../../api/src/handlers");
@@ -552,6 +584,18 @@ export class FoodwiseStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(10),
     });
 
+    const manageScheduleFn = new NodejsFunction(this, "ManageScheduleFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "manageSchedule.ts"),
+      timeout: cdk.Duration.seconds(10),
+    });
+
+    const timeClockFn = new NodejsFunction(this, "TimeClockFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "timeClock.ts"),
+      timeout: cdk.Duration.seconds(10),
+    });
+
     const setExpirationFn = new NodejsFunction(this, "SetExpirationFn", {
       ...nodejsFnProps,
       entry: path.join(handlersPath, "setExpiration.ts"),
@@ -698,6 +742,10 @@ export class FoodwiseStack extends cdk.Stack {
     this.notificationsTable.grantReadWriteData(updateNotificationPrefsFn);
     this.notificationsTable.grantReadData(getNotificationPrefsFn);
     this.notificationsTable.grantReadData(sendNotificationFn);
+
+    // Schedule & Time Clock permissions
+    this.schedulesTable.grantReadWriteData(manageScheduleFn);
+    this.timeClockTable.grantReadWriteData(timeClockFn);
 
     // Staff permissions
     this.staffTable.grantReadData(listStaffFn);
@@ -970,6 +1018,18 @@ export class FoodwiseStack extends cdk.Stack {
       new apigateway.LambdaIntegration(listIncidentsFn),
       authMethodOptions
     );
+
+    // GET/POST /stores/{storeId}/schedule & DELETE /stores/{storeId}/schedule/{shiftId}
+    const scheduleResource = singleStoreResource.addResource("schedule");
+    scheduleResource.addMethod("GET", new apigateway.LambdaIntegration(manageScheduleFn), authMethodOptions);
+    scheduleResource.addMethod("POST", new apigateway.LambdaIntegration(manageScheduleFn), authMethodOptions);
+    const singleShiftResource = scheduleResource.addResource("{shiftId}");
+    singleShiftResource.addMethod("DELETE", new apigateway.LambdaIntegration(manageScheduleFn), authMethodOptions);
+
+    // GET/POST /stores/{storeId}/time-clock
+    const timeClockResource = singleStoreResource.addResource("time-clock");
+    timeClockResource.addMethod("GET", new apigateway.LambdaIntegration(timeClockFn), authMethodOptions);
+    timeClockResource.addMethod("POST", new apigateway.LambdaIntegration(timeClockFn), authMethodOptions);
 
     // GET /stores/{storeId}/staff & POST /stores/{storeId}/staff
     const staffResource = singleStoreResource.addResource("staff");

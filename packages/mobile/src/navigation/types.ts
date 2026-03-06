@@ -28,4 +28,5 @@ export type RootStackParamList = {
   Dashboard: undefined;
   Reports: undefined;
   Expiration: undefined;
+  Schedule: undefined;
 };

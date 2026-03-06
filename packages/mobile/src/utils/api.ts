@@ -158,6 +158,20 @@ export const api = {
   removeStaff: (storeId: string, staffId: string) =>
     request<any>("DELETE", `/stores/${storeId}/staff/${staffId}`),
 
+  // Schedule
+  getSchedule: (storeId: string, weekStart?: string) =>
+    request<any>("GET", `/stores/${storeId}/schedule${weekStart ? `?weekStart=${weekStart}` : ""}`),
+  createShift: (storeId: string, body: { staffId: string; staffName: string; date: string; startTime: string; endTime: string; position?: string }) =>
+    request<any>("POST", `/stores/${storeId}/schedule`, body),
+  deleteShift: (storeId: string, shiftId: string) =>
+    request<any>("DELETE", `/stores/${storeId}/schedule/${shiftId}`),
+
+  // Time Clock
+  getTimeEntries: (storeId: string, date?: string) =>
+    request<any>("GET", `/stores/${storeId}/time-clock${date ? `?date=${date}` : ""}`),
+  clockAction: (storeId: string, body: { action: string; entryId?: string; staffName?: string }) =>
+    request<any>("POST", `/stores/${storeId}/time-clock`, body),
+
   // Reports
   generateReport: (body: { storeId: string; reportType: string; startDate?: string; endDate?: string; format?: string }) =>
     request<any>("POST", "/reports", body),

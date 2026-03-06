@@ -21,4 +21,6 @@ export const TABLES = {
   INVENTORY_COUNTS: process.env.INVENTORY_COUNTS_TABLE!,
   NOTIFICATIONS: process.env.NOTIFICATIONS_TABLE!,
   STAFF: process.env.STAFF_TABLE!,
+  SCHEDULES: process.env.SCHEDULES_TABLE!,
+  TIME_CLOCK: process.env.TIME_CLOCK_TABLE!,
 };

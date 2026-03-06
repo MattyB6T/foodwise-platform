@@ -20,6 +20,7 @@ import { TransactionDetailScreen } from "./src/screens/TransactionDetailScreen";
 import { CountScreen } from "./src/screens/CountScreen";
 import { ReportsScreen } from "./src/screens/ReportsScreen";
 import { ExpirationScreen } from "./src/screens/ExpirationScreen";
+import { ScheduleScreen } from "./src/screens/ScheduleScreen";
 import { SettingsScreen } from "./src/screens/SettingsScreen";
 import type { RootStackParamList, TabParamList } from "./src/navigation/types";
 
@@ -230,6 +231,11 @@ function AppNavigator() {
             name="Expiration"
             component={ExpirationScreen}
             options={{ title: "Expiration Tracking" }}
+          />
+          <Stack.Screen
+            name="Schedule"
+            component={ScheduleScreen}
+            options={{ title: "Schedule & Time Clock" }}
           />
         </>
       )}
