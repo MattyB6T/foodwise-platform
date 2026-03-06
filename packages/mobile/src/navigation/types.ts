@@ -3,6 +3,7 @@ import type { NavigatorScreenParams } from "@react-navigation/native";
 export type TabParamList = {
   DashboardTab: undefined;
   ScannerTab: undefined;
+  CountTab: undefined;
   WasteTab: undefined;
   OrdersTab: undefined;
   SecurityTab: undefined;
@@ -25,4 +26,6 @@ export type RootStackParamList = {
     cameras: any[];
   };
   Dashboard: undefined;
+  Reports: undefined;
+  Expiration: undefined;
 };

@@ -18,4 +18,7 @@ export const TABLES = {
   WASTE_LOGS: process.env.WASTE_LOGS_TABLE!,
   CAMERAS: process.env.CAMERAS_TABLE!,
   INCIDENTS: process.env.INCIDENTS_TABLE!,
+  INVENTORY_COUNTS: process.env.INVENTORY_COUNTS_TABLE!,
+  NOTIFICATIONS: process.env.NOTIFICATIONS_TABLE!,
+  STAFF: process.env.STAFF_TABLE!,
 };

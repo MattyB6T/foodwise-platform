@@ -23,6 +23,9 @@ export class FoodwiseStack extends cdk.Stack {
   public readonly wasteLogsTable: dynamodb.Table;
   public readonly camerasTable: dynamodb.Table;
   public readonly incidentsTable: dynamodb.Table;
+  public readonly inventoryCountsTable: dynamodb.Table;
+  public readonly notificationsTable: dynamodb.Table;
+  public readonly staffTable: dynamodb.Table;
   public readonly userPool: cognito.UserPool;
   public readonly reportsBucket: s3.Bucket;
   public readonly api: apigateway.RestApi;
@@ -151,6 +154,46 @@ export class FoodwiseStack extends cdk.Stack {
       projectionType: dynamodb.ProjectionType.ALL,
     });
 
+    this.inventoryCountsTable = new dynamodb.Table(this, "InventoryCountsTable", {
+      tableName: "inventory-counts",
+      partitionKey: { name: "countId", type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    this.inventoryCountsTable.addGlobalSecondaryIndex({
+      indexName: "storeId-timestamp-index",
+      partitionKey: { name: "storeId", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "timestamp", type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
+    this.notificationsTable = new dynamodb.Table(this, "NotificationsTable", {
+      tableName: "notifications",
+      partitionKey: { name: "userId", type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    this.notificationsTable.addGlobalSecondaryIndex({
+      indexName: "storeId-index",
+      partitionKey: { name: "storeId", type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
+    this.staffTable = new dynamodb.Table(this, "StaffTable", {
+      tableName: "staff",
+      partitionKey: { name: "staffId", type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    this.staffTable.addGlobalSecondaryIndex({
+      indexName: "storeId-index",
+      partitionKey: { name: "storeId", type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
     // --- Cognito User Pool ---
 
     this.userPool = new cognito.UserPool(this, "FoodwiseUserPool", {
@@ -198,6 +241,12 @@ export class FoodwiseStack extends cdk.Stack {
       description: "Store staff members",
     });
 
+    new cognito.CfnUserPoolGroup(this, "ReadonlyGroup", {
+      userPoolId: this.userPool.userPoolId,
+      groupName: "readonly",
+      description: "Read-only access users",
+    });
+
     // --- S3 Bucket ---
 
     this.reportsBucket = new s3.Bucket(this, "ReportsBucket", {
@@ -222,6 +271,9 @@ export class FoodwiseStack extends cdk.Stack {
       WASTE_LOGS_TABLE: this.wasteLogsTable.tableName,
       CAMERAS_TABLE: this.camerasTable.tableName,
       INCIDENTS_TABLE: this.incidentsTable.tableName,
+      INVENTORY_COUNTS_TABLE: this.inventoryCountsTable.tableName,
+      NOTIFICATIONS_TABLE: this.notificationsTable.tableName,
+      STAFF_TABLE: this.staffTable.tableName,
     };
 
     const handlersPath = path.join(__dirname, "../../api/src/handlers");
@@ -433,6 +485,85 @@ export class FoodwiseStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(10),
     });
 
+    const createCountFn = new NodejsFunction(this, "CreateCountFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "createCount.ts"),
+      timeout: cdk.Duration.seconds(15),
+    });
+
+    const saveCountFn = new NodejsFunction(this, "SaveCountFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "saveCount.ts"),
+      timeout: cdk.Duration.seconds(15),
+    });
+
+    const listCountsFn = new NodejsFunction(this, "ListCountsFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "listCounts.ts"),
+      timeout: cdk.Duration.seconds(10),
+    });
+
+    const getCountVarianceFn = new NodejsFunction(this, "GetCountVarianceFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "getCountVariance.ts"),
+      timeout: cdk.Duration.seconds(10),
+    });
+
+    const registerPushTokenFn = new NodejsFunction(this, "RegisterPushTokenFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "registerPushToken.ts"),
+      timeout: cdk.Duration.seconds(10),
+    });
+
+    const updateNotificationPrefsFn = new NodejsFunction(this, "UpdateNotificationPrefsFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "updateNotificationPrefs.ts"),
+      timeout: cdk.Duration.seconds(10),
+    });
+
+    const getNotificationPrefsFn = new NodejsFunction(this, "GetNotificationPrefsFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "getNotificationPrefs.ts"),
+      timeout: cdk.Duration.seconds(10),
+    });
+
+    const sendNotificationFn = new NodejsFunction(this, "SendNotificationFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "sendNotification.ts"),
+      timeout: cdk.Duration.seconds(15),
+    });
+
+    const generateReportFn = new NodejsFunction(this, "GenerateReportFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "generateReport.ts"),
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 512,
+    });
+
+    const listStaffFn = new NodejsFunction(this, "ListStaffFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "listStaff.ts"),
+      timeout: cdk.Duration.seconds(10),
+    });
+
+    const manageStaffFn = new NodejsFunction(this, "ManageStaffFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "manageStaff.ts"),
+      timeout: cdk.Duration.seconds(10),
+    });
+
+    const setExpirationFn = new NodejsFunction(this, "SetExpirationFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "setExpiration.ts"),
+      timeout: cdk.Duration.seconds(10),
+    });
+
+    const getExpirationAlertsFn = new NodejsFunction(this, "GetExpirationAlertsFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "getExpirationAlerts.ts"),
+      timeout: cdk.Duration.seconds(15),
+    });
+
     // Bedrock permissions for assistant
     assistantFn.addToRolePolicy(
       new iam.PolicyStatement({
@@ -554,6 +685,33 @@ export class FoodwiseStack extends cdk.Stack {
     this.incidentsTable.grantReadWriteData(createIncidentFn);
     this.incidentsTable.grantReadData(listIncidentsFn);
     this.transactionsTable.grantReadData(listTransactionsFn);
+
+    // Inventory Counts permissions
+    this.inventoryCountsTable.grantReadWriteData(createCountFn);
+    this.inventoryCountsTable.grantReadWriteData(saveCountFn);
+    this.inventoryCountsTable.grantReadData(listCountsFn);
+    this.inventoryCountsTable.grantReadData(getCountVarianceFn);
+    this.inventoryTable.grantReadData(createCountFn);
+
+    // Notifications permissions
+    this.notificationsTable.grantReadWriteData(registerPushTokenFn);
+    this.notificationsTable.grantReadWriteData(updateNotificationPrefsFn);
+    this.notificationsTable.grantReadData(getNotificationPrefsFn);
+    this.notificationsTable.grantReadData(sendNotificationFn);
+
+    // Staff permissions
+    this.staffTable.grantReadData(listStaffFn);
+    this.staffTable.grantReadWriteData(manageStaffFn);
+
+    // Expiration permissions
+    this.inventoryTable.grantReadWriteData(setExpirationFn);
+    this.inventoryTable.grantReadData(getExpirationAlertsFn);
+
+    // Report permissions
+    this.inventoryTable.grantReadData(generateReportFn);
+    this.wasteLogsTable.grantReadData(generateReportFn);
+    this.transactionsTable.grantReadData(generateReportFn);
+    this.purchaseOrdersTable.grantReadData(generateReportFn);
 
     // Assistant needs read on all tables
     this.storesTable.grantReadData(assistantFn);
@@ -810,6 +968,108 @@ export class FoodwiseStack extends cdk.Stack {
     incidentsResource.addMethod(
       "GET",
       new apigateway.LambdaIntegration(listIncidentsFn),
+      authMethodOptions
+    );
+
+    // GET /stores/{storeId}/staff & POST /stores/{storeId}/staff
+    const staffResource = singleStoreResource.addResource("staff");
+    staffResource.addMethod(
+      "GET",
+      new apigateway.LambdaIntegration(listStaffFn),
+      authMethodOptions
+    );
+    staffResource.addMethod(
+      "POST",
+      new apigateway.LambdaIntegration(manageStaffFn),
+      authMethodOptions
+    );
+    // PUT /stores/{storeId}/staff/{staffId} & DELETE
+    const singleStaffResource = staffResource.addResource("{staffId}");
+    singleStaffResource.addMethod(
+      "PUT",
+      new apigateway.LambdaIntegration(manageStaffFn),
+      authMethodOptions
+    );
+    singleStaffResource.addMethod(
+      "DELETE",
+      new apigateway.LambdaIntegration(manageStaffFn),
+      authMethodOptions
+    );
+
+    // POST /stores/{storeId}/expiration & GET /stores/{storeId}/expiration/alerts
+    const expirationResource = singleStoreResource.addResource("expiration");
+    expirationResource.addMethod(
+      "POST",
+      new apigateway.LambdaIntegration(setExpirationFn),
+      authMethodOptions
+    );
+    const expirationAlertsResource = expirationResource.addResource("alerts");
+    expirationAlertsResource.addMethod(
+      "GET",
+      new apigateway.LambdaIntegration(getExpirationAlertsFn),
+      authMethodOptions
+    );
+
+    // POST /reports
+    const reportsResource = this.api.root.addResource("reports");
+    reportsResource.addMethod(
+      "POST",
+      new apigateway.LambdaIntegration(generateReportFn),
+      authMethodOptions
+    );
+
+    // POST /notifications/register & GET /notifications/preferences & PUT /notifications/preferences
+    const notificationsResource = this.api.root.addResource("notifications");
+    const registerResource = notificationsResource.addResource("register");
+    registerResource.addMethod(
+      "POST",
+      new apigateway.LambdaIntegration(registerPushTokenFn),
+      authMethodOptions
+    );
+    const prefsResource = notificationsResource.addResource("preferences");
+    prefsResource.addMethod(
+      "GET",
+      new apigateway.LambdaIntegration(getNotificationPrefsFn),
+      authMethodOptions
+    );
+    prefsResource.addMethod(
+      "PUT",
+      new apigateway.LambdaIntegration(updateNotificationPrefsFn),
+      authMethodOptions
+    );
+    const sendResource = notificationsResource.addResource("send");
+    sendResource.addMethod(
+      "POST",
+      new apigateway.LambdaIntegration(sendNotificationFn),
+      authMethodOptions
+    );
+
+    // POST /stores/{storeId}/counts & GET /stores/{storeId}/counts
+    const countsResource = singleStoreResource.addResource("counts");
+    countsResource.addMethod(
+      "POST",
+      new apigateway.LambdaIntegration(createCountFn),
+      authMethodOptions
+    );
+    countsResource.addMethod(
+      "GET",
+      new apigateway.LambdaIntegration(listCountsFn),
+      authMethodOptions
+    );
+
+    // PUT /stores/{storeId}/counts/{countId}
+    const singleCountResource = countsResource.addResource("{countId}");
+    singleCountResource.addMethod(
+      "PUT",
+      new apigateway.LambdaIntegration(saveCountFn),
+      authMethodOptions
+    );
+
+    // GET /stores/{storeId}/counts/{countId}/variance
+    const countVarianceResource = singleCountResource.addResource("variance");
+    countVarianceResource.addMethod(
+      "GET",
+      new apigateway.LambdaIntegration(getCountVarianceFn),
       authMethodOptions
     );
 

@@ -17,6 +17,9 @@ import { OrderReviewScreen } from "./src/screens/OrderReviewScreen";
 import { AssistantScreen } from "./src/screens/AssistantScreen";
 import { SecurityScreen } from "./src/screens/SecurityScreen";
 import { TransactionDetailScreen } from "./src/screens/TransactionDetailScreen";
+import { CountScreen } from "./src/screens/CountScreen";
+import { ReportsScreen } from "./src/screens/ReportsScreen";
+import { ExpirationScreen } from "./src/screens/ExpirationScreen";
 import { SettingsScreen } from "./src/screens/SettingsScreen";
 import type { RootStackParamList, TabParamList } from "./src/navigation/types";
 
@@ -32,6 +35,7 @@ const linking = {
         screens: {
           DashboardTab: "",
           ScannerTab: "scan",
+          CountTab: "count",
           WasteTab: "waste",
           OrdersTab: "orders",
           SecurityTab: "security",
@@ -76,6 +80,7 @@ function MainTabs() {
           let iconName: keyof typeof Ionicons.glyphMap = "home";
           if (route.name === "DashboardTab") iconName = "grid";
           else if (route.name === "ScannerTab") iconName = "scan";
+          else if (route.name === "CountTab") iconName = "clipboard-outline";
           else if (route.name === "WasteTab") iconName = "trash";
           else if (route.name === "OrdersTab") iconName = "clipboard";
           else if (route.name === "SecurityTab") iconName = "shield-checkmark";
@@ -105,6 +110,11 @@ function MainTabs() {
         name="ScannerTab"
         component={BarcodeScannerScreen}
         options={{ title: "Scanner", headerTitle: "Receive Shipment" }}
+      />
+      <Tab.Screen
+        name="CountTab"
+        component={CountScreen}
+        options={{ title: "Count", headerTitle: "Inventory Count" }}
       />
       <Tab.Screen
         name="WasteTab"
@@ -210,6 +220,16 @@ function AppNavigator() {
             name="TransactionDetail"
             component={TransactionDetailScreen}
             options={{ title: "Transaction Detail" }}
+          />
+          <Stack.Screen
+            name="Reports"
+            component={ReportsScreen}
+            options={{ title: "Reports" }}
+          />
+          <Stack.Screen
+            name="Expiration"
+            component={ExpirationScreen}
+            options={{ title: "Expiration Tracking" }}
           />
         </>
       )}

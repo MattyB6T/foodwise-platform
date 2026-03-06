@@ -122,6 +122,46 @@ export const api = {
     wasteId?: string;
   }) => request<any>("POST", `/stores/${storeId}/incidents`, body),
 
+  // Notifications
+  registerPushToken: (body: { token: string; platform: string; storeId?: string }) =>
+    request<any>("POST", "/notifications/register", body),
+  getNotificationPrefs: () =>
+    request<any>("GET", "/notifications/preferences"),
+  updateNotificationPrefs: (body: { preferences?: Record<string, boolean>; enabled?: boolean }) =>
+    request<any>("PUT", "/notifications/preferences", body),
+  sendNotification: (body: { storeId: string; title: string; body: string; type: string }) =>
+    request<any>("POST", "/notifications/send", body),
+
+  // Inventory Counts
+  createCount: (storeId: string, body?: { notes?: string }) =>
+    request<any>("POST", `/stores/${storeId}/counts`, body),
+  saveCount: (storeId: string, countId: string, body: { items: { itemId: string; actualQuantity: number }[]; status?: string }) =>
+    request<any>("PUT", `/stores/${storeId}/counts/${countId}`, body),
+  listCounts: (storeId: string) =>
+    request<any>("GET", `/stores/${storeId}/counts`),
+  getCountVariance: (storeId: string, countId: string) =>
+    request<any>("GET", `/stores/${storeId}/counts/${countId}/variance`),
+
+  // Expiration
+  setExpiration: (storeId: string, body: { itemId: string; expirationDate: string; shelfLifeDays?: number }) =>
+    request<any>("POST", `/stores/${storeId}/expiration`, body),
+  getExpirationAlerts: (storeId: string, days?: number) =>
+    request<any>("GET", `/stores/${storeId}/expiration/alerts${days ? `?days=${days}` : ""}`),
+
+  // Staff
+  listStaff: (storeId: string) =>
+    request<any>("GET", `/stores/${storeId}/staff`),
+  addStaff: (storeId: string, body: { email: string; name: string; role: string; phone?: string }) =>
+    request<any>("POST", `/stores/${storeId}/staff`, body),
+  updateStaff: (storeId: string, staffId: string, body: { name?: string; role?: string; active?: boolean; phone?: string }) =>
+    request<any>("PUT", `/stores/${storeId}/staff/${staffId}`, body),
+  removeStaff: (storeId: string, staffId: string) =>
+    request<any>("DELETE", `/stores/${storeId}/staff/${staffId}`),
+
+  // Reports
+  generateReport: (body: { storeId: string; reportType: string; startDate?: string; endDate?: string; format?: string }) =>
+    request<any>("POST", "/reports", body),
+
   // Transactions (for timeline view)
   getTransactions: (storeId: string, startDate?: string, endDate?: string) => {
     const qs = new URLSearchParams();
