@@ -13,6 +13,7 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import { useStore } from "../contexts/StoreContext";
 import { api } from "../utils/api";
 import { colors, fontSize, spacing } from "../utils/theme";
+import { StorePicker } from "../components/StorePicker";
 
 interface ScannedItem {
   barcode: string;
@@ -107,6 +108,16 @@ export function BarcodeScannerScreen() {
     }
   };
 
+  if (!selectedStoreId) {
+    return (
+      <View style={styles.centered}>
+        <Text style={{ fontSize: fontSize.md, color: colors.textSecondary, textAlign: "center" }}>
+          Select a store from the Dashboard first
+        </Text>
+      </View>
+    );
+  }
+
   if (!permission) {
     return (
       <View style={styles.centered}>
@@ -129,6 +140,7 @@ export function BarcodeScannerScreen() {
 
   return (
     <View style={styles.container}>
+      <StorePicker />
       {scanning ? (
         <View style={styles.scannerContainer}>
           <CameraView

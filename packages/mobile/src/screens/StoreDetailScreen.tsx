@@ -146,28 +146,28 @@ export function StoreDetailScreen() {
       <View style={styles.actionsRow}>
         <TouchableOpacity
           style={styles.actionBtn}
-          onPress={() => navigation.navigate("BarcodeScanner")}
+          onPress={() => navigation.navigate("BarcodeScanner" as any)}
         >
           <Text style={styles.actionIcon}>📦</Text>
           <Text style={styles.actionLabel}>Receive</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.actionBtn}
-          onPress={() => navigation.navigate("WasteLog")}
+          onPress={() => navigation.navigate("WasteLog" as any)}
         >
           <Text style={styles.actionIcon}>🗑️</Text>
           <Text style={styles.actionLabel}>Log Waste</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.actionBtn}
-          onPress={() => navigation.navigate("OrderReview")}
+          onPress={() => navigation.navigate("OrderReview" as any)}
         >
           <Text style={styles.actionIcon}>📋</Text>
           <Text style={styles.actionLabel}>Orders</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.actionBtn}
-          onPress={() => navigation.navigate("Assistant")}
+          onPress={() => navigation.navigate("Assistant" as any)}
         >
           <Text style={styles.actionIcon}>🤖</Text>
           <Text style={styles.actionLabel}>Assistant</Text>

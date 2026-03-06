@@ -51,7 +51,7 @@ export function DashboardScreen() {
 
   const handleStorePress = (storeId: string, storeName: string) => {
     setSelectedStore(storeId, storeName);
-    navigation.navigate("StoreDetail");
+    navigation.navigate("StoreDetail" as any);
   };
 
   if (loading) {

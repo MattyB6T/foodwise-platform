@@ -47,7 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated: true,
       user: {
         email: payload.email,
-        groups: payload["cognito:groups"] ? payload["cognito:groups"].split(",") : [],
+        groups: Array.isArray(payload["cognito:groups"]) ? payload["cognito:groups"] : payload["cognito:groups"] ? [payload["cognito:groups"]] : [],
       },
       error: null,
     });

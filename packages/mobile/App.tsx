@@ -1,8 +1,10 @@
 import React, { useEffect } from "react";
-import { Platform } from "react-native";
+import { Platform, Text, ActivityIndicator, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { Ionicons } from "@expo/vector-icons";
 import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
 import { StoreProvider } from "./src/contexts/StoreContext";
 import { LoginScreen } from "./src/screens/LoginScreen";
@@ -13,25 +15,99 @@ import { WasteLogScreen } from "./src/screens/WasteLogScreen";
 import { OrderReviewScreen } from "./src/screens/OrderReviewScreen";
 import { AssistantScreen } from "./src/screens/AssistantScreen";
 import { colors } from "./src/utils/theme";
-import type { RootStackParamList } from "./src/navigation/types";
-import { ActivityIndicator, View } from "react-native";
+import type { RootStackParamList, TabParamList } from "./src/navigation/types";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+const Tab = createBottomTabNavigator<TabParamList>();
 
 const linking = {
   prefixes: [],
   config: {
     screens: {
       Login: "login",
-      Dashboard: "",
+      MainTabs: {
+        screens: {
+          DashboardTab: "",
+          ScannerTab: "scan",
+          WasteTab: "waste",
+          OrdersTab: "orders",
+          AssistantTab: "assistant",
+        },
+      },
       StoreDetail: "store",
-      BarcodeScanner: "scan",
-      WasteLog: "waste",
-      OrderReview: "orders",
-      Assistant: "assistant",
+      BarcodeScanner: "scanner",
+      WasteLog: "waste-log",
+      OrderReview: "order-review",
+      Assistant: "ask",
     },
   },
 };
+
+const stackScreenOptions = {
+  headerStyle: { backgroundColor: colors.primary },
+  headerTintColor: "#fff",
+  headerTitleStyle: { fontWeight: "700" as const },
+};
+
+function MainTabs() {
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerStyle: { backgroundColor: colors.primary },
+        headerTintColor: "#fff",
+        headerTitleStyle: { fontWeight: "700" },
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textSecondary,
+        tabBarStyle: {
+          backgroundColor: colors.surface,
+          borderTopColor: colors.border,
+          paddingBottom: Platform.OS === "ios" ? 20 : 8,
+          paddingTop: 8,
+          height: Platform.OS === "ios" ? 85 : 65,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: "600",
+        },
+        tabBarIcon: ({ color, size }) => {
+          let iconName: keyof typeof Ionicons.glyphMap = "home";
+          if (route.name === "DashboardTab") iconName = "grid";
+          else if (route.name === "ScannerTab") iconName = "scan";
+          else if (route.name === "WasteTab") iconName = "trash";
+          else if (route.name === "OrdersTab") iconName = "clipboard";
+          else if (route.name === "AssistantTab") iconName = "chatbubble-ellipses";
+          return <Ionicons name={iconName} size={size} color={color} />;
+        },
+      })}
+    >
+      <Tab.Screen
+        name="DashboardTab"
+        component={DashboardScreen}
+        options={{ title: "Dashboard", headerTitle: "FoodWise" }}
+      />
+      <Tab.Screen
+        name="ScannerTab"
+        component={BarcodeScannerScreen}
+        options={{ title: "Scanner", headerTitle: "Receive Shipment" }}
+      />
+      <Tab.Screen
+        name="WasteTab"
+        component={WasteLogScreen}
+        options={{ title: "Waste", headerTitle: "Log Waste" }}
+      />
+      <Tab.Screen
+        name="OrdersTab"
+        component={OrderReviewScreen}
+        options={{ title: "Orders", headerTitle: "Purchase Orders" }}
+      />
+      <Tab.Screen
+        name="AssistantTab"
+        component={AssistantScreen}
+        options={{ title: "Assistant", headerTitle: "AI Assistant" }}
+      />
+    </Tab.Navigator>
+  );
+}
 
 function AppNavigator() {
   const { isLoading, isAuthenticated } = useAuth();
@@ -45,13 +121,7 @@ function AppNavigator() {
   }
 
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerStyle: { backgroundColor: colors.primary },
-        headerTintColor: "#fff",
-        headerTitleStyle: { fontWeight: "700" },
-      }}
-    >
+    <Stack.Navigator screenOptions={stackScreenOptions}>
       {!isAuthenticated ? (
         <Stack.Screen
           name="Login"
@@ -61,9 +131,9 @@ function AppNavigator() {
       ) : (
         <>
           <Stack.Screen
-            name="Dashboard"
-            component={DashboardScreen}
-            options={{ title: "FoodWise", headerBackVisible: false }}
+            name="MainTabs"
+            component={MainTabs}
+            options={{ headerShown: false }}
           />
           <Stack.Screen
             name="StoreDetail"

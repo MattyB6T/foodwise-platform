@@ -12,6 +12,7 @@ import {
 import { useStore } from "../contexts/StoreContext";
 import { api } from "../utils/api";
 import { colors, fontSize, spacing } from "../utils/theme";
+import { StorePicker } from "../components/StorePicker";
 
 const REASONS = [
   { key: "expired", label: "Expired", icon: "⏰" },
@@ -84,6 +85,16 @@ export function WasteLogScreen() {
     }
   };
 
+  if (!selectedStoreId) {
+    return (
+      <View style={styles.centered}>
+        <Text style={{ fontSize: fontSize.md, color: colors.textSecondary, textAlign: "center" }}>
+          Select a store from the Dashboard first
+        </Text>
+      </View>
+    );
+  }
+
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -94,6 +105,7 @@ export function WasteLogScreen() {
 
   return (
     <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
+      <StorePicker />
       <Text style={styles.title}>Log Waste</Text>
 
       {/* Ingredient Selection */}

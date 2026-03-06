@@ -12,6 +12,7 @@ import {
 import { useStore } from "../contexts/StoreContext";
 import { api } from "../utils/api";
 import { colors, fontSize, spacing } from "../utils/theme";
+import { StorePicker } from "../components/StorePicker";
 
 export function OrderReviewScreen() {
   const { selectedStoreId } = useStore();
@@ -73,6 +74,16 @@ export function OrderReviewScreen() {
       ]
     );
   };
+
+  if (!selectedStoreId) {
+    return (
+      <View style={styles.centered}>
+        <Text style={{ fontSize: fontSize.md, color: colors.textSecondary, textAlign: "center" }}>
+          Select a store from the Dashboard first
+        </Text>
+      </View>
+    );
+  }
 
   if (loading) {
     return (
@@ -171,6 +182,7 @@ export function OrderReviewScreen() {
   return (
     <FlatList
       style={styles.container}
+      ListHeaderComponent={<StorePicker />}
       data={[
         ...(draftOrders.length > 0
           ? [{ type: "header", title: `Draft Orders (${draftOrders.length})` }, ...draftOrders.map((o) => ({ type: "order", ...o }))]

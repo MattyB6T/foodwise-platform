@@ -13,6 +13,7 @@ import {
 import { useStore } from "../contexts/StoreContext";
 import { api } from "../utils/api";
 import { colors, fontSize, spacing } from "../utils/theme";
+import { StorePicker } from "../components/StorePicker";
 
 interface Message {
   id: string;
@@ -32,7 +33,7 @@ const SUGGESTIONS = [
 ];
 
 export function AssistantScreen() {
-  const { selectedStoreId, selectedStoreName } = useStore();
+  const { selectedStoreId } = useStore();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -104,17 +105,26 @@ export function AssistantScreen() {
     </View>
   );
 
+  if (!selectedStoreId) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyTitle}>FoodWise Assistant</Text>
+          <Text style={styles.emptySubtitle}>
+            Select a store from the Dashboard to start asking questions
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={90}
     >
-      <View style={styles.storeBar}>
-        <Text style={styles.storeLabel}>
-          Analyzing: {selectedStoreName || "Select a store"}
-        </Text>
-      </View>
+      <StorePicker />
 
       {messages.length === 0 ? (
         <View style={styles.emptyState}>
@@ -179,12 +189,6 @@ export function AssistantScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  storeBar: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-  },
-  storeLabel: { color: "rgba(255,255,255,0.8)", fontSize: fontSize.sm },
   emptyState: {
     flex: 1,
     justifyContent: "center",
