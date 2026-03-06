@@ -291,3 +291,45 @@ export interface HealthScoreBreakdown {
   recommendations: string[];
   generatedAt: string;
 }
+
+// --- Camera / Surveillance ---
+
+export type CameraLocation = "register" | "prep-area" | "drive-thru" | "storage" | "dining" | "entrance";
+
+export interface Camera {
+  cameraId: string;
+  storeId: string;
+  name: string;
+  location: CameraLocation;
+  wyzeDeviceId: string;
+  wyzeDeviceMac: string;
+  streamUrl?: string;
+  thumbnailUrl?: string;
+  isOnline: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// --- Incident Reports ---
+
+export type IncidentStatus = "open" | "investigating" | "resolved" | "dismissed";
+export type IncidentType = "theft" | "waste-verification" | "safety" | "discrepancy" | "other";
+
+export interface Incident {
+  incidentId: string;
+  storeId: string;
+  cameraId?: string;
+  transactionId?: string;
+  wasteId?: string;
+  type: IncidentType;
+  status: IncidentStatus;
+  title: string;
+  notes: string;
+  timestamp: string;
+  footageStartTime: string;
+  footageEndTime: string;
+  footageUrl?: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}

@@ -21,6 +21,8 @@ export class FoodwiseStack extends cdk.Stack {
   public readonly purchaseOrdersTable: dynamodb.Table;
   public readonly receivingLogsTable: dynamodb.Table;
   public readonly wasteLogsTable: dynamodb.Table;
+  public readonly camerasTable: dynamodb.Table;
+  public readonly incidentsTable: dynamodb.Table;
   public readonly userPool: cognito.UserPool;
   public readonly reportsBucket: s3.Bucket;
   public readonly api: apigateway.RestApi;
@@ -122,6 +124,33 @@ export class FoodwiseStack extends cdk.Stack {
       projectionType: dynamodb.ProjectionType.ALL,
     });
 
+    this.camerasTable = new dynamodb.Table(this, "CamerasTable", {
+      tableName: "cameras",
+      partitionKey: { name: "cameraId", type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    this.camerasTable.addGlobalSecondaryIndex({
+      indexName: "storeId-index",
+      partitionKey: { name: "storeId", type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
+    this.incidentsTable = new dynamodb.Table(this, "IncidentsTable", {
+      tableName: "incidents",
+      partitionKey: { name: "incidentId", type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    this.incidentsTable.addGlobalSecondaryIndex({
+      indexName: "storeId-timestamp-index",
+      partitionKey: { name: "storeId", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "timestamp", type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
     // --- Cognito User Pool ---
 
     this.userPool = new cognito.UserPool(this, "FoodwiseUserPool", {
@@ -191,6 +220,8 @@ export class FoodwiseStack extends cdk.Stack {
       PURCHASE_ORDERS_TABLE: this.purchaseOrdersTable.tableName,
       RECEIVING_LOGS_TABLE: this.receivingLogsTable.tableName,
       WASTE_LOGS_TABLE: this.wasteLogsTable.tableName,
+      CAMERAS_TABLE: this.camerasTable.tableName,
+      INCIDENTS_TABLE: this.incidentsTable.tableName,
     };
 
     const handlersPath = path.join(__dirname, "../../api/src/handlers");
@@ -366,6 +397,36 @@ export class FoodwiseStack extends cdk.Stack {
       },
     });
 
+    const registerCameraFn = new NodejsFunction(this, "RegisterCameraFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "registerCamera.ts"),
+      timeout: cdk.Duration.seconds(10),
+    });
+
+    const listCamerasFn = new NodejsFunction(this, "ListCamerasFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "listCameras.ts"),
+      timeout: cdk.Duration.seconds(10),
+    });
+
+    const getCameraFootageFn = new NodejsFunction(this, "GetCameraFootageFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "getCameraFootage.ts"),
+      timeout: cdk.Duration.seconds(15),
+    });
+
+    const createIncidentFn = new NodejsFunction(this, "CreateIncidentFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "createIncident.ts"),
+      timeout: cdk.Duration.seconds(10),
+    });
+
+    const listIncidentsFn = new NodejsFunction(this, "ListIncidentsFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "listIncidents.ts"),
+      timeout: cdk.Duration.seconds(10),
+    });
+
     // Bedrock permissions for assistant
     assistantFn.addToRolePolicy(
       new iam.PolicyStatement({
@@ -475,6 +536,14 @@ export class FoodwiseStack extends cdk.Stack {
 
     // Store comparison also needs waste logs for per-ingredient comparison
     this.wasteLogsTable.grantReadData(getStoreComparisonFn);
+
+    // Camera & Incident permissions
+    this.camerasTable.grantReadWriteData(registerCameraFn);
+    this.camerasTable.grantReadData(listCamerasFn);
+    this.camerasTable.grantReadData(getCameraFootageFn);
+    this.camerasTable.grantReadData(createIncidentFn);
+    this.incidentsTable.grantReadWriteData(createIncidentFn);
+    this.incidentsTable.grantReadData(listIncidentsFn);
 
     // Assistant needs read on all tables
     this.storesTable.grantReadData(assistantFn);
@@ -691,6 +760,41 @@ export class FoodwiseStack extends cdk.Stack {
     healthScoreResource.addMethod(
       "GET",
       new apigateway.LambdaIntegration(getHealthScoreFn),
+      authMethodOptions
+    );
+
+    // POST /stores/{storeId}/cameras & GET /stores/{storeId}/cameras
+    const camerasResource = singleStoreResource.addResource("cameras");
+    camerasResource.addMethod(
+      "POST",
+      new apigateway.LambdaIntegration(registerCameraFn),
+      authMethodOptions
+    );
+    camerasResource.addMethod(
+      "GET",
+      new apigateway.LambdaIntegration(listCamerasFn),
+      authMethodOptions
+    );
+
+    // GET /stores/{storeId}/cameras/{cameraId}/footage
+    const singleCameraResource = camerasResource.addResource("{cameraId}");
+    const footageResource = singleCameraResource.addResource("footage");
+    footageResource.addMethod(
+      "GET",
+      new apigateway.LambdaIntegration(getCameraFootageFn),
+      authMethodOptions
+    );
+
+    // POST /stores/{storeId}/incidents & GET /stores/{storeId}/incidents
+    const incidentsResource = singleStoreResource.addResource("incidents");
+    incidentsResource.addMethod(
+      "POST",
+      new apigateway.LambdaIntegration(createIncidentFn),
+      authMethodOptions
+    );
+    incidentsResource.addMethod(
+      "GET",
+      new apigateway.LambdaIntegration(listIncidentsFn),
       authMethodOptions
     );
 

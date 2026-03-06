@@ -24,18 +24,24 @@ export function StoreDetailScreen() {
   const navigation = useNavigation<NavProp>();
   const [healthScore, setHealthScore] = useState<any>(null);
   const [inventory, setInventory] = useState<any>(null);
+  const [cameras, setCameras] = useState<any[]>([]);
+  const [incidents, setIncidents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchData = useCallback(async () => {
     if (!selectedStoreId) return;
     try {
-      const [hs, inv] = await Promise.all([
+      const [hs, inv, camRes, incRes] = await Promise.all([
         api.getHealthScore(selectedStoreId),
         api.getInventory(selectedStoreId),
+        api.listCameras(selectedStoreId).catch(() => ({ cameras: [] })),
+        api.listIncidents(selectedStoreId, { status: "open" }).catch(() => ({ incidents: [] })),
       ]);
       setHealthScore(hs);
       setInventory(inv);
+      setCameras(camRes.cameras || []);
+      setIncidents(incRes.incidents || []);
     } catch (err) {
       console.error("Store detail error:", err);
     } finally {
@@ -172,7 +178,58 @@ export function StoreDetailScreen() {
           <Text style={styles.actionIcon}>🤖</Text>
           <Text style={styles.actionLabel}>Assistant</Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.actionBtn}
+          onPress={() => navigation.navigate("Security" as any)}
+        >
+          <Text style={styles.actionIcon}>🛡</Text>
+          <Text style={styles.actionLabel}>Security</Text>
+        </TouchableOpacity>
       </View>
+
+      {/* Camera Quick Links */}
+      {cameras.length > 0 && (
+        <>
+          <Text style={styles.sectionTitle}>Cameras ({cameras.length})</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingHorizontal: spacing.lg }}>
+            {cameras.map((cam: any) => (
+              <TouchableOpacity
+                key={cam.cameraId}
+                style={styles.cameraChip}
+                onPress={() => navigation.navigate("Security" as any)}
+              >
+                <View style={[styles.camDot, cam.isOnline ? styles.camOnline : styles.camOffline]} />
+                <Text style={styles.cameraChipText}>{cam.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </>
+      )}
+
+      {/* Recent Incidents */}
+      {incidents.length > 0 && (
+        <>
+          <Text style={styles.sectionTitle}>Open Incidents ({incidents.length})</Text>
+          {incidents.slice(0, 3).map((inc: any) => (
+            <TouchableOpacity
+              key={inc.incidentId}
+              style={styles.incidentCard}
+              onPress={() => navigation.navigate("Security" as any)}
+            >
+              <View style={styles.incidentRow}>
+                <View style={[styles.incidentDot, { backgroundColor: inc.status === "open" ? colors.danger : colors.warning }]} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.incidentTitle}>{inc.title}</Text>
+                  <Text style={styles.incidentMeta}>
+                    {inc.type} &middot; {new Date(inc.timestamp).toLocaleDateString()}
+                  </Text>
+                </View>
+                <Text style={styles.incidentArrow}>→</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </>
+      )}
 
       <View style={{ height: spacing.xl }} />
     </ScrollView>
@@ -257,4 +314,33 @@ const styles = StyleSheet.create({
   },
   actionIcon: { fontSize: 28, marginBottom: spacing.xs },
   actionLabel: { fontSize: fontSize.xs, fontWeight: "600", color: colors.text },
+  cameraChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderRadius: 20,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginRight: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  camDot: { width: 8, height: 8, borderRadius: 4, marginRight: spacing.xs },
+  camOnline: { backgroundColor: colors.green },
+  camOffline: { backgroundColor: colors.red },
+  cameraChipText: { fontSize: fontSize.sm, color: colors.text, fontWeight: "600" },
+  incidentCard: {
+    backgroundColor: colors.surface,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.sm,
+    borderRadius: 10,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  incidentRow: { flexDirection: "row", alignItems: "center" },
+  incidentDot: { width: 10, height: 10, borderRadius: 5, marginRight: spacing.sm },
+  incidentTitle: { fontSize: fontSize.sm, fontWeight: "600", color: colors.text },
+  incidentMeta: { fontSize: fontSize.xs, color: colors.textSecondary, marginTop: 2 },
+  incidentArrow: { fontSize: fontSize.lg, color: colors.textSecondary },
 });

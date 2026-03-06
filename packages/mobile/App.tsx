@@ -14,6 +14,8 @@ import { BarcodeScannerScreen } from "./src/screens/BarcodeScannerScreen";
 import { WasteLogScreen } from "./src/screens/WasteLogScreen";
 import { OrderReviewScreen } from "./src/screens/OrderReviewScreen";
 import { AssistantScreen } from "./src/screens/AssistantScreen";
+import { SecurityScreen } from "./src/screens/SecurityScreen";
+import { TransactionDetailScreen } from "./src/screens/TransactionDetailScreen";
 import { colors } from "./src/utils/theme";
 import type { RootStackParamList, TabParamList } from "./src/navigation/types";
 
@@ -31,6 +33,7 @@ const linking = {
           ScannerTab: "scan",
           WasteTab: "waste",
           OrdersTab: "orders",
+          SecurityTab: "security",
           AssistantTab: "assistant",
         },
       },
@@ -39,6 +42,8 @@ const linking = {
       WasteLog: "waste-log",
       OrderReview: "order-review",
       Assistant: "ask",
+      Security: "security-detail",
+      TransactionDetail: "transaction",
     },
   },
 };
@@ -75,6 +80,7 @@ function MainTabs() {
           else if (route.name === "ScannerTab") iconName = "scan";
           else if (route.name === "WasteTab") iconName = "trash";
           else if (route.name === "OrdersTab") iconName = "clipboard";
+          else if (route.name === "SecurityTab") iconName = "shield-checkmark";
           else if (route.name === "AssistantTab") iconName = "chatbubble-ellipses";
           return <Ionicons name={iconName} size={size} color={color} />;
         },
@@ -99,6 +105,11 @@ function MainTabs() {
         name="OrdersTab"
         component={OrderReviewScreen}
         options={{ title: "Orders", headerTitle: "Purchase Orders" }}
+      />
+      <Tab.Screen
+        name="SecurityTab"
+        component={SecurityScreen}
+        options={{ title: "Security", headerTitle: "Security" }}
       />
       <Tab.Screen
         name="AssistantTab"
@@ -159,6 +170,16 @@ function AppNavigator() {
             name="Assistant"
             component={AssistantScreen}
             options={{ title: "AI Assistant" }}
+          />
+          <Stack.Screen
+            name="Security"
+            component={SecurityScreen}
+            options={{ title: "Security" }}
+          />
+          <Stack.Screen
+            name="TransactionDetail"
+            component={TransactionDetailScreen}
+            options={{ title: "Transaction Detail" }}
           />
         </>
       )}

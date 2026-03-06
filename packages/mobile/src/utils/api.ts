@@ -94,4 +94,40 @@ export const api = {
 
   // Forecasts
   runForecast: () => request<any>("POST", "/forecasts"),
+
+  // Cameras
+  listCameras: (storeId: string) =>
+    request<any>("GET", `/stores/${storeId}/cameras`),
+  registerCamera: (storeId: string, body: { name: string; location: string; wyzeDeviceId: string; wyzeDeviceMac: string }) =>
+    request<any>("POST", `/stores/${storeId}/cameras`, body),
+  getCameraFootage: (storeId: string, cameraId: string, startTime: string, endTime: string) =>
+    request<any>("GET", `/stores/${storeId}/cameras/${cameraId}/footage?startTime=${startTime}&endTime=${endTime}`),
+
+  // Incidents
+  listIncidents: (storeId: string, params?: { status?: string; startDate?: string; endDate?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.status) qs.set("status", params.status);
+    if (params?.startDate) qs.set("startDate", params.startDate);
+    if (params?.endDate) qs.set("endDate", params.endDate);
+    const query = qs.toString();
+    return request<any>("GET", `/stores/${storeId}/incidents${query ? `?${query}` : ""}`);
+  },
+  createIncident: (storeId: string, body: {
+    type: string;
+    title: string;
+    notes: string;
+    timestamp: string;
+    cameraId?: string;
+    transactionId?: string;
+    wasteId?: string;
+  }) => request<any>("POST", `/stores/${storeId}/incidents`, body),
+
+  // Transactions (for timeline view)
+  getTransactions: (storeId: string, startDate?: string, endDate?: string) => {
+    const qs = new URLSearchParams();
+    if (startDate) qs.set("startDate", startDate);
+    if (endDate) qs.set("endDate", endDate);
+    const query = qs.toString();
+    return request<any>("GET", `/stores/${storeId}/transactions${query ? `?${query}` : ""}`);
+  },
 };

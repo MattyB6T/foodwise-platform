@@ -5,6 +5,7 @@ export type TabParamList = {
   ScannerTab: undefined;
   WasteTab: undefined;
   OrdersTab: undefined;
+  SecurityTab: undefined;
   AssistantTab: undefined;
 };
 
@@ -16,5 +17,11 @@ export type RootStackParamList = {
   WasteLog: undefined;
   OrderReview: undefined;
   Assistant: undefined;
+  Security: undefined;
+  TransactionDetail: {
+    transaction: any;
+    storeId: string;
+    cameras: any[];
+  };
   Dashboard: undefined;
 };

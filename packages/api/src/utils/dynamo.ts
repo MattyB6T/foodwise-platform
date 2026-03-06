@@ -16,4 +16,6 @@ export const TABLES = {
   PURCHASE_ORDERS: process.env.PURCHASE_ORDERS_TABLE!,
   RECEIVING_LOGS: process.env.RECEIVING_LOGS_TABLE!,
   WASTE_LOGS: process.env.WASTE_LOGS_TABLE!,
+  CAMERAS: process.env.CAMERAS_TABLE!,
+  INCIDENTS: process.env.INCIDENTS_TABLE!,
 };
