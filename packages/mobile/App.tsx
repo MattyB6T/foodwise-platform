@@ -29,7 +29,7 @@ import type { RootStackParamList, TabParamList } from "./src/navigation/types";
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
 
-const linking = {
+const linking: any = {
   prefixes: [],
   config: {
     screens: {
@@ -53,6 +53,12 @@ const linking = {
       Assistant: "ask",
       Security: "security-detail",
       TransactionDetail: "transaction",
+      Dashboard: "dashboard",
+      Reports: "reports",
+      Expiration: "expiration",
+      Schedule: "schedule",
+      TempLog: "temp-log",
+      Forecast: "forecast",
     },
   },
 };

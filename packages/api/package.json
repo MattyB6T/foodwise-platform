@@ -8,11 +8,13 @@
     "lint": "echo \"No linter configured yet\""
   },
   "dependencies": {
-    "@foodwise/shared": "*",
-    "@aws-sdk/client-dynamodb": "^3.500.0",
     "@aws-sdk/client-bedrock-runtime": "^3.500.0",
+    "@aws-sdk/client-dynamodb": "^3.500.0",
+    "@aws-sdk/client-s3": "^3.1003.0",
     "@aws-sdk/client-ses": "^3.500.0",
     "@aws-sdk/lib-dynamodb": "^3.500.0",
+    "@aws-sdk/s3-request-presigner": "^3.1003.0",
+    "@foodwise/shared": "*",
     "uuid": "^9.0.0"
   },
   "devDependencies": {

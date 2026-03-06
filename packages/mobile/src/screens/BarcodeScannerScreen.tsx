@@ -37,6 +37,7 @@ export function BarcodeScannerScreen() {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [lastScanned, setLastScanned] = useState<string | null>(null);
+  const [manualBarcode, setManualBarcode] = useState("");
   const s = makeStyles(colors);
 
   useEffect(() => {
@@ -61,6 +62,13 @@ export function BarcodeScannerScreen() {
 
   const isGranted = Platform.OS === "web" ? webPermission === true : permission?.granted;
   const isLoading = Platform.OS === "web" ? webPermission === null : !permission;
+
+  const handleManualLookup = () => {
+    if (manualBarcode.trim()) {
+      handleBarCodeScanned({ data: manualBarcode.trim() });
+      setManualBarcode("");
+    }
+  };
 
   const handleBarCodeScanned = async ({ data }: { data: string }) => {
     if (data === lastScanned || loading) return;
@@ -162,26 +170,65 @@ export function BarcodeScannerScreen() {
       <StorePicker />
       {scanning ? (
         <View style={s.scannerContainer}>
-          <CameraView
-            onBarcodeScanned={scanning ? handleBarCodeScanned : undefined}
-            style={StyleSheet.absoluteFillObject}
-            barcodeScannerSettings={{
-              barcodeTypes: ["ean13", "ean8", "upc_a", "upc_e", "code128"],
-            }}
-          />
-          <View style={s.overlay}>
-            <View style={s.scanFrame} />
-            <Text style={s.scanText}>
-              {loading ? "Looking up barcode..." : "Point at a barcode to scan"}
-            </Text>
-          </View>
-          {scannedItems.length > 0 && (
-            <TouchableOpacity
-              style={[s.viewListBtn, { backgroundColor: colors.primary }]}
-              onPress={() => setScanning(false)}
-            >
-              <Text style={s.viewListText}>View Scanned ({scannedItems.length})</Text>
-            </TouchableOpacity>
+          {Platform.OS === "web" ? (
+            <View style={[s.centered, { flex: 1 }]}>
+              <Text style={[s.listTitle, { color: colors.text, marginBottom: spacing.sm }]}>Enter Barcode</Text>
+              <Text style={[s.permText, { color: colors.textSecondary, marginBottom: spacing.lg }]}>
+                Camera scanning is not supported in web browsers.{"\n"}Enter the barcode number manually.
+              </Text>
+              <TextInput
+                style={[s.qtyInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text, width: 250, marginBottom: spacing.md }]}
+                placeholder="Barcode number..."
+                placeholderTextColor={colors.textSecondary}
+                value={manualBarcode}
+                onChangeText={setManualBarcode}
+                onSubmitEditing={handleManualLookup}
+                autoFocus
+              />
+              <TouchableOpacity
+                style={[s.submitBtn, { backgroundColor: colors.primary, margin: 0 }]}
+                onPress={handleManualLookup}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={s.submitText}>Look Up</Text>
+                )}
+              </TouchableOpacity>
+              {scannedItems.length > 0 && (
+                <TouchableOpacity
+                  style={[s.scanMoreBtn, { backgroundColor: colors.primaryLight, marginTop: spacing.lg }]}
+                  onPress={() => setScanning(false)}
+                >
+                  <Text style={s.scanMoreText}>View Scanned ({scannedItems.length})</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          ) : (
+            <>
+              <CameraView
+                onBarcodeScanned={scanning ? handleBarCodeScanned : undefined}
+                style={StyleSheet.absoluteFillObject}
+                barcodeScannerSettings={{
+                  barcodeTypes: ["ean13", "ean8", "upc_a", "upc_e", "code128"],
+                }}
+              />
+              <View style={s.overlay}>
+                <View style={s.scanFrame} />
+                <Text style={s.scanText}>
+                  {loading ? "Looking up barcode..." : "Point at a barcode to scan"}
+                </Text>
+              </View>
+              {scannedItems.length > 0 && (
+                <TouchableOpacity
+                  style={[s.viewListBtn, { backgroundColor: colors.primary }]}
+                  onPress={() => setScanning(false)}
+                >
+                  <Text style={s.viewListText}>View Scanned ({scannedItems.length})</Text>
+                </TouchableOpacity>
+              )}
+            </>
           )}
         </View>
       ) : (
