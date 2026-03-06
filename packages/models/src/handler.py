@@ -51,29 +51,34 @@ def _json_response(status_code: int, body: Any) -> dict[str, Any]:
     }
 
 
-def _fetch_sales_data(store_id: str, days: int = 60) -> list[dict[str, Any]]:
+def _fetch_sales_data(store_id: str, days: int = 90) -> list[dict[str, Any]]:
     """Fetch transaction data for a store from the last N days."""
     table = dynamodb.Table(TRANSACTIONS_TABLE)
     since = (datetime.utcnow() - timedelta(days=days)).isoformat()
 
-    response = table.query(
-        IndexName="timestamp-index",
-        KeyConditionExpression=Key("storeId").eq(store_id)
+    query_kwargs = {
+        "IndexName": "timestamp-index",
+        "KeyConditionExpression": Key("storeId").eq(store_id)
         & Key("timestamp").gte(since),
-    )
+    }
 
     sales: list[dict[str, Any]] = []
-    for tx in response.get("Items", []):
-        tx_date = tx["timestamp"][:10]  # YYYY-MM-DD
-        for line_item in tx.get("lineItems", []):
-            sales.append(
-                {
-                    "date": tx_date,
-                    "store_id": store_id,
-                    "recipe_id": line_item["recipeId"],
-                    "quantity_sold": float(line_item["quantity"]),
-                }
-            )
+    while True:
+        response = table.query(**query_kwargs)
+        for tx in response.get("Items", []):
+            tx_date = tx["timestamp"][:10]  # YYYY-MM-DD
+            for line_item in tx.get("lineItems", []):
+                sales.append(
+                    {
+                        "date": tx_date,
+                        "store_id": store_id,
+                        "recipe_id": line_item["recipeId"],
+                        "quantity_sold": float(line_item["quantity"]),
+                    }
+                )
+        if "LastEvaluatedKey" not in response:
+            break
+        query_kwargs["ExclusiveStartKey"] = response["LastEvaluatedKey"]
 
     return sales
 

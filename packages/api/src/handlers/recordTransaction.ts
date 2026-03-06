@@ -23,6 +23,7 @@ interface RecordTransactionBody {
     quantity: number;
     price: number;
   }[];
+  timestamp?: string;
 }
 
 export const handler = async (
@@ -158,7 +159,7 @@ export const handler = async (
     const transaction: Transaction = {
       storeId,
       transactionId: uuidv4(),
-      timestamp: now,
+      timestamp: body.timestamp || now,
       lineItems: transactionLineItems,
       totalAmount,
       foodCost,

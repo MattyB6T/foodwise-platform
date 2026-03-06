@@ -240,11 +240,11 @@ switch ($Command) {
             }
 
             if ($d % 15 -eq 0) {
-                Write-Host "  Day $([Math]::Abs($d - 89) + 1)/90 done — $total transactions loaded" -ForegroundColor Cyan
+                Write-Host "  Day $([Math]::Abs($d - 89) + 1)/90 done - $total transactions loaded" -ForegroundColor Cyan
             }
         }
 
-        Write-Host "`nDone! Loaded $total transactions ($errCount errors)." -ForegroundColor Green
+        Write-Host "`nDone! Loaded $total transactions, $errCount errors." -ForegroundColor Green
         Write-Host "Run .\fw.ps1 run-forecast next." -ForegroundColor Cyan
     }
 
@@ -265,7 +265,7 @@ switch ($Command) {
         Write-Host "Usage: powershell -ExecutionPolicy Bypass -File .\fw.ps1 [command]"
         Write-Host ""
         Write-Host "Commands:"
-        Write-Host "  check              Check current state (stores, inventory, recipes, dashboard)"
+        Write-Host "  check              Check current state - stores, inventory, recipes, dashboard"
         Write-Host "  setup-store        Create ingredients + recipes for the Subway store"
         Write-Host "  load-transactions  Load 90 days of realistic test transactions"
         Write-Host "  run-forecast       Trigger the AI demand forecast"

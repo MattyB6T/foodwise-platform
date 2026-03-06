@@ -1,6 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { GetCommand, BatchGetCommand } from "@aws-sdk/lib-dynamodb";
-import { Recipe, InventoryItem } from "@foodwise/shared";
+import { Recipe, RecipeIngredient, InventoryItem } from "@foodwise/shared";
 import { docClient, TABLES } from "../utils/dynamo";
 import { success, error } from "../utils/response";
 import { getUserClaims } from "../utils/auth";
@@ -45,7 +45,7 @@ export const handler = async (
 
     if (storeId && recipe.ingredients.length > 0) {
       // Fetch inventory items for this store to get current prices
-      const keys = recipe.ingredients.map((ing) => ({
+      const keys = recipe.ingredients.map((ing: RecipeIngredient) => ({
         storeId,
         itemId: ing.itemId,
       }));
@@ -65,7 +65,7 @@ export const handler = async (
       }
 
       calculatedCost = 0;
-      ingredientDetails = recipe.ingredients.map((ing) => {
+      ingredientDetails = recipe.ingredients.map((ing: RecipeIngredient) => {
         const inv = inventoryMap.get(ing.itemId);
         const costPerUnit = inv?.costPerUnit || 0;
         const lineCost = costPerUnit * ing.quantity;
