@@ -391,144 +391,40 @@ export class FoodwiseStack extends cdk.Stack {
       },
     };
 
-    const createStoreFn = new NodejsFunction(this, "CreateStoreFn", {
+    // Store operations router — consolidates createStore, listStores, getInventory, updateInventory, recordTransaction, listTransactions, getDashboard
+    const storeOpsRouterFn = new NodejsFunction(this, "StoreOpsRouterFn", {
       ...nodejsFnProps,
-      entry: path.join(handlersPath, "createStore.ts"),
-      timeout: cdk.Duration.seconds(10),
-    });
-
-    const listStoresFn = new NodejsFunction(this, "ListStoresFn", {
-      ...nodejsFnProps,
-      entry: path.join(handlersPath, "listStores.ts"),
-      timeout: cdk.Duration.seconds(10),
-    });
-
-    const getInventoryFn = new NodejsFunction(this, "GetInventoryFn", {
-      ...nodejsFnProps,
-      entry: path.join(handlersPath, "getInventory.ts"),
-      timeout: cdk.Duration.seconds(10),
-    });
-
-    const updateInventoryFn = new NodejsFunction(this, "UpdateInventoryFn", {
-      ...nodejsFnProps,
-      entry: path.join(handlersPath, "updateInventory.ts"),
+      entry: path.join(handlersPath, "storeOpsRouter.ts"),
       timeout: cdk.Duration.seconds(15),
     });
 
-    const recordTransactionFn = new NodejsFunction(this, "RecordTransactionFn", {
+    // Recipe router — consolidates createRecipe, listRecipes, getRecipe, upsertIngredient, recipeScaling
+    const recipeRouterFn = new NodejsFunction(this, "RecipeRouterFn", {
       ...nodejsFnProps,
-      entry: path.join(handlersPath, "recordTransaction.ts"),
+      entry: path.join(handlersPath, "recipeRouter.ts"),
       timeout: cdk.Duration.seconds(15),
     });
 
-    const getDashboardFn = new NodejsFunction(this, "GetDashboardFn", {
+    // Supply chain router — consolidates createSupplier, listSuppliers, createPurchaseOrder, listPurchaseOrders, receiveShipment, listReceivingLogs, lookupBarcode
+    const supplyChainRouterFn = new NodejsFunction(this, "SupplyChainRouterFn", {
       ...nodejsFnProps,
-      entry: path.join(handlersPath, "getDashboard.ts"),
-      timeout: cdk.Duration.seconds(15),
-    });
-
-    const createRecipeFn = new NodejsFunction(this, "CreateRecipeFn", {
-      ...nodejsFnProps,
-      entry: path.join(handlersPath, "createRecipe.ts"),
-      timeout: cdk.Duration.seconds(10),
-    });
-
-    const listRecipesFn = new NodejsFunction(this, "ListRecipesFn", {
-      ...nodejsFnProps,
-      entry: path.join(handlersPath, "listRecipes.ts"),
-      timeout: cdk.Duration.seconds(10),
-    });
-
-    const getRecipeFn = new NodejsFunction(this, "GetRecipeFn", {
-      ...nodejsFnProps,
-      entry: path.join(handlersPath, "getRecipe.ts"),
-      timeout: cdk.Duration.seconds(10),
-    });
-
-    const upsertIngredientFn = new NodejsFunction(this, "UpsertIngredientFn", {
-      ...nodejsFnProps,
-      entry: path.join(handlersPath, "upsertIngredient.ts"),
-      timeout: cdk.Duration.seconds(10),
-    });
-
-    const createSupplierFn = new NodejsFunction(this, "CreateSupplierFn", {
-      ...nodejsFnProps,
-      entry: path.join(handlersPath, "createSupplier.ts"),
-      timeout: cdk.Duration.seconds(10),
-    });
-
-    const listSuppliersFn = new NodejsFunction(this, "ListSuppliersFn", {
-      ...nodejsFnProps,
-      entry: path.join(handlersPath, "listSuppliers.ts"),
-      timeout: cdk.Duration.seconds(10),
-    });
-
-    const createPurchaseOrderFn = new NodejsFunction(this, "CreatePurchaseOrderFn", {
-      ...nodejsFnProps,
-      entry: path.join(handlersPath, "createPurchaseOrder.ts"),
-      timeout: cdk.Duration.seconds(10),
-    });
-
-    const listPurchaseOrdersFn = new NodejsFunction(this, "ListPurchaseOrdersFn", {
-      ...nodejsFnProps,
-      entry: path.join(handlersPath, "listPurchaseOrders.ts"),
-      timeout: cdk.Duration.seconds(10),
-    });
-
-    const receiveShipmentFn = new NodejsFunction(this, "ReceiveShipmentFn", {
-      ...nodejsFnProps,
-      entry: path.join(handlersPath, "receiveShipment.ts"),
+      entry: path.join(handlersPath, "supplyChainRouter.ts"),
       timeout: cdk.Duration.seconds(30),
     });
 
-    const listReceivingLogsFn = new NodejsFunction(this, "ListReceivingLogsFn", {
+    // Waste router — consolidates recordWaste, listWaste, getWasteAnalytics
+    const wasteRouterFn = new NodejsFunction(this, "WasteRouterFn", {
       ...nodejsFnProps,
-      entry: path.join(handlersPath, "listReceivingLogs.ts"),
-      timeout: cdk.Duration.seconds(10),
-    });
-
-    const lookupBarcodeFn = new NodejsFunction(this, "LookupBarcodeFn", {
-      ...nodejsFnProps,
-      entry: path.join(handlersPath, "lookupBarcode.ts"),
-      timeout: cdk.Duration.seconds(10),
-    });
-
-    const recordWasteFn = new NodejsFunction(this, "RecordWasteFn", {
-      ...nodejsFnProps,
-      entry: path.join(handlersPath, "recordWaste.ts"),
-      timeout: cdk.Duration.seconds(10),
-    });
-
-    const listWasteFn = new NodejsFunction(this, "ListWasteFn", {
-      ...nodejsFnProps,
-      entry: path.join(handlersPath, "listWaste.ts"),
-      timeout: cdk.Duration.seconds(10),
-    });
-
-    const getWasteAnalyticsFn = new NodejsFunction(this, "GetWasteAnalyticsFn", {
-      ...nodejsFnProps,
-      entry: path.join(handlersPath, "getWasteAnalytics.ts"),
+      entry: path.join(handlersPath, "wasteRouter.ts"),
       timeout: cdk.Duration.seconds(30),
     });
 
-    const getOwnerDashboardFn = new NodejsFunction(this, "GetOwnerDashboardFn", {
+    // Analytics router — consolidates getOwnerDashboard, getStoreComparison, getHealthScore, generateReport, menuEngineering
+    const analyticsRouterFn = new NodejsFunction(this, "AnalyticsRouterFn", {
       ...nodejsFnProps,
-      entry: path.join(handlersPath, "getOwnerDashboard.ts"),
+      entry: path.join(handlersPath, "analyticsRouter.ts"),
       timeout: cdk.Duration.seconds(60),
       memorySize: 512,
-    });
-
-    const getStoreComparisonFn = new NodejsFunction(this, "GetStoreComparisonFn", {
-      ...nodejsFnProps,
-      entry: path.join(handlersPath, "getStoreComparison.ts"),
-      timeout: cdk.Duration.seconds(60),
-      memorySize: 512,
-    });
-
-    const getHealthScoreFn = new NodejsFunction(this, "GetHealthScoreFn", {
-      ...nodejsFnProps,
-      entry: path.join(handlersPath, "getHealthScore.ts"),
-      timeout: cdk.Duration.seconds(30),
     });
 
     const generateWeeklyReportFn = new NodejsFunction(this, "GenerateWeeklyReportFn", {
@@ -554,107 +450,31 @@ export class FoodwiseStack extends cdk.Stack {
       },
     });
 
-    const registerCameraFn = new NodejsFunction(this, "RegisterCameraFn", {
+    // Camera/Incident router — consolidates registerCamera, listCameras, getCameraFootage, createIncident, listIncidents
+    const cameraIncidentRouterFn = new NodejsFunction(this, "CameraIncidentRouterFn", {
       ...nodejsFnProps,
-      entry: path.join(handlersPath, "registerCamera.ts"),
-      timeout: cdk.Duration.seconds(10),
-    });
-
-    const listCamerasFn = new NodejsFunction(this, "ListCamerasFn", {
-      ...nodejsFnProps,
-      entry: path.join(handlersPath, "listCameras.ts"),
-      timeout: cdk.Duration.seconds(10),
-    });
-
-    const getCameraFootageFn = new NodejsFunction(this, "GetCameraFootageFn", {
-      ...nodejsFnProps,
-      entry: path.join(handlersPath, "getCameraFootage.ts"),
+      entry: path.join(handlersPath, "cameraIncidentRouter.ts"),
       timeout: cdk.Duration.seconds(15),
     });
 
-    const createIncidentFn = new NodejsFunction(this, "CreateIncidentFn", {
+    // Count router — consolidates createCount, saveCount, listCounts, getCountVariance
+    const countRouterFn = new NodejsFunction(this, "CountRouterFn", {
       ...nodejsFnProps,
-      entry: path.join(handlersPath, "createIncident.ts"),
-      timeout: cdk.Duration.seconds(10),
-    });
-
-    const listIncidentsFn = new NodejsFunction(this, "ListIncidentsFn", {
-      ...nodejsFnProps,
-      entry: path.join(handlersPath, "listIncidents.ts"),
-      timeout: cdk.Duration.seconds(10),
-    });
-
-    const listTransactionsFn = new NodejsFunction(this, "ListTransactionsFn", {
-      ...nodejsFnProps,
-      entry: path.join(handlersPath, "listTransactions.ts"),
-      timeout: cdk.Duration.seconds(10),
-    });
-
-    const createCountFn = new NodejsFunction(this, "CreateCountFn", {
-      ...nodejsFnProps,
-      entry: path.join(handlersPath, "createCount.ts"),
+      entry: path.join(handlersPath, "countRouter.ts"),
       timeout: cdk.Duration.seconds(15),
     });
 
-    const saveCountFn = new NodejsFunction(this, "SaveCountFn", {
+    // Notification router — consolidates registerPushToken, updateNotificationPrefs, getNotificationPrefs, sendNotification
+    const notificationRouterFn = new NodejsFunction(this, "NotificationRouterFn", {
       ...nodejsFnProps,
-      entry: path.join(handlersPath, "saveCount.ts"),
+      entry: path.join(handlersPath, "notificationRouter.ts"),
       timeout: cdk.Duration.seconds(15),
-    });
-
-    const listCountsFn = new NodejsFunction(this, "ListCountsFn", {
-      ...nodejsFnProps,
-      entry: path.join(handlersPath, "listCounts.ts"),
-      timeout: cdk.Duration.seconds(10),
-    });
-
-    const getCountVarianceFn = new NodejsFunction(this, "GetCountVarianceFn", {
-      ...nodejsFnProps,
-      entry: path.join(handlersPath, "getCountVariance.ts"),
-      timeout: cdk.Duration.seconds(10),
-    });
-
-    const registerPushTokenFn = new NodejsFunction(this, "RegisterPushTokenFn", {
-      ...nodejsFnProps,
-      entry: path.join(handlersPath, "registerPushToken.ts"),
-      timeout: cdk.Duration.seconds(10),
-    });
-
-    const updateNotificationPrefsFn = new NodejsFunction(this, "UpdateNotificationPrefsFn", {
-      ...nodejsFnProps,
-      entry: path.join(handlersPath, "updateNotificationPrefs.ts"),
-      timeout: cdk.Duration.seconds(10),
-    });
-
-    const getNotificationPrefsFn = new NodejsFunction(this, "GetNotificationPrefsFn", {
-      ...nodejsFnProps,
-      entry: path.join(handlersPath, "getNotificationPrefs.ts"),
-      timeout: cdk.Duration.seconds(10),
-    });
-
-    const sendNotificationFn = new NodejsFunction(this, "SendNotificationFn", {
-      ...nodejsFnProps,
-      entry: path.join(handlersPath, "sendNotification.ts"),
-      timeout: cdk.Duration.seconds(15),
-    });
-
-    const menuEngineeringFn = new NodejsFunction(this, "MenuEngineeringFn", {
-      ...nodejsFnProps,
-      entry: path.join(handlersPath, "menuEngineering.ts"),
-      timeout: cdk.Duration.seconds(30),
-      memorySize: 512,
     });
 
     const prepListsFn = new NodejsFunction(this, "PrepListsFn", {
       ...nodejsFnProps,
       entry: path.join(handlersPath, "prepLists.ts"),
       timeout: cdk.Duration.seconds(15),
-    });
-
-    const recipeScalingFn = new NodejsFunction(this, "RecipeScalingFn", {
-      ...nodejsFnProps,
-      entry: path.join(handlersPath, "recipeScaling.ts"),
-      timeout: cdk.Duration.seconds(10),
     });
 
     const auditTrailFn = new NodejsFunction(this, "AuditTrailFn", {
@@ -697,66 +517,18 @@ export class FoodwiseStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(10),
     });
 
-    const generateReportFn = new NodejsFunction(this, "GenerateReportFn", {
+    // Staff/Schedule router — consolidates listStaff, manageStaff, manageSchedule
+    const staffScheduleRouterFn = new NodejsFunction(this, "StaffScheduleRouterFn", {
       ...nodejsFnProps,
-      entry: path.join(handlersPath, "generateReport.ts"),
-      timeout: cdk.Duration.seconds(30),
-      memorySize: 512,
-    });
-
-    const listStaffFn = new NodejsFunction(this, "ListStaffFn", {
-      ...nodejsFnProps,
-      entry: path.join(handlersPath, "listStaff.ts"),
+      entry: path.join(handlersPath, "staffScheduleRouter.ts"),
       timeout: cdk.Duration.seconds(10),
     });
 
-    const manageStaffFn = new NodejsFunction(this, "ManageStaffFn", {
+    // Kiosk router — single Lambda handles all kiosk endpoints to stay under CFn 500-resource limit
+    const kioskRouterFn = new NodejsFunction(this, "KioskRouterFn", {
       ...nodejsFnProps,
-      entry: path.join(handlersPath, "manageStaff.ts"),
-      timeout: cdk.Duration.seconds(10),
-    });
-
-    const manageScheduleFn = new NodejsFunction(this, "ManageScheduleFn", {
-      ...nodejsFnProps,
-      entry: path.join(handlersPath, "manageSchedule.ts"),
-      timeout: cdk.Duration.seconds(10),
-    });
-
-    // Kiosk endpoints (API key auth, no Cognito)
-    const kioskRegisterFn = new NodejsFunction(this, "KioskRegisterFn", {
-      ...nodejsFnProps,
-      entry: path.join(handlersPath, "kioskRegister.ts"),
-      timeout: cdk.Duration.seconds(10),
-    });
-
-    const kioskLookupFn = new NodejsFunction(this, "KioskLookupFn", {
-      ...nodejsFnProps,
-      entry: path.join(handlersPath, "kioskLookup.ts"),
-      timeout: cdk.Duration.seconds(10),
-    });
-
-    const kioskClockInFn = new NodejsFunction(this, "KioskClockInFn", {
-      ...nodejsFnProps,
-      entry: path.join(handlersPath, "kioskClockIn.ts"),
+      entry: path.join(handlersPath, "kioskRouter.ts"),
       timeout: cdk.Duration.seconds(15),
-    });
-
-    const kioskClockOutFn = new NodejsFunction(this, "KioskClockOutFn", {
-      ...nodejsFnProps,
-      entry: path.join(handlersPath, "kioskClockOut.ts"),
-      timeout: cdk.Duration.seconds(10),
-    });
-
-    const kioskBreakFn = new NodejsFunction(this, "KioskBreakFn", {
-      ...nodejsFnProps,
-      entry: path.join(handlersPath, "kioskBreak.ts"),
-      timeout: cdk.Duration.seconds(10),
-    });
-
-    const kioskActiveFn = new NodejsFunction(this, "KioskActiveFn", {
-      ...nodejsFnProps,
-      entry: path.join(handlersPath, "kioskActive.ts"),
-      timeout: cdk.Duration.seconds(10),
     });
 
     // Timesheet management (Cognito auth)
@@ -829,117 +601,71 @@ export class FoodwiseStack extends cdk.Stack {
 
     // --- DynamoDB Permissions ---
 
-    this.storesTable.grantReadWriteData(createStoreFn);
-    this.storesTable.grantReadData(listStoresFn);
+    // Store operations router needs stores, inventory, transactions
+    this.storesTable.grantReadWriteData(storeOpsRouterFn);
+    this.inventoryTable.grantReadWriteData(storeOpsRouterFn);
+    this.transactionsTable.grantReadWriteData(storeOpsRouterFn);
+    this.recipesTable.grantReadData(storeOpsRouterFn);
+    this.wasteLogsTable.grantReadData(storeOpsRouterFn);
+
     this.storesTable.grantReadData(forecastFn);
-
-    this.inventoryTable.grantReadData(getInventoryFn);
-    this.inventoryTable.grantReadWriteData(updateInventoryFn);
-    this.inventoryTable.grantReadWriteData(recordTransactionFn);
-    this.inventoryTable.grantReadData(getDashboardFn);
-    this.inventoryTable.grantReadData(getRecipeFn);
-    this.inventoryTable.grantReadWriteData(upsertIngredientFn);
     this.inventoryTable.grantReadData(forecastFn);
-
-    this.transactionsTable.grantReadWriteData(recordTransactionFn);
-    this.transactionsTable.grantReadData(getDashboardFn);
     this.transactionsTable.grantReadData(forecastFn);
-
-    this.recipesTable.grantReadData(recordTransactionFn);
-    this.recipesTable.grantReadWriteData(createRecipeFn);
-    this.recipesTable.grantReadData(listRecipesFn);
-    this.recipesTable.grantReadData(getRecipeFn);
     this.recipesTable.grantReadData(forecastFn);
-
     this.forecastsTable.grantReadWriteData(forecastFn);
 
-    this.suppliersTable.grantReadWriteData(createSupplierFn);
-    this.suppliersTable.grantReadData(listSuppliersFn);
-    this.suppliersTable.grantReadData(lookupBarcodeFn);
-    this.suppliersTable.grantReadData(receiveShipmentFn);
-    this.suppliersTable.grantReadData(createPurchaseOrderFn);
+    // Recipe router needs recipes + inventory
+    this.recipesTable.grantReadWriteData(recipeRouterFn);
+    this.inventoryTable.grantReadData(recipeRouterFn);
 
-    this.purchaseOrdersTable.grantReadWriteData(createPurchaseOrderFn);
-    this.purchaseOrdersTable.grantReadData(listPurchaseOrdersFn);
-    this.purchaseOrdersTable.grantReadWriteData(receiveShipmentFn);
-    this.purchaseOrdersTable.grantReadData(lookupBarcodeFn);
+    // Supply chain router needs suppliers, POs, receiving, inventory, barcode
+    this.suppliersTable.grantReadWriteData(supplyChainRouterFn);
+    this.purchaseOrdersTable.grantReadWriteData(supplyChainRouterFn);
+    this.receivingLogsTable.grantReadWriteData(supplyChainRouterFn);
+    this.inventoryTable.grantReadWriteData(supplyChainRouterFn);
 
-    this.receivingLogsTable.grantReadWriteData(receiveShipmentFn);
-    this.receivingLogsTable.grantReadData(listReceivingLogsFn);
+    // Waste router needs waste logs, inventory, receiving logs
+    this.wasteLogsTable.grantReadWriteData(wasteRouterFn);
+    this.inventoryTable.grantReadData(wasteRouterFn);
+    this.receivingLogsTable.grantReadData(wasteRouterFn);
 
-    this.inventoryTable.grantReadWriteData(receiveShipmentFn);
-    this.inventoryTable.grantReadData(recordWasteFn);
+    // Analytics router needs read on most tables (owner dashboard, comparison, health score, report, menu engineering)
+    this.storesTable.grantReadData(analyticsRouterFn);
+    this.inventoryTable.grantReadData(analyticsRouterFn);
+    this.transactionsTable.grantReadData(analyticsRouterFn);
+    this.wasteLogsTable.grantReadData(analyticsRouterFn);
+    this.forecastsTable.grantReadData(analyticsRouterFn);
+    this.receivingLogsTable.grantReadData(analyticsRouterFn);
+    this.purchaseOrdersTable.grantReadData(analyticsRouterFn);
+    this.recipesTable.grantReadData(analyticsRouterFn);
 
-    this.wasteLogsTable.grantReadWriteData(recordWasteFn);
-    this.wasteLogsTable.grantReadData(listWasteFn);
-    this.wasteLogsTable.grantReadData(getWasteAnalyticsFn);
-    this.wasteLogsTable.grantReadData(getDashboardFn);
-
-    this.receivingLogsTable.grantReadData(getWasteAnalyticsFn);
-
-    // Owner dashboard, store comparison, and weekly report need read on all tables
-    const multiStoreReadFns = [getOwnerDashboardFn, getStoreComparisonFn, generateWeeklyReportFn];
-    for (const fn of multiStoreReadFns) {
-      this.storesTable.grantReadData(fn);
-      this.inventoryTable.grantReadData(fn);
-      this.transactionsTable.grantReadData(fn);
-      this.wasteLogsTable.grantReadData(fn);
-      this.forecastsTable.grantReadData(fn);
-    }
-
-    // Health score needs read on individual store data
-    this.storesTable.grantReadData(getHealthScoreFn);
-    this.inventoryTable.grantReadData(getHealthScoreFn);
-    this.transactionsTable.grantReadData(getHealthScoreFn);
-    this.wasteLogsTable.grantReadData(getHealthScoreFn);
-    this.forecastsTable.grantReadData(getHealthScoreFn);
-    this.receivingLogsTable.grantReadData(getHealthScoreFn);
-
-    // Store comparison also needs waste logs for per-ingredient comparison
-    this.wasteLogsTable.grantReadData(getStoreComparisonFn);
+    // Weekly report also needs read on all tables
+    this.storesTable.grantReadData(generateWeeklyReportFn);
+    this.inventoryTable.grantReadData(generateWeeklyReportFn);
+    this.transactionsTable.grantReadData(generateWeeklyReportFn);
+    this.wasteLogsTable.grantReadData(generateWeeklyReportFn);
+    this.forecastsTable.grantReadData(generateWeeklyReportFn);
 
     // Camera & Incident permissions
-    this.camerasTable.grantReadWriteData(registerCameraFn);
-    this.camerasTable.grantReadData(listCamerasFn);
-    this.camerasTable.grantReadData(getCameraFootageFn);
-    this.camerasTable.grantReadData(createIncidentFn);
-    this.incidentsTable.grantReadWriteData(createIncidentFn);
-    this.incidentsTable.grantReadData(listIncidentsFn);
-    this.transactionsTable.grantReadData(listTransactionsFn);
+    this.camerasTable.grantReadWriteData(cameraIncidentRouterFn);
+    this.incidentsTable.grantReadWriteData(cameraIncidentRouterFn);
 
     // Inventory Counts permissions
-    this.inventoryCountsTable.grantReadWriteData(createCountFn);
-    this.inventoryCountsTable.grantReadWriteData(saveCountFn);
-    this.inventoryCountsTable.grantReadData(listCountsFn);
-    this.inventoryCountsTable.grantReadData(getCountVarianceFn);
-    this.inventoryTable.grantReadData(createCountFn);
+    this.inventoryCountsTable.grantReadWriteData(countRouterFn);
+    this.inventoryTable.grantReadData(countRouterFn);
 
     // Notifications permissions
-    this.notificationsTable.grantReadWriteData(registerPushTokenFn);
-    this.notificationsTable.grantReadWriteData(updateNotificationPrefsFn);
-    this.notificationsTable.grantReadData(getNotificationPrefsFn);
-    this.notificationsTable.grantReadData(sendNotificationFn);
+    this.notificationsTable.grantReadWriteData(notificationRouterFn);
 
-    // Schedule permissions
-    this.schedulesTable.grantReadWriteData(manageScheduleFn);
+    // Staff/Schedule router permissions
+    this.staffTable.grantReadWriteData(staffScheduleRouterFn);
+    this.schedulesTable.grantReadWriteData(staffScheduleRouterFn);
 
-    // Kiosk permissions
-    this.kioskDevicesTable.grantReadWriteData(kioskRegisterFn);
-    this.kioskDevicesTable.grantReadData(kioskLookupFn);
-    this.kioskDevicesTable.grantReadData(kioskClockInFn);
-    this.kioskDevicesTable.grantReadData(kioskClockOutFn);
-    this.kioskDevicesTable.grantReadData(kioskBreakFn);
-    this.kioskDevicesTable.grantReadData(kioskActiveFn);
-
-    this.timeClockTable.grantReadWriteData(kioskClockInFn);
-    this.timeClockTable.grantReadWriteData(kioskClockOutFn);
-    this.timeClockTable.grantReadWriteData(kioskBreakFn);
-    this.timeClockTable.grantReadData(kioskLookupFn);
-    this.timeClockTable.grantReadData(kioskActiveFn);
-
-    this.staffTable.grantReadData(kioskLookupFn);
-
-    this.auditTrailTable.grantReadWriteData(kioskClockInFn);
+    // Kiosk permissions (single router Lambda)
+    this.kioskDevicesTable.grantReadWriteData(kioskRouterFn);
+    this.timeClockTable.grantReadWriteData(kioskRouterFn);
+    this.staffTable.grantReadData(kioskRouterFn);
+    this.auditTrailTable.grantReadWriteData(kioskRouterFn);
 
     // Timesheet management permissions
     this.timeClockTable.grantReadWriteData(timesheetManagementFn);
@@ -949,26 +675,14 @@ export class FoodwiseStack extends cdk.Stack {
     // Staff PIN permissions
     this.staffTable.grantReadWriteData(staffPinFn);
 
-    // Staff permissions
-    this.staffTable.grantReadData(listStaffFn);
-    this.staffTable.grantReadWriteData(manageStaffFn);
-
     // Expiration permissions
     this.inventoryTable.grantReadWriteData(setExpirationFn);
     this.inventoryTable.grantReadData(getExpirationAlertsFn);
-
-    // Menu Engineering permissions
-    this.transactionsTable.grantReadData(menuEngineeringFn);
-    this.recipesTable.grantReadData(menuEngineeringFn);
 
     // Prep Lists permissions
     this.prepListsTable.grantReadWriteData(prepListsFn);
     this.recipesTable.grantReadData(prepListsFn);
     this.inventoryTable.grantReadData(prepListsFn);
-
-    // Recipe Scaling permissions
-    this.recipesTable.grantReadData(recipeScalingFn);
-    this.inventoryTable.grantReadData(recipeScalingFn);
 
     // Audit Trail permissions
     this.auditTrailTable.grantReadWriteData(auditTrailFn);
@@ -989,12 +703,6 @@ export class FoodwiseStack extends cdk.Stack {
 
     // Price History permissions
     this.priceHistoryTable.grantReadWriteData(vendorPriceHistoryFn);
-
-    // Report permissions
-    this.inventoryTable.grantReadData(generateReportFn);
-    this.wasteLogsTable.grantReadData(generateReportFn);
-    this.transactionsTable.grantReadData(generateReportFn);
-    this.purchaseOrdersTable.grantReadData(generateReportFn);
 
     // Assistant needs read on all tables
     this.storesTable.grantReadData(assistantFn);
@@ -1037,12 +745,12 @@ export class FoodwiseStack extends cdk.Stack {
     const storesResource = this.api.root.addResource("stores");
     storesResource.addMethod(
       "POST",
-      new apigateway.LambdaIntegration(createStoreFn),
+      new apigateway.LambdaIntegration(storeOpsRouterFn),
       authMethodOptions
     );
     storesResource.addMethod(
       "GET",
-      new apigateway.LambdaIntegration(listStoresFn),
+      new apigateway.LambdaIntegration(storeOpsRouterFn),
       authMethodOptions
     );
 
@@ -1053,12 +761,12 @@ export class FoodwiseStack extends cdk.Stack {
     const inventoryResource = singleStoreResource.addResource("inventory");
     inventoryResource.addMethod(
       "GET",
-      new apigateway.LambdaIntegration(getInventoryFn),
+      new apigateway.LambdaIntegration(storeOpsRouterFn),
       authMethodOptions
     );
     inventoryResource.addMethod(
       "POST",
-      new apigateway.LambdaIntegration(updateInventoryFn),
+      new apigateway.LambdaIntegration(storeOpsRouterFn),
       authMethodOptions
     );
 
@@ -1066,12 +774,12 @@ export class FoodwiseStack extends cdk.Stack {
     const transactionsResource = singleStoreResource.addResource("transactions");
     transactionsResource.addMethod(
       "POST",
-      new apigateway.LambdaIntegration(recordTransactionFn),
+      new apigateway.LambdaIntegration(storeOpsRouterFn),
       authMethodOptions
     );
     transactionsResource.addMethod(
       "GET",
-      new apigateway.LambdaIntegration(listTransactionsFn),
+      new apigateway.LambdaIntegration(storeOpsRouterFn),
       authMethodOptions
     );
 
@@ -1079,7 +787,7 @@ export class FoodwiseStack extends cdk.Stack {
     const dashboardResource = singleStoreResource.addResource("dashboard");
     dashboardResource.addMethod(
       "GET",
-      new apigateway.LambdaIntegration(getDashboardFn),
+      new apigateway.LambdaIntegration(storeOpsRouterFn),
       authMethodOptions
     );
 
@@ -1087,12 +795,12 @@ export class FoodwiseStack extends cdk.Stack {
     const recipesResource = this.api.root.addResource("recipes");
     recipesResource.addMethod(
       "POST",
-      new apigateway.LambdaIntegration(createRecipeFn),
+      new apigateway.LambdaIntegration(recipeRouterFn),
       authMethodOptions
     );
     recipesResource.addMethod(
       "GET",
-      new apigateway.LambdaIntegration(listRecipesFn),
+      new apigateway.LambdaIntegration(recipeRouterFn),
       authMethodOptions
     );
 
@@ -1100,7 +808,7 @@ export class FoodwiseStack extends cdk.Stack {
     const singleRecipeResource = recipesResource.addResource("{recipeId}");
     singleRecipeResource.addMethod(
       "GET",
-      new apigateway.LambdaIntegration(getRecipeFn),
+      new apigateway.LambdaIntegration(recipeRouterFn),
       authMethodOptions
     );
 
@@ -1108,13 +816,13 @@ export class FoodwiseStack extends cdk.Stack {
     const ingredientsResource = this.api.root.addResource("ingredients");
     ingredientsResource.addMethod(
       "POST",
-      new apigateway.LambdaIntegration(upsertIngredientFn),
+      new apigateway.LambdaIntegration(recipeRouterFn),
       authMethodOptions
     );
 
     // GET /stores/{storeId}/menu-engineering
     const menuEngResource = singleStoreResource.addResource("menu-engineering");
-    menuEngResource.addMethod("GET", new apigateway.LambdaIntegration(menuEngineeringFn), authMethodOptions);
+    menuEngResource.addMethod("GET", new apigateway.LambdaIntegration(analyticsRouterFn), authMethodOptions);
 
     // GET/POST /stores/{storeId}/prep-lists
     const prepListsResource = singleStoreResource.addResource("prep-lists");
@@ -1123,7 +831,7 @@ export class FoodwiseStack extends cdk.Stack {
 
     // GET /recipes/{recipeId}/scale
     const scaleResource = singleRecipeResource.addResource("scale");
-    scaleResource.addMethod("GET", new apigateway.LambdaIntegration(recipeScalingFn), authMethodOptions);
+    scaleResource.addMethod("GET", new apigateway.LambdaIntegration(recipeRouterFn), authMethodOptions);
 
     // GET/POST /stores/{storeId}/audit-trail
     const auditResource = singleStoreResource.addResource("audit-trail");
@@ -1156,12 +864,12 @@ export class FoodwiseStack extends cdk.Stack {
     const suppliersResource = this.api.root.addResource("suppliers");
     suppliersResource.addMethod(
       "POST",
-      new apigateway.LambdaIntegration(createSupplierFn),
+      new apigateway.LambdaIntegration(supplyChainRouterFn),
       authMethodOptions
     );
     suppliersResource.addMethod(
       "GET",
-      new apigateway.LambdaIntegration(listSuppliersFn),
+      new apigateway.LambdaIntegration(supplyChainRouterFn),
       authMethodOptions
     );
 
@@ -1169,7 +877,7 @@ export class FoodwiseStack extends cdk.Stack {
     const purchaseOrdersResource = this.api.root.addResource("purchase-orders");
     purchaseOrdersResource.addMethod(
       "POST",
-      new apigateway.LambdaIntegration(createPurchaseOrderFn),
+      new apigateway.LambdaIntegration(supplyChainRouterFn),
       authMethodOptions
     );
 
@@ -1192,7 +900,7 @@ export class FoodwiseStack extends cdk.Stack {
     const storePurchaseOrdersResource = singleStoreResource.addResource("purchase-orders");
     storePurchaseOrdersResource.addMethod(
       "GET",
-      new apigateway.LambdaIntegration(listPurchaseOrdersFn),
+      new apigateway.LambdaIntegration(supplyChainRouterFn),
       authMethodOptions
     );
 
@@ -1200,7 +908,7 @@ export class FoodwiseStack extends cdk.Stack {
     const receiveResource = singleStoreResource.addResource("receive");
     receiveResource.addMethod(
       "POST",
-      new apigateway.LambdaIntegration(receiveShipmentFn),
+      new apigateway.LambdaIntegration(supplyChainRouterFn),
       authMethodOptions
     );
 
@@ -1208,7 +916,7 @@ export class FoodwiseStack extends cdk.Stack {
     const receivingLogsResource = singleStoreResource.addResource("receiving-logs");
     receivingLogsResource.addMethod(
       "GET",
-      new apigateway.LambdaIntegration(listReceivingLogsFn),
+      new apigateway.LambdaIntegration(supplyChainRouterFn),
       authMethodOptions
     );
 
@@ -1217,7 +925,7 @@ export class FoodwiseStack extends cdk.Stack {
     const barcodeLookupResource = barcodeResource.addResource("{code}");
     barcodeLookupResource.addMethod(
       "GET",
-      new apigateway.LambdaIntegration(lookupBarcodeFn),
+      new apigateway.LambdaIntegration(supplyChainRouterFn),
       authMethodOptions
     );
 
@@ -1225,12 +933,12 @@ export class FoodwiseStack extends cdk.Stack {
     const wasteResource = singleStoreResource.addResource("waste");
     wasteResource.addMethod(
       "POST",
-      new apigateway.LambdaIntegration(recordWasteFn),
+      new apigateway.LambdaIntegration(wasteRouterFn),
       authMethodOptions
     );
     wasteResource.addMethod(
       "GET",
-      new apigateway.LambdaIntegration(listWasteFn),
+      new apigateway.LambdaIntegration(wasteRouterFn),
       authMethodOptions
     );
 
@@ -1238,7 +946,7 @@ export class FoodwiseStack extends cdk.Stack {
     const wasteAnalyticsResource = wasteResource.addResource("analytics");
     wasteAnalyticsResource.addMethod(
       "GET",
-      new apigateway.LambdaIntegration(getWasteAnalyticsFn),
+      new apigateway.LambdaIntegration(wasteRouterFn),
       authMethodOptions
     );
 
@@ -1246,7 +954,7 @@ export class FoodwiseStack extends cdk.Stack {
     const ownerDashboardResource = this.api.root.addResource("dashboard");
     ownerDashboardResource.addMethod(
       "GET",
-      new apigateway.LambdaIntegration(getOwnerDashboardFn),
+      new apigateway.LambdaIntegration(analyticsRouterFn),
       authMethodOptions
     );
 
@@ -1254,7 +962,7 @@ export class FoodwiseStack extends cdk.Stack {
     const comparisonResource = ownerDashboardResource.addResource("comparison");
     comparisonResource.addMethod(
       "GET",
-      new apigateway.LambdaIntegration(getStoreComparisonFn),
+      new apigateway.LambdaIntegration(analyticsRouterFn),
       authMethodOptions
     );
 
@@ -1262,7 +970,7 @@ export class FoodwiseStack extends cdk.Stack {
     const healthScoreResource = singleStoreResource.addResource("health-score");
     healthScoreResource.addMethod(
       "GET",
-      new apigateway.LambdaIntegration(getHealthScoreFn),
+      new apigateway.LambdaIntegration(analyticsRouterFn),
       authMethodOptions
     );
 
@@ -1270,12 +978,12 @@ export class FoodwiseStack extends cdk.Stack {
     const camerasResource = singleStoreResource.addResource("cameras");
     camerasResource.addMethod(
       "POST",
-      new apigateway.LambdaIntegration(registerCameraFn),
+      new apigateway.LambdaIntegration(cameraIncidentRouterFn),
       authMethodOptions
     );
     camerasResource.addMethod(
       "GET",
-      new apigateway.LambdaIntegration(listCamerasFn),
+      new apigateway.LambdaIntegration(cameraIncidentRouterFn),
       authMethodOptions
     );
 
@@ -1284,7 +992,7 @@ export class FoodwiseStack extends cdk.Stack {
     const footageResource = singleCameraResource.addResource("footage");
     footageResource.addMethod(
       "GET",
-      new apigateway.LambdaIntegration(getCameraFootageFn),
+      new apigateway.LambdaIntegration(cameraIncidentRouterFn),
       authMethodOptions
     );
 
@@ -1292,49 +1000,49 @@ export class FoodwiseStack extends cdk.Stack {
     const incidentsResource = singleStoreResource.addResource("incidents");
     incidentsResource.addMethod(
       "POST",
-      new apigateway.LambdaIntegration(createIncidentFn),
+      new apigateway.LambdaIntegration(cameraIncidentRouterFn),
       authMethodOptions
     );
     incidentsResource.addMethod(
       "GET",
-      new apigateway.LambdaIntegration(listIncidentsFn),
+      new apigateway.LambdaIntegration(cameraIncidentRouterFn),
       authMethodOptions
     );
 
     // GET/POST /stores/{storeId}/schedule & DELETE /stores/{storeId}/schedule/{shiftId}
     const scheduleResource = singleStoreResource.addResource("schedule");
-    scheduleResource.addMethod("GET", new apigateway.LambdaIntegration(manageScheduleFn), authMethodOptions);
-    scheduleResource.addMethod("POST", new apigateway.LambdaIntegration(manageScheduleFn), authMethodOptions);
+    scheduleResource.addMethod("GET", new apigateway.LambdaIntegration(staffScheduleRouterFn), authMethodOptions);
+    scheduleResource.addMethod("POST", new apigateway.LambdaIntegration(staffScheduleRouterFn), authMethodOptions);
     const singleShiftResource = scheduleResource.addResource("{shiftId}");
-    singleShiftResource.addMethod("DELETE", new apigateway.LambdaIntegration(manageScheduleFn), authMethodOptions);
+    singleShiftResource.addMethod("DELETE", new apigateway.LambdaIntegration(staffScheduleRouterFn), authMethodOptions);
 
     // --- Kiosk API endpoints (no Cognito auth — use API key) ---
     const kioskResource = this.api.root.addResource("kiosk");
 
     // POST /kiosk/register (Cognito auth — manager sets up kiosk)
     const kioskRegisterResource = kioskResource.addResource("register");
-    kioskRegisterResource.addMethod("POST", new apigateway.LambdaIntegration(kioskRegisterFn), authMethodOptions);
+    kioskRegisterResource.addMethod("POST", new apigateway.LambdaIntegration(kioskRouterFn), authMethodOptions);
 
     // POST /kiosk/lookup (no auth — kiosk device uses API key header)
     const kioskLookupResource = kioskResource.addResource("lookup");
-    kioskLookupResource.addMethod("POST", new apigateway.LambdaIntegration(kioskLookupFn));
+    kioskLookupResource.addMethod("POST", new apigateway.LambdaIntegration(kioskRouterFn));
 
     // POST /kiosk/clockin
     const kioskClockInResource = kioskResource.addResource("clockin");
-    kioskClockInResource.addMethod("POST", new apigateway.LambdaIntegration(kioskClockInFn));
+    kioskClockInResource.addMethod("POST", new apigateway.LambdaIntegration(kioskRouterFn));
 
     // POST /kiosk/clockout
     const kioskClockOutResource = kioskResource.addResource("clockout");
-    kioskClockOutResource.addMethod("POST", new apigateway.LambdaIntegration(kioskClockOutFn));
+    kioskClockOutResource.addMethod("POST", new apigateway.LambdaIntegration(kioskRouterFn));
 
     // POST /kiosk/break/{action}
     const kioskBreakResource = kioskResource.addResource("break");
     const kioskBreakActionResource = kioskBreakResource.addResource("{action}");
-    kioskBreakActionResource.addMethod("POST", new apigateway.LambdaIntegration(kioskBreakFn));
+    kioskBreakActionResource.addMethod("POST", new apigateway.LambdaIntegration(kioskRouterFn));
 
     // GET /kiosk/active?storeId=
     const kioskActiveResource = kioskResource.addResource("active");
-    kioskActiveResource.addMethod("GET", new apigateway.LambdaIntegration(kioskActiveFn));
+    kioskActiveResource.addMethod("GET", new apigateway.LambdaIntegration(kioskRouterFn));
 
     // --- Timesheet management API (Cognito auth) ---
     const timeclockResource = singleStoreResource.addResource("timeclock");
@@ -1366,24 +1074,24 @@ export class FoodwiseStack extends cdk.Stack {
     const staffResource = singleStoreResource.addResource("staff");
     staffResource.addMethod(
       "GET",
-      new apigateway.LambdaIntegration(listStaffFn),
+      new apigateway.LambdaIntegration(staffScheduleRouterFn),
       authMethodOptions
     );
     staffResource.addMethod(
       "POST",
-      new apigateway.LambdaIntegration(manageStaffFn),
+      new apigateway.LambdaIntegration(staffScheduleRouterFn),
       authMethodOptions
     );
     // PUT /stores/{storeId}/staff/{staffId} & DELETE
     const singleStaffResource = staffResource.addResource("{staffId}");
     singleStaffResource.addMethod(
       "PUT",
-      new apigateway.LambdaIntegration(manageStaffFn),
+      new apigateway.LambdaIntegration(staffScheduleRouterFn),
       authMethodOptions
     );
     singleStaffResource.addMethod(
       "DELETE",
-      new apigateway.LambdaIntegration(manageStaffFn),
+      new apigateway.LambdaIntegration(staffScheduleRouterFn),
       authMethodOptions
     );
 
@@ -1409,7 +1117,7 @@ export class FoodwiseStack extends cdk.Stack {
     const reportsResource = this.api.root.addResource("reports");
     reportsResource.addMethod(
       "POST",
-      new apigateway.LambdaIntegration(generateReportFn),
+      new apigateway.LambdaIntegration(analyticsRouterFn),
       authMethodOptions
     );
 
@@ -1418,24 +1126,24 @@ export class FoodwiseStack extends cdk.Stack {
     const registerResource = notificationsResource.addResource("register");
     registerResource.addMethod(
       "POST",
-      new apigateway.LambdaIntegration(registerPushTokenFn),
+      new apigateway.LambdaIntegration(notificationRouterFn),
       authMethodOptions
     );
     const prefsResource = notificationsResource.addResource("preferences");
     prefsResource.addMethod(
       "GET",
-      new apigateway.LambdaIntegration(getNotificationPrefsFn),
+      new apigateway.LambdaIntegration(notificationRouterFn),
       authMethodOptions
     );
     prefsResource.addMethod(
       "PUT",
-      new apigateway.LambdaIntegration(updateNotificationPrefsFn),
+      new apigateway.LambdaIntegration(notificationRouterFn),
       authMethodOptions
     );
     const sendResource = notificationsResource.addResource("send");
     sendResource.addMethod(
       "POST",
-      new apigateway.LambdaIntegration(sendNotificationFn),
+      new apigateway.LambdaIntegration(notificationRouterFn),
       authMethodOptions
     );
 
@@ -1443,12 +1151,12 @@ export class FoodwiseStack extends cdk.Stack {
     const countsResource = singleStoreResource.addResource("counts");
     countsResource.addMethod(
       "POST",
-      new apigateway.LambdaIntegration(createCountFn),
+      new apigateway.LambdaIntegration(countRouterFn),
       authMethodOptions
     );
     countsResource.addMethod(
       "GET",
-      new apigateway.LambdaIntegration(listCountsFn),
+      new apigateway.LambdaIntegration(countRouterFn),
       authMethodOptions
     );
 
@@ -1456,7 +1164,7 @@ export class FoodwiseStack extends cdk.Stack {
     const singleCountResource = countsResource.addResource("{countId}");
     singleCountResource.addMethod(
       "PUT",
-      new apigateway.LambdaIntegration(saveCountFn),
+      new apigateway.LambdaIntegration(countRouterFn),
       authMethodOptions
     );
 
@@ -1464,7 +1172,7 @@ export class FoodwiseStack extends cdk.Stack {
     const countVarianceResource = singleCountResource.addResource("variance");
     countVarianceResource.addMethod(
       "GET",
-      new apigateway.LambdaIntegration(getCountVarianceFn),
+      new apigateway.LambdaIntegration(countRouterFn),
       authMethodOptions
     );
 
