@@ -172,6 +172,22 @@ export const api = {
   clockAction: (storeId: string, body: { action: string; entryId?: string; staffName?: string }) =>
     request<any>("POST", `/stores/${storeId}/time-clock`, body),
 
+  // Vendor Communication
+  emailPurchaseOrder: (orderId: string) =>
+    request<any>("POST", `/purchase-orders/${orderId}/email`),
+
+  // Temperature Logs
+  getTempLogs: (storeId: string, startDate?: string) =>
+    request<any>("GET", `/stores/${storeId}/temp-logs${startDate ? `?startDate=${startDate}` : ""}`),
+  recordTempLog: (storeId: string, body: { location: string; temperature: number; unit?: string; notes?: string }) =>
+    request<any>("POST", `/stores/${storeId}/temp-logs`, body),
+
+  // Price History
+  getPriceHistory: (supplierId: string, itemId?: string) =>
+    request<any>("GET", `/price-history?supplierId=${supplierId}${itemId ? `&itemId=${itemId}` : ""}`),
+  addPriceEntry: (body: { supplierId: string; itemId: string; itemName: string; price: number; unit: string }) =>
+    request<any>("POST", "/price-history", body),
+
   // Reports
   generateReport: (body: { storeId: string; reportType: string; startDate?: string; endDate?: string; format?: string }) =>
     request<any>("POST", "/reports", body),

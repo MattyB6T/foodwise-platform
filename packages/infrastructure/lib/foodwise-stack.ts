@@ -28,6 +28,8 @@ export class FoodwiseStack extends cdk.Stack {
   public readonly staffTable: dynamodb.Table;
   public readonly schedulesTable: dynamodb.Table;
   public readonly timeClockTable: dynamodb.Table;
+  public readonly tempLogsTable: dynamodb.Table;
+  public readonly priceHistoryTable: dynamodb.Table;
   public readonly userPool: cognito.UserPool;
   public readonly reportsBucket: s3.Bucket;
   public readonly api: apigateway.RestApi;
@@ -224,6 +226,34 @@ export class FoodwiseStack extends cdk.Stack {
       projectionType: dynamodb.ProjectionType.ALL,
     });
 
+    this.tempLogsTable = new dynamodb.Table(this, "TempLogsTable", {
+      tableName: "temp-logs",
+      partitionKey: { name: "logId", type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    this.tempLogsTable.addGlobalSecondaryIndex({
+      indexName: "storeId-timestamp-index",
+      partitionKey: { name: "storeId", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "timestamp", type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
+    this.priceHistoryTable = new dynamodb.Table(this, "PriceHistoryTable", {
+      tableName: "price-history",
+      partitionKey: { name: "priceId", type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    this.priceHistoryTable.addGlobalSecondaryIndex({
+      indexName: "supplierId-timestamp-index",
+      partitionKey: { name: "supplierId", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "timestamp", type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
     // --- Cognito User Pool ---
 
     this.userPool = new cognito.UserPool(this, "FoodwiseUserPool", {
@@ -306,6 +336,8 @@ export class FoodwiseStack extends cdk.Stack {
       STAFF_TABLE: this.staffTable.tableName,
       SCHEDULES_TABLE: this.schedulesTable.tableName,
       TIME_CLOCK_TABLE: this.timeClockTable.tableName,
+      TEMP_LOGS_TABLE: this.tempLogsTable.tableName,
+      PRICE_HISTORY_TABLE: this.priceHistoryTable.tableName,
     };
 
     const handlersPath = path.join(__dirname, "../../api/src/handlers");
@@ -565,6 +597,24 @@ export class FoodwiseStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(15),
     });
 
+    const emailPurchaseOrderFn = new NodejsFunction(this, "EmailPurchaseOrderFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "emailPurchaseOrder.ts"),
+      timeout: cdk.Duration.seconds(15),
+    });
+
+    const temperatureLogsFn = new NodejsFunction(this, "TemperatureLogsFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "temperatureLogs.ts"),
+      timeout: cdk.Duration.seconds(10),
+    });
+
+    const vendorPriceHistoryFn = new NodejsFunction(this, "VendorPriceHistoryFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "vendorPriceHistory.ts"),
+      timeout: cdk.Duration.seconds(10),
+    });
+
     const generateReportFn = new NodejsFunction(this, "GenerateReportFn", {
       ...nodejsFnProps,
       entry: path.join(handlersPath, "generateReport.ts"),
@@ -755,6 +805,16 @@ export class FoodwiseStack extends cdk.Stack {
     this.inventoryTable.grantReadWriteData(setExpirationFn);
     this.inventoryTable.grantReadData(getExpirationAlertsFn);
 
+    // Vendor Communication permissions
+    this.purchaseOrdersTable.grantReadData(emailPurchaseOrderFn);
+    this.suppliersTable.grantReadData(emailPurchaseOrderFn);
+
+    // Temperature Log permissions
+    this.tempLogsTable.grantReadWriteData(temperatureLogsFn);
+
+    // Price History permissions
+    this.priceHistoryTable.grantReadWriteData(vendorPriceHistoryFn);
+
     // Report permissions
     this.inventoryTable.grantReadData(generateReportFn);
     this.wasteLogsTable.grantReadData(generateReportFn);
@@ -905,6 +965,21 @@ export class FoodwiseStack extends cdk.Stack {
       new apigateway.LambdaIntegration(createPurchaseOrderFn),
       authMethodOptions
     );
+
+    // POST /purchase-orders/{orderId}/email
+    const singlePOResource = purchaseOrdersResource.addResource("{orderId}");
+    const emailPOResource = singlePOResource.addResource("email");
+    emailPOResource.addMethod("POST", new apigateway.LambdaIntegration(emailPurchaseOrderFn), authMethodOptions);
+
+    // GET/POST /stores/{storeId}/temp-logs
+    const tempLogsResource = singleStoreResource.addResource("temp-logs");
+    tempLogsResource.addMethod("GET", new apigateway.LambdaIntegration(temperatureLogsFn), authMethodOptions);
+    tempLogsResource.addMethod("POST", new apigateway.LambdaIntegration(temperatureLogsFn), authMethodOptions);
+
+    // GET/POST /price-history
+    const priceHistoryResource = this.api.root.addResource("price-history");
+    priceHistoryResource.addMethod("GET", new apigateway.LambdaIntegration(vendorPriceHistoryFn), authMethodOptions);
+    priceHistoryResource.addMethod("POST", new apigateway.LambdaIntegration(vendorPriceHistoryFn), authMethodOptions);
 
     // GET /stores/{storeId}/purchase-orders
     const storePurchaseOrdersResource = singleStoreResource.addResource("purchase-orders");

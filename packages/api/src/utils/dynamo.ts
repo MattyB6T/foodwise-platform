@@ -23,4 +23,6 @@ export const TABLES = {
   STAFF: process.env.STAFF_TABLE!,
   SCHEDULES: process.env.SCHEDULES_TABLE!,
   TIME_CLOCK: process.env.TIME_CLOCK_TABLE!,
+  TEMP_LOGS: process.env.TEMP_LOGS_TABLE!,
+  PRICE_HISTORY: process.env.PRICE_HISTORY_TABLE!,
 };

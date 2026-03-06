@@ -21,6 +21,7 @@ import { CountScreen } from "./src/screens/CountScreen";
 import { ReportsScreen } from "./src/screens/ReportsScreen";
 import { ExpirationScreen } from "./src/screens/ExpirationScreen";
 import { ScheduleScreen } from "./src/screens/ScheduleScreen";
+import { TempLogScreen } from "./src/screens/TempLogScreen";
 import { SettingsScreen } from "./src/screens/SettingsScreen";
 import type { RootStackParamList, TabParamList } from "./src/navigation/types";
 
@@ -236,6 +237,11 @@ function AppNavigator() {
             name="Schedule"
             component={ScheduleScreen}
             options={{ title: "Schedule & Time Clock" }}
+          />
+          <Stack.Screen
+            name="TempLog"
+            component={TempLogScreen}
+            options={{ title: "Temperature Logs" }}
           />
         </>
       )}
