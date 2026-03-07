@@ -42,7 +42,6 @@ async function request<T>(
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    "X-Request-Timestamp": new Date().toISOString(),
   };
 
   if (authToken) {
