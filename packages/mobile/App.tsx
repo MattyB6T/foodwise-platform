@@ -32,6 +32,7 @@ import { TimeEntryDetailScreen } from "./src/screens/TimeEntryDetailScreen";
 import { LiveStaffScreen } from "./src/screens/LiveStaffScreen";
 import { IntegrationsScreen } from "./src/screens/IntegrationsScreen";
 import { MappingScreen } from "./src/screens/MappingScreen";
+import { OnboardingScreen } from "./src/screens/OnboardingScreen";
 import type { RootStackParamList, TabParamList } from "./src/navigation/types";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -44,6 +45,7 @@ const linking: any = {
       ModeSelection: "mode",
       Kiosk: "kiosk",
       Login: "login",
+      Onboarding: "onboarding",
       MainTabs: {
         screens: {
           DashboardTab: "",
@@ -180,11 +182,16 @@ function AppNavigator() {
   const [kioskEnabled, setKioskEnabled] = useState<boolean | null>(null);
   const [showModeSelection, setShowModeSelection] = useState(false);
   const [pendingKiosk, setPendingKiosk] = useState(false);
+  const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null);
 
   useEffect(() => {
     (async () => {
-      const enabled = await AsyncStorage.getItem("kiosk_enabled");
+      const [enabled, onboarded] = await Promise.all([
+        AsyncStorage.getItem("kiosk_enabled"),
+        AsyncStorage.getItem("onboarding_complete"),
+      ]);
       setKioskEnabled(enabled === "true");
+      setOnboardingComplete(onboarded === "true");
     })();
   }, []);
 
@@ -211,7 +218,7 @@ function AppNavigator() {
     ),
   });
 
-  if (isLoading || kioskEnabled === null) {
+  if (isLoading || kioskEnabled === null || onboardingComplete === null) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.primary }}>
         <ActivityIndicator size="large" color="#fff" />
@@ -270,6 +277,21 @@ function AppNavigator() {
         </>
       ) : (
         <>
+          {!onboardingComplete && (
+            <Stack.Screen
+              name="Onboarding"
+              options={{ headerShown: false }}
+            >
+              {() => (
+                <OnboardingScreen
+                  onComplete={async () => {
+                    await AsyncStorage.setItem("onboarding_complete", "true");
+                    setOnboardingComplete(true);
+                  }}
+                />
+              )}
+            </Stack.Screen>
+          )}
           <Stack.Screen
             name="MainTabs"
             component={MainTabs}

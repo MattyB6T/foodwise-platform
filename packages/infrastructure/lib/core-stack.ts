@@ -52,6 +52,7 @@ export class FoodwiseCoreStack extends cdk.NestedStack {
       sortKey: { name: "itemId", type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
+      pointInTimeRecovery: true,
     });
 
     this.transactionsTable = new dynamodb.Table(this, "TransactionsTable", {
@@ -59,6 +60,7 @@ export class FoodwiseCoreStack extends cdk.NestedStack {
       sortKey: { name: "transactionId", type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
+      pointInTimeRecovery: true,
     });
 
     this.transactionsTable.addGlobalSecondaryIndex({
@@ -178,6 +180,7 @@ export class FoodwiseCoreStack extends cdk.NestedStack {
       partitionKey: { name: "staffId", type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
+      pointInTimeRecovery: true,
     });
 
     this.staffTable.addGlobalSecondaryIndex({
@@ -203,6 +206,7 @@ export class FoodwiseCoreStack extends cdk.NestedStack {
       partitionKey: { name: "entryId", type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
+      pointInTimeRecovery: true,
     });
 
     this.timeClockTable.addGlobalSecondaryIndex({

@@ -15,6 +15,7 @@ export type RootStackParamList = {
   ModeSelection: undefined;
   Kiosk: undefined;
   Login: undefined;
+  Onboarding: undefined;
   MainTabs: NavigatorScreenParams<TabParamList>;
   StoreDetail: undefined;
   BarcodeScanner: undefined;
