@@ -262,11 +262,11 @@ async function seed() {
   console.log("=== Stores ===");
   await put(T.STORES, {
     storeId: STORE1, ownerId: "a4c8f448-1031-70dc-991e-a60bc878349d", name: "Subway - Downtown Austin",
-    address: "123 Congress Ave, Austin TX 78701", createdAt: NOW, updatedAt: NOW,
+    address: "123 Congress Ave, Austin TX 78701", operatorType: "qsr", createdAt: NOW, updatedAt: NOW,
   });
   await put(T.STORES, {
     storeId: STORE2, ownerId: "a4c8f448-1031-70dc-991e-a60bc878349d", name: "Subway - Lakeline Mall",
-    address: "11200 Lakeline Mall Dr, Austin TX 78717", createdAt: NOW, updatedAt: NOW,
+    address: "11200 Lakeline Mall Dr, Austin TX 78717", operatorType: "qsr", createdAt: NOW, updatedAt: NOW,
   });
 
   // ── 2. INVENTORY ──

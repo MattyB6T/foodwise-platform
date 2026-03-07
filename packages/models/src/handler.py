@@ -83,11 +83,14 @@ def _fetch_sales_data(store_id: str, days: int = 90) -> list[dict[str, Any]]:
     return sales
 
 
-def _fetch_all_store_ids() -> list[str]:
-    """Scan the stores table to get all store IDs."""
+def _fetch_all_stores() -> list[dict[str, Any]]:
+    """Scan the stores table to get all stores with operator type."""
     table = dynamodb.Table(STORES_TABLE)
-    response = table.scan(ProjectionExpression="storeId")
-    return [item["storeId"] for item in response.get("Items", [])]
+    response = table.scan(ProjectionExpression="storeId, operatorType")
+    return [
+        {"storeId": item["storeId"], "operatorType": item.get("operatorType", "qsr")}
+        for item in response.get("Items", [])
+    ]
 
 
 def _fetch_recipes() -> list[dict[str, Any]]:
@@ -115,13 +118,31 @@ def _store_forecast(items: list[dict[str, Any]]) -> None:
             batch.put_item(Item=json.loads(json.dumps(item), parse_float=Decimal))
 
 
+def _fetch_store_operator_type(store_id: str) -> str:
+    """Fetch operator type for a single store."""
+    table = dynamodb.Table(STORES_TABLE)
+    response = table.get_item(
+        Key={"storeId": store_id},
+        ProjectionExpression="operatorType",
+    )
+    return response.get("Item", {}).get("operatorType", "qsr")
+
+
 def _run_forecast(
     store_ids: list[str] | None = None,
     lead_time_days: int = 2,
 ) -> dict[str, Any]:
     """Run the full forecast pipeline for given stores (or all stores)."""
+    store_operator_types: dict[str, str] = {}
+
     if store_ids is None:
-        store_ids = _fetch_all_store_ids()
+        stores = _fetch_all_stores()
+        store_ids = [s["storeId"] for s in stores]
+        for s in stores:
+            store_operator_types[s["storeId"]] = s.get("operatorType", "qsr")
+    else:
+        for sid in store_ids:
+            store_operator_types[sid] = _fetch_store_operator_type(sid)
 
     if not store_ids:
         return {"message": "No stores found", "forecasts": {}, "purchaseOrders": []}
@@ -134,7 +155,8 @@ def _run_forecast(
     all_purchase_orders: list[dict[str, Any]] = []
 
     for store_id in store_ids:
-        logger.info("Processing store: %s", store_id)
+        operator_type = store_operator_types.get(store_id, "qsr")
+        logger.info("Processing store: %s (type: %s)", store_id, operator_type)
 
         try:
             sales_data = _fetch_sales_data(store_id)
@@ -142,7 +164,7 @@ def _run_forecast(
                 logger.warning("No sales data for store %s, skipping", store_id)
                 continue
 
-            forecasts = build_forecast(sales_data)
+            forecasts = build_forecast(sales_data, operator_type=operator_type)
             all_forecasts.update(forecasts)
 
             # Generate purchase orders

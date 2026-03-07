@@ -10,6 +10,65 @@ export interface ErrorResponse {
   code: string;
 }
 
+// --- Operator Types ---
+
+export type OperatorType = "qsr" | "cafe" | "bar" | "hybrid" | "restaurant";
+
+export const OPERATOR_TYPE_LABELS: Record<OperatorType, string> = {
+  qsr: "Quick Service / Fast Food",
+  cafe: "Coffee Shop / Cafe",
+  bar: "Bar / Nightclub",
+  hybrid: "Bar + Restaurant / Gastropub",
+  restaurant: "Full Service Restaurant",
+};
+
+/** Operator-specific configuration used by health score, assistant, and UI. */
+export const OPERATOR_CONFIG: Record<OperatorType, {
+  foodCostTarget: number;
+  laborCostTarget: number;
+  wasteTarget: number;
+  primaryCostLabel: string;
+  peakPattern: string;
+  healthWeights: { foodCost: number; waste: number; forecast: number; turnover: number; stockout: number; labor: number };
+  healthWeightsNoLabor: { foodCost: number; waste: number; forecast: number; turnover: number; stockout: number };
+}> = {
+  qsr: {
+    foodCostTarget: 30, laborCostTarget: 30, wasteTarget: 4,
+    primaryCostLabel: "Food Cost",
+    peakPattern: "lunch and dinner peaks",
+    healthWeights: { foodCost: 0.25, waste: 0.20, forecast: 0.20, turnover: 0.10, stockout: 0.10, labor: 0.15 },
+    healthWeightsNoLabor: { foodCost: 0.30, waste: 0.25, forecast: 0.25, turnover: 0.10, stockout: 0.10 },
+  },
+  cafe: {
+    foodCostTarget: 35, laborCostTarget: 35, wasteTarget: 5,
+    primaryCostLabel: "Cost of Goods",
+    peakPattern: "morning rush, weekday-heavy",
+    healthWeights: { foodCost: 0.20, waste: 0.25, forecast: 0.20, turnover: 0.10, stockout: 0.10, labor: 0.15 },
+    healthWeightsNoLabor: { foodCost: 0.25, waste: 0.30, forecast: 0.25, turnover: 0.10, stockout: 0.10 },
+  },
+  bar: {
+    foodCostTarget: 22, laborCostTarget: 25, wasteTarget: 3,
+    primaryCostLabel: "Pour Cost",
+    peakPattern: "evening and late-night, weekend-heavy",
+    healthWeights: { foodCost: 0.30, waste: 0.15, forecast: 0.15, turnover: 0.10, stockout: 0.10, labor: 0.20 },
+    healthWeightsNoLabor: { foodCost: 0.35, waste: 0.20, forecast: 0.20, turnover: 0.10, stockout: 0.15 },
+  },
+  hybrid: {
+    foodCostTarget: 28, laborCostTarget: 30, wasteTarget: 4,
+    primaryCostLabel: "Food & Beverage Cost",
+    peakPattern: "lunch and evening peaks (bimodal)",
+    healthWeights: { foodCost: 0.25, waste: 0.20, forecast: 0.20, turnover: 0.10, stockout: 0.10, labor: 0.15 },
+    healthWeightsNoLabor: { foodCost: 0.30, waste: 0.25, forecast: 0.25, turnover: 0.10, stockout: 0.10 },
+  },
+  restaurant: {
+    foodCostTarget: 32, laborCostTarget: 33, wasteTarget: 4,
+    primaryCostLabel: "Food Cost",
+    peakPattern: "lunch and dinner service",
+    healthWeights: { foodCost: 0.25, waste: 0.20, forecast: 0.20, turnover: 0.10, stockout: 0.10, labor: 0.15 },
+    healthWeightsNoLabor: { foodCost: 0.30, waste: 0.25, forecast: 0.25, turnover: 0.10, stockout: 0.10 },
+  },
+};
+
 // --- Store ---
 
 export interface Store {
@@ -17,6 +76,7 @@ export interface Store {
   ownerId: string;
   name: string;
   address: string;
+  operatorType?: OperatorType;
   createdAt: string;
   updatedAt: string;
 }

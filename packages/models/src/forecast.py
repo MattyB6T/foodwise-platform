@@ -10,9 +10,42 @@ from prophet import Prophet
 logger = logging.getLogger(__name__)
 
 
+def _get_seasonality_config(operator_type: str) -> dict[str, Any]:
+    """Return Prophet seasonality settings based on operator type."""
+    configs = {
+        "qsr": {
+            "daily_seasonality": True,
+            "weekly_seasonality": True,
+            "changepoint_prior_scale": 0.05,
+        },
+        "cafe": {
+            "daily_seasonality": True,
+            "weekly_seasonality": True,
+            "changepoint_prior_scale": 0.03,  # more stable patterns
+        },
+        "bar": {
+            "daily_seasonality": True,
+            "weekly_seasonality": True,
+            "changepoint_prior_scale": 0.08,  # more volatile weekend patterns
+        },
+        "hybrid": {
+            "daily_seasonality": True,
+            "weekly_seasonality": True,
+            "changepoint_prior_scale": 0.05,
+        },
+        "restaurant": {
+            "daily_seasonality": True,
+            "weekly_seasonality": True,
+            "changepoint_prior_scale": 0.05,
+        },
+    }
+    return configs.get(operator_type, configs["qsr"])
+
+
 def build_forecast(
     sales_data: list[dict[str, Any]],
     forecast_days: int = 7,
+    operator_type: str = "qsr",
 ) -> dict[str, Any]:
     """Generate a demand forecast from historical daily sales data.
 
@@ -20,6 +53,7 @@ def build_forecast(
         sales_data: List of dicts with keys: date, store_id, recipe_id, quantity_sold.
                     Must have at least 30 days of data.
         forecast_days: Number of days to forecast (default 7).
+        operator_type: Type of food service operation (qsr, cafe, bar, hybrid, restaurant).
 
     Returns:
         Dict keyed by (store_id, recipe_id) with forecast rows.
@@ -41,6 +75,7 @@ def build_forecast(
             f"Need at least 30 days of data, got {unique_days}"
         )
 
+    seasonality = _get_seasonality_config(operator_type)
     forecasts: dict[str, Any] = {}
 
     for (store_id, recipe_id), group in df.groupby(["store_id", "recipe_id"]):
@@ -62,10 +97,10 @@ def build_forecast(
             continue
 
         model = Prophet(
-            daily_seasonality=True,
-            weekly_seasonality=True,
+            daily_seasonality=seasonality["daily_seasonality"],
+            weekly_seasonality=seasonality["weekly_seasonality"],
             yearly_seasonality=False,
-            changepoint_prior_scale=0.05,
+            changepoint_prior_scale=seasonality["changepoint_prior_scale"],
         )
         model.fit(prophet_df)
 

@@ -4,7 +4,6 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  ScrollView,
   Dimensions,
 } from "react-native";
 import { useTheme } from "../contexts/ThemeContext";
@@ -12,11 +11,25 @@ import { fontSize, spacing, type ColorScheme } from "../utils/theme";
 
 const { width } = Dimensions.get("window");
 
+const OPERATOR_TYPES = [
+  { key: "qsr", label: "Quick Service / Fast Food", icon: "🍔" },
+  { key: "cafe", label: "Coffee Shop / Cafe", icon: "☕" },
+  { key: "bar", label: "Bar / Nightclub", icon: "🍸" },
+  { key: "hybrid", label: "Bar + Restaurant / Gastropub", icon: "🍽️" },
+  { key: "restaurant", label: "Full Service Restaurant", icon: "👨‍🍳" },
+] as const;
+
 const STEPS = [
   {
     title: "Welcome to FoodWise",
     description: "Your complete food service management platform. Track inventory, reduce waste, and optimize operations — all in one place.",
     icon: "🍽️",
+  },
+  {
+    title: "What type of operation?",
+    description: "Select your business type so FoodWise can calibrate benchmarks, forecasts, and recommendations for your industry.",
+    icon: "🏪",
+    isOperatorStep: true,
   },
   {
     title: "Real-Time Inventory",
@@ -46,29 +59,62 @@ const STEPS = [
 ];
 
 interface OnboardingScreenProps {
-  onComplete: () => void;
+  onComplete: (operatorType?: string) => void;
 }
 
 export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   const { colors } = useTheme();
   const [currentStep, setCurrentStep] = useState(0);
+  const [selectedOperatorType, setSelectedOperatorType] = useState("qsr");
   const s = makeStyles(colors);
 
   const isLast = currentStep === STEPS.length - 1;
   const step = STEPS[currentStep];
+  const isOperatorStep = (step as any).isOperatorStep;
 
   return (
     <View style={[s.container, { backgroundColor: colors.background }]}>
       <View style={s.skipContainer}>
-        <TouchableOpacity onPress={onComplete}>
+        <TouchableOpacity onPress={() => onComplete(selectedOperatorType)}>
           <Text style={[s.skipText, { color: colors.textSecondary }]}>Skip</Text>
         </TouchableOpacity>
       </View>
 
       <View style={s.content}>
-        <Text style={s.icon}>{step.icon}</Text>
+        {!isOperatorStep && <Text style={s.icon}>{step.icon}</Text>}
         <Text style={[s.title, { color: colors.text }]}>{step.title}</Text>
         <Text style={[s.description, { color: colors.textSecondary }]}>{step.description}</Text>
+
+        {isOperatorStep && (
+          <View style={s.operatorList}>
+            {OPERATOR_TYPES.map((op) => (
+              <TouchableOpacity
+                key={op.key}
+                style={[
+                  s.operatorOption,
+                  {
+                    borderColor: selectedOperatorType === op.key ? colors.primary : colors.border,
+                    backgroundColor: selectedOperatorType === op.key ? colors.primary + "15" : colors.surface,
+                  },
+                ]}
+                onPress={() => setSelectedOperatorType(op.key)}
+              >
+                <Text style={s.operatorIcon}>{op.icon}</Text>
+                <Text
+                  style={[
+                    s.operatorLabel,
+                    { color: selectedOperatorType === op.key ? colors.primary : colors.text },
+                  ]}
+                >
+                  {op.label}
+                </Text>
+                {selectedOperatorType === op.key && (
+                  <Text style={[s.operatorCheck, { color: colors.primary }]}>✓</Text>
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
       </View>
 
       {/* Dots */}
@@ -97,7 +143,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
           style={[s.nextBtn, { backgroundColor: colors.primary, flex: currentStep === 0 ? 1 : undefined }]}
           onPress={() => {
             if (isLast) {
-              onComplete();
+              onComplete(selectedOperatorType);
             } else {
               setCurrentStep((prev) => prev + 1);
             }
@@ -118,7 +164,18 @@ const makeStyles = (colors: ColorScheme) =>
     content: { flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: spacing.lg },
     icon: { fontSize: 64, marginBottom: spacing.lg },
     title: { fontSize: 28, fontWeight: "700", textAlign: "center", marginBottom: spacing.md },
-    description: { fontSize: fontSize.md, textAlign: "center", lineHeight: 24, paddingHorizontal: spacing.md },
+    description: { fontSize: fontSize.md, textAlign: "center", lineHeight: 24, paddingHorizontal: spacing.md, marginBottom: spacing.md },
+    operatorList: { width: "100%", gap: spacing.sm, marginTop: spacing.sm },
+    operatorOption: {
+      flexDirection: "row",
+      alignItems: "center",
+      padding: spacing.md,
+      borderRadius: 12,
+      borderWidth: 2,
+    },
+    operatorIcon: { fontSize: 24, marginRight: spacing.sm, width: 32 },
+    operatorLabel: { fontSize: fontSize.md, fontWeight: "600", flex: 1 },
+    operatorCheck: { fontSize: 18, fontWeight: "700" },
     dotsContainer: { flexDirection: "row", justifyContent: "center", marginBottom: spacing.lg, gap: 8 },
     dot: { width: 10, height: 10, borderRadius: 5 },
     buttonContainer: { flexDirection: "row", gap: spacing.md, paddingBottom: spacing.lg },

@@ -7,7 +7,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
-import { StoreProvider } from "./src/contexts/StoreContext";
+import { StoreProvider, useStore } from "./src/contexts/StoreContext";
 import { ThemeProvider, useTheme } from "./src/contexts/ThemeContext";
 import { LoginScreen } from "./src/screens/LoginScreen";
 import { DashboardScreen } from "./src/screens/DashboardScreen";
@@ -85,10 +85,17 @@ const linking: any = {
 function MainTabs() {
   const { colors, isDark } = useTheme();
   const { user } = useAuth();
+  const { selectedOperatorType } = useStore();
 
   const groups = user?.groups || [];
   const isManager = groups.includes("owner") || groups.includes("manager");
   const isStaff = groups.includes("staff");
+
+  // Operator-type-aware labels
+  const wasteLabel = selectedOperatorType === "bar" ? "Waste" : "Waste";
+  const wasteHeader = selectedOperatorType === "bar" ? "Log Waste & Spillage" : "Log Waste";
+  const scannerHeader = selectedOperatorType === "bar" ? "Receive Delivery" : "Receive Shipment";
+  const countHeader = selectedOperatorType === "cafe" ? "Stock Count" : "Inventory";
   // readonly users get minimal tabs
 
   return (
@@ -159,21 +166,21 @@ function MainTabs() {
         <Tab.Screen
           name="ScannerTab"
           component={BarcodeScannerScreen}
-          options={{ title: "Scanner", headerTitle: "Receive Shipment" }}
+          options={{ title: "Scanner", headerTitle: scannerHeader }}
         />
       )}
       {(isManager || isStaff) && (
         <Tab.Screen
           name="CountTab"
           component={CountScreen}
-          options={{ title: "Inventory", headerTitle: "Inventory" }}
+          options={{ title: "Inventory", headerTitle: countHeader }}
         />
       )}
       {(isManager || isStaff) && (
         <Tab.Screen
           name="WasteTab"
           component={WasteLogScreen}
-          options={{ title: "Waste", headerTitle: "Log Waste" }}
+          options={{ title: wasteLabel, headerTitle: wasteHeader }}
         />
       )}
       {isManager && (
@@ -309,7 +316,10 @@ function AppNavigator() {
             >
               {() => (
                 <OnboardingScreen
-                  onComplete={async () => {
+                  onComplete={async (operatorType) => {
+                    if (operatorType) {
+                      await AsyncStorage.setItem("preferred_operator_type", operatorType);
+                    }
                     await AsyncStorage.setItem("onboarding_complete", "true");
                     setOnboardingComplete(true);
                   }}

@@ -45,6 +45,7 @@ export function SettingsScreen() {
   const [showAddStore, setShowAddStore] = useState(false);
   const [newStoreName, setNewStoreName] = useState("");
   const [newStoreAddress, setNewStoreAddress] = useState("");
+  const [newStoreOperatorType, setNewStoreOperatorType] = useState("qsr");
   const [addingStore, setAddingStore] = useState(false);
 
   // Kiosk mode
@@ -85,11 +86,12 @@ export function SettingsScreen() {
     }
     setAddingStore(true);
     try {
-      await api.createStore({ name, address });
+      await api.createStore({ name, address, operatorType: newStoreOperatorType });
       Alert.alert("Store Added", `"${name}" has been created.`);
       setShowAddStore(false);
       setNewStoreName("");
       setNewStoreAddress("");
+      setNewStoreOperatorType("qsr");
       refreshStores();
     } catch (err: any) {
       Alert.alert("Error", err.message || "Failed to create store");
@@ -231,19 +233,25 @@ export function SettingsScreen() {
       {/* Store Management */}
       <View style={[s.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <Text style={[s.sectionTitle, { color: colors.text }]}>Store Management</Text>
-        {stores.map((store) => (
-          <View key={store.storeId} style={s.row}>
-            <View style={s.rowLeft}>
-              <Text style={s.rowIcon}>🏪</Text>
-              <View>
-                <Text style={[s.rowLabel, { color: colors.text }]}>{store.name}</Text>
-                {store.storeId === selectedStoreId && (
-                  <Text style={[s.rowSub, { color: colors.primary }]}>Active</Text>
-                )}
+        {stores.map((store) => {
+          const opLabels: Record<string, string> = {
+            qsr: "QSR", cafe: "Cafe", bar: "Bar", hybrid: "Gastropub", restaurant: "Restaurant",
+          };
+          return (
+            <View key={store.storeId} style={s.row}>
+              <View style={s.rowLeft}>
+                <Text style={s.rowIcon}>🏪</Text>
+                <View>
+                  <Text style={[s.rowLabel, { color: colors.text }]}>{store.name}</Text>
+                  <Text style={[s.rowSub, { color: store.storeId === selectedStoreId ? colors.primary : colors.textSecondary }]}>
+                    {opLabels[store.operatorType || "qsr"] || "QSR"}
+                    {store.storeId === selectedStoreId ? " · Active" : ""}
+                  </Text>
+                </View>
               </View>
             </View>
-          </View>
-        ))}
+          );
+        })}
         {!showAddStore ? (
           <TouchableOpacity style={s.row} onPress={() => setShowAddStore(true)}>
             <View style={s.rowLeft}>
@@ -271,6 +279,24 @@ export function SettingsScreen() {
               placeholder="123 Main St, City, State"
               placeholderTextColor={colors.textSecondary}
             />
+            <Text style={[s.fieldLabel, { color: colors.textSecondary }]}>Business Type</Text>
+            {([
+              { key: "qsr", label: "Quick Service / Fast Food" },
+              { key: "cafe", label: "Coffee Shop / Cafe" },
+              { key: "bar", label: "Bar / Nightclub" },
+              { key: "hybrid", label: "Bar + Restaurant / Gastropub" },
+              { key: "restaurant", label: "Full Service Restaurant" },
+            ] as const).map((op) => (
+              <TouchableOpacity
+                key={op.key}
+                style={[s.storeOption, { borderColor: newStoreOperatorType === op.key ? colors.primary : colors.border }]}
+                onPress={() => setNewStoreOperatorType(op.key)}
+              >
+                <Text style={[s.storeOptionText, { color: newStoreOperatorType === op.key ? colors.primary : colors.text }]}>
+                  {newStoreOperatorType === op.key ? "● " : "○ "}{op.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
             <View style={s.passwordActions}>
               <TouchableOpacity
                 style={[s.cancelBtn, { borderColor: colors.border }]}

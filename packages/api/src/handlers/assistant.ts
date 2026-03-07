@@ -10,6 +10,9 @@ import {
   Transaction,
   WasteLog,
   PurchaseOrder,
+  OPERATOR_CONFIG,
+  OPERATOR_TYPE_LABELS,
+  OperatorType,
 } from "@foodwise/shared";
 import { docClient, TABLES } from "../utils/dynamo";
 import { success, error } from "../utils/response";
@@ -430,11 +433,21 @@ async function fetchContextData(
 function buildPrompt(question: string, ctx: DataContext): string {
   const sections: string[] = [];
 
+  const opType: OperatorType = (ctx.store?.operatorType as OperatorType) || "qsr";
+  const opConfig = OPERATOR_CONFIG[opType];
+  const opLabel = OPERATOR_TYPE_LABELS[opType];
+
   sections.push(
-    `You are the FoodWise AI operations assistant for a food service restaurant (Subway-style). ` +
+    `You are the FoodWise AI operations assistant for a ${opLabel} establishment. ` +
       `You help managers understand their store's performance and make data-driven decisions. ` +
       `Be specific, use numbers from the data, and give actionable recommendations. ` +
-      `Keep responses concise but thorough. Use bullet points for lists.`
+      `Keep responses concise but thorough. Use bullet points for lists.\n` +
+      `Key context for this operator type:\n` +
+      `- Primary cost metric: ${opConfig.primaryCostLabel}\n` +
+      `- Target ${opConfig.primaryCostLabel.toLowerCase()}: ${opConfig.foodCostTarget}%\n` +
+      `- Target labor cost: ${opConfig.laborCostTarget}%\n` +
+      `- Waste benchmark: under ${opConfig.wasteTarget}% of cost of goods\n` +
+      `- Typical peak pattern: ${opConfig.peakPattern}`
   );
 
   if (ctx.store) {
@@ -469,8 +482,8 @@ function buildPrompt(question: string, ctx: DataContext): string {
       `\n## Sales & Food Cost (Last 30 Days)\n` +
         `- Transactions: ${rt.count}\n` +
         `- Revenue: $${rt.totalRevenue.toFixed(2)}\n` +
-        `- Food cost: $${rt.totalFoodCost.toFixed(2)} (${rt.foodCostPercentage}%)\n` +
-        `- Industry target: 25-30% food cost`
+        `- ${opConfig.primaryCostLabel}: $${rt.totalFoodCost.toFixed(2)} (${rt.foodCostPercentage}%)\n` +
+        `- Target: ${opConfig.foodCostTarget}% ${opConfig.primaryCostLabel.toLowerCase()}`
     );
   }
 
@@ -493,7 +506,7 @@ function buildPrompt(question: string, ctx: DataContext): string {
           .map(([r, c]) => `${r}: $${c.toFixed(2)}`)
           .join(", ")}\n` +
         `- Top wasted ingredients: ${w.byIngredient.map((i) => `${i.name}: $${i.cost.toFixed(2)}`).join(", ")}\n` +
-        `- Industry benchmark: waste should be under 4% of food cost`
+        `- Target: waste under ${opConfig.wasteTarget}% of cost of goods`
     );
   }
 
@@ -529,7 +542,7 @@ function buildPrompt(question: string, ctx: DataContext): string {
         `- Total labor hours: ${lb.totalHours}\n` +
         `- Total labor cost: $${lb.totalCost.toFixed(2)}\n` +
         `- Labor cost %: ${lb.laborCostPercentage}% of revenue\n` +
-        `- Industry target: 25-30% labor cost\n` +
+        `- Target: ${opConfig.laborCostTarget}% labor cost\n` +
         `- Active employees: ${lb.activeStaff}\n` +
         `- Currently on shift: ${lb.currentlyOnShift}\n` +
         `- Top employees by hours:\n` +

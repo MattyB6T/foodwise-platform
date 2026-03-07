@@ -6,6 +6,8 @@ import {
   WasteLog,
   StoreSnapshot,
   StoreStatus,
+  OPERATOR_CONFIG,
+  OperatorType,
 } from "@foodwise/shared";
 import { docClient, TABLES } from "./dynamo";
 
@@ -24,6 +26,9 @@ function scoreStatus(score: number): StoreStatus {
 }
 
 export async function getStoreSnapshot(store: Store): Promise<StoreSnapshot> {
+  const opType: OperatorType = (store.operatorType as OperatorType) || "qsr";
+  const opConfig = OPERATOR_CONFIG[opType];
+
   const thirtyDaysAgo = new Date(Date.now() - THIRTY_DAYS_MS).toISOString();
   const sixtyDaysAgo = new Date(Date.now() - 2 * THIRTY_DAYS_MS).toISOString();
 
@@ -125,8 +130,9 @@ export async function getStoreSnapshot(store: Store): Promise<StoreSnapshot> {
     (i) => i.lowStockThreshold > 0 && i.quantity <= i.lowStockThreshold
   ).length;
 
-  // Health score (weighted average — matches getHealthScore.ts no-labor formula)
-  const foodCostScore = Math.max(0, Math.min(100, 100 - Math.max(0, foodCostPercentage - 25) * 3));
+  // Health score (weighted average — uses operator-type config)
+  const foodCostThreshold = opConfig.foodCostTarget - 5;
+  const foodCostScore = Math.max(0, Math.min(100, 100 - Math.max(0, foodCostPercentage - foodCostThreshold) * 3));
   const wasteScore = Math.max(0, Math.min(100, 100 - wastePercentage * 10));
   const forecastScore = forecastAccuracy;
   const stockoutScore = inventory.length > 0
@@ -150,21 +156,22 @@ export async function getStoreSnapshot(store: Store): Promise<StoreSnapshot> {
     inventoryTurnoverScore = Math.max(0, 50 - (inventoryTurnoverDays - 14) * 3);
   }
 
+  const w = opConfig.healthWeightsNoLabor;
   const healthScore = Math.round(
-    foodCostScore * 0.3 +
-    wasteScore * 0.25 +
-    forecastScore * 0.25 +
-    inventoryTurnoverScore * 0.1 +
-    stockoutScore * 0.1
+    foodCostScore * w.foodCost +
+    wasteScore * w.waste +
+    forecastScore * w.forecast +
+    inventoryTurnoverScore * w.turnover +
+    stockoutScore * w.stockout
   );
 
   return {
     storeId: store.storeId,
     storeName: store.name,
     foodCostPercentage,
-    foodCostStatus: status(foodCostPercentage, 30, 35),
+    foodCostStatus: status(foodCostPercentage, opConfig.foodCostTarget, opConfig.foodCostTarget + 5),
     wastePercentage,
-    wasteStatus: status(wastePercentage, 4, 7),
+    wasteStatus: status(wastePercentage, opConfig.wasteTarget, opConfig.wasteTarget + 3),
     healthScore,
     healthStatus: scoreStatus(healthScore),
     salesTrend,

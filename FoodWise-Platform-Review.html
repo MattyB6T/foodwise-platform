@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoodWise Platform Review</title>
+<style>
+  @page { margin: 0.75in; size: letter; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: #1a1a2e;
+    line-height: 1.6;
+    background: #fff;
+    padding: 48px 56px;
+    max-width: 850px;
+    margin: 0 auto;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    padding-bottom: 32px;
+    border-bottom: 3px solid #2d6a4f;
+    margin-bottom: 36px;
+  }
+  .header h1 {
+    font-size: 32px;
+    font-weight: 800;
+    color: #1b4332;
+    letter-spacing: -0.5px;
+  }
+  .header .subtitle {
+    font-size: 15px;
+    color: #555;
+    margin-top: 6px;
+  }
+  .header .tagline {
+    font-size: 13px;
+    color: #888;
+    margin-top: 4px;
+  }
+
+  /* Sections */
+  h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #2d6a4f;
+    margin: 32px 0 14px 0;
+    padding-bottom: 6px;
+    border-bottom: 2px solid #e8f5e9;
+  }
+  h3 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin: 18px 0 8px 0;
+  }
+
+  /* Overview box */
+  .overview {
+    background: #f0faf4;
+    border: 1px solid #c8e6c9;
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-bottom: 8px;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  /* Stats grid */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin: 16px 0 8px 0;
+  }
+  .stat-card {
+    background: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 14px 16px;
+    text-align: center;
+  }
+  .stat-card .number {
+    font-size: 26px;
+    font-weight: 800;
+    color: #2d6a4f;
+  }
+  .stat-card .label {
+    font-size: 11px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+  }
+
+  /* Feature sections */
+  .feature-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 12px 0;
+  }
+  .feature-box {
+    background: #fafafa;
+    border: 1px solid #e8e8e8;
+    border-radius: 8px;
+    padding: 16px 18px;
+    page-break-inside: avoid;
+  }
+  .feature-box h3 {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    color: #2d6a4f;
+  }
+  .feature-box ul {
+    list-style: none;
+    padding: 0;
+  }
+  .feature-box ul li {
+    font-size: 12.5px;
+    padding: 3px 0;
+    padding-left: 16px;
+    position: relative;
+    color: #333;
+  }
+  .feature-box ul li::before {
+    content: "\2022";
+    color: #2d6a4f;
+    font-weight: bold;
+    position: absolute;
+    left: 0;
+  }
+
+  /* Tech stack table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 13px;
+  }
+  table th {
+    background: #2d6a4f;
+    color: #fff;
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  table td {
+    padding: 9px 14px;
+    border-bottom: 1px solid #eee;
+    color: #333;
+  }
+  table tr:nth-child(even) td { background: #f8faf9; }
+
+  /* Strengths & growth */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 12px 0;
+  }
+  .col-box {
+    border-radius: 8px;
+    padding: 16px 18px;
+    page-break-inside: avoid;
+  }
+  .col-box.strengths {
+    background: #f0faf4;
+    border: 1px solid #a5d6a7;
+  }
+  .col-box.growth {
+    background: #fff8e1;
+    border: 1px solid #ffe082;
+  }
+  .col-box h3 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+  }
+  .col-box.strengths h3 { color: #2d6a4f; }
+  .col-box.growth h3 { color: #e65100; }
+  .col-box ul {
+    list-style: none;
+    padding: 0;
+  }
+  .col-box ul li {
+    font-size: 12.5px;
+    padding: 4px 0;
+    padding-left: 16px;
+    position: relative;
+    color: #333;
+  }
+  .col-box.strengths ul li::before {
+    content: "\2713";
+    color: #2d6a4f;
+    font-weight: bold;
+    position: absolute;
+    left: 0;
+  }
+  .col-box.growth ul li::before {
+    content: "\25B8";
+    color: #e65100;
+    position: absolute;
+    left: 0;
+  }
+
+  /* Architecture diagram */
+  .arch-box {
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 12px;
+    line-height: 1.8;
+    margin: 12px 0;
+    color: #333;
+  }
+
+  /* Footer */
+  .footer {
+    margin-top: 40px;
+    padding-top: 16px;
+    border-top: 2px solid #e8f5e9;
+    text-align: center;
+    font-size: 11px;
+    color: #999;
+  }
+
+  @media print {
+    body { padding: 0; }
+    .page-break { page-break-before: always; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>FoodWise Platform</h1>
+  <div class="subtitle">Full-Stack Restaurant Operations Management Platform</div>
+  <div class="tagline">Technical Review &amp; Feature Overview &mdash; March 2026</div>
+</div>
+
+<div class="overview">
+  <strong>FoodWise</strong> is an all-in-one platform for food service operators to manage inventory, reduce waste, control costs, schedule staff, and make data-driven decisions. It runs on <strong>iOS, Android, and Web</strong> from a single codebase, backed by a fully serverless AWS infrastructure. The platform includes AI-powered forecasting, real-time POS integrations, and a comprehensive health scoring engine built on industry-standard restaurant KPIs.
+</div>
+
+<h2>Platform at a Glance</h2>
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="number">136</div>
+    <div class="label">Source Files</div>
+  </div>
+  <div class="stat-card">
+    <div class="number">82</div>
+    <div class="label">API Handlers</div>
+  </div>
+  <div class="stat-card">
+    <div class="number">27</div>
+    <div class="label">Mobile Screens</div>
+  </div>
+  <div class="stat-card">
+    <div class="number">25</div>
+    <div class="label">Database Tables</div>
+  </div>
+</div>
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="number">14</div>
+    <div class="label">Lambda Functions</div>
+  </div>
+  <div class="stat-card">
+    <div class="number">324</div>
+    <div class="label">Cloud Resources</div>
+  </div>
+  <div class="stat-card">
+    <div class="number">3</div>
+    <div class="label">POS Integrations</div>
+  </div>
+  <div class="stat-card">
+    <div class="number">5</div>
+    <div class="label">CDK Stacks</div>
+  </div>
+</div>
+
+<h2>Feature Overview</h2>
+<div class="feature-grid">
+  <div class="feature-box">
+    <h3>Core Operations</h3>
+    <ul>
+      <li>Real-time inventory tracking with barcode scanning</li>
+      <li>Low-stock alerts and expiration tracking (FIFO)</li>
+      <li>Waste logging by reason with cost analysis</li>
+      <li>Purchase orders with supplier email delivery</li>
+      <li>Shipment receiving with variance tracking</li>
+      <li>Physical inventory count sheets and count variance reports</li>
+    </ul>
+  </div>
+  <div class="feature-box">
+    <h3>Financial Intelligence</h3>
+    <ul>
+      <li>Weighted health score engine (food cost, waste, forecast, turnover, stockouts, labor)</li>
+      <li>Owner dashboard with multi-store comparison</li>
+      <li>4 report types: Labor, P&amp;L, Food Cost, Count Variance</li>
+      <li>Menu engineering with recipe costing and margin analysis</li>
+      <li>Vendor price history and trend tracking</li>
+    </ul>
+  </div>
+  <div class="feature-box">
+    <h3>Staff &amp; Labor</h3>
+    <ul>
+      <li>Team management: invite, assign roles, deactivate</li>
+      <li>Role-based access (owner / manager / staff)</li>
+      <li>Shift scheduling with weekly view</li>
+      <li>Kiosk mode for employee clock-in/out with PIN auth</li>
+      <li>Timesheet approval and labor cost tracking</li>
+      <li>AI-powered weekly planner for staffing and ordering</li>
+    </ul>
+  </div>
+  <div class="feature-box">
+    <h3>AI &amp; Forecasting</h3>
+    <ul>
+      <li>Claude-powered AI assistant (Amazon Bedrock) with store context</li>
+      <li>Python ML demand forecasting model (Docker Lambda)</li>
+      <li>Weekly forecast accuracy tracking</li>
+      <li>Forecast-driven prep lists</li>
+      <li>Recipe scaling calculator</li>
+      <li>Actionable health score recommendations</li>
+    </ul>
+  </div>
+  <div class="feature-box">
+    <h3>POS Integrations</h3>
+    <ul>
+      <li>Toast: HMAC-SHA256 webhook for real-time sync</li>
+      <li>Square: OAuth + EventBridge polling (15 min)</li>
+      <li>CSV: S3-triggered import or direct API upload</li>
+      <li>Fuzzy ingredient matching (Levenshtein distance)</li>
+      <li>Auto-mapping at 85% confidence, review at 60%</li>
+      <li>Transaction normalization and deduplication</li>
+    </ul>
+  </div>
+  <div class="feature-box">
+    <h3>Security &amp; Compliance</h3>
+    <ul>
+      <li>Camera integration with footage viewing</li>
+      <li>Incident management and tracking</li>
+      <li>Temperature logging for food safety</li>
+      <li>Full audit trail (who changed what, when)</li>
+      <li>Push notifications for alerts and reminders</li>
+      <li>Offline mode with local data caching</li>
+    </ul>
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<h2>Architecture</h2>
+<div class="arch-box">
+  <strong>Client Layer</strong><br>
+  &nbsp;&nbsp;React Native (Expo) &rarr; iOS + Android + Web<br><br>
+  <strong>API Layer</strong><br>
+  &nbsp;&nbsp;API Gateway &rarr; 14 Lambda Routers (Node.js 22, TypeScript)<br>
+  &nbsp;&nbsp;Cognito JWT Authentication on all endpoints<br><br>
+  <strong>Data Layer</strong><br>
+  &nbsp;&nbsp;25 DynamoDB Tables (PAY_PER_REQUEST, PITR on critical tables)<br><br>
+  <strong>AI Layer</strong><br>
+  &nbsp;&nbsp;Amazon Bedrock (Claude Sonnet) + Python ML Forecast (Docker Lambda)<br><br>
+  <strong>Integration Layer</strong><br>
+  &nbsp;&nbsp;Toast Webhooks | Square OAuth + Polling | CSV/S3 Import<br><br>
+  <strong>Infrastructure</strong><br>
+  &nbsp;&nbsp;AWS CDK &rarr; 5 Nested Stacks &rarr; ~324 CloudFormation Resources
+</div>
+
+<h2>Technology Stack</h2>
+<table>
+  <tr>
+    <th>Layer</th>
+    <th>Technology</th>
+    <th>Details</th>
+  </tr>
+  <tr>
+    <td><strong>Mobile App</strong></td>
+    <td>React Native + Expo</td>
+    <td>27 screens, 3 contexts, themed components, dark mode</td>
+  </tr>
+  <tr>
+    <td><strong>API Backend</strong></td>
+    <td>TypeScript, Node.js 22</td>
+    <td>82 handler files consolidated into 14 Lambda routers</td>
+  </tr>
+  <tr>
+    <td><strong>Database</strong></td>
+    <td>Amazon DynamoDB</td>
+    <td>25 tables, GSIs for query patterns, PAY_PER_REQUEST</td>
+  </tr>
+  <tr>
+    <td><strong>Authentication</strong></td>
+    <td>Amazon Cognito</td>
+    <td>User pool with JWT tokens, role-based access control</td>
+  </tr>
+  <tr>
+    <td><strong>AI / ML</strong></td>
+    <td>Bedrock (Claude) + Python</td>
+    <td>Contextual assistant + demand forecasting model</td>
+  </tr>
+  <tr>
+    <td><strong>Infrastructure</strong></td>
+    <td>AWS CDK (TypeScript)</td>
+    <td>5 nested stacks, EventBridge schedulers, S3 buckets</td>
+  </tr>
+  <tr>
+    <td><strong>Shared Types</strong></td>
+    <td>TypeScript (@foodwise/shared)</td>
+    <td>Shared interfaces and types across API and mobile</td>
+  </tr>
+</table>
+
+<h2>Assessment</h2>
+<div class="two-col">
+  <div class="col-box strengths">
+    <h3>Strengths</h3>
+    <ul>
+      <li>Comprehensive scope covering the full restaurant operations lifecycle</li>
+      <li>Real financial metrics using industry-standard KPIs (food cost %, waste %, labor %)</li>
+      <li>Fully serverless &mdash; scales to zero, pay-per-use, zero servers to manage</li>
+      <li>Single codebase for three platforms (iOS, Android, Web)</li>
+      <li>AI-native design with assistant and forecasting built in</li>
+      <li>Production-grade infrastructure with PITR, monitoring, and security hardening</li>
+    </ul>
+  </div>
+  <div class="col-box growth">
+    <h3>Growth Opportunities</h3>
+    <ul>
+      <li>Connect live POS data from a real store environment</li>
+      <li>Add unit and integration test suite</li>
+      <li>Set up CI/CD pipeline for automated deployments</li>
+      <li>Add stricter API input validation (e.g., Zod schemas)</li>
+      <li>Implement offline conflict resolution for sync</li>
+      <li>Expand to multi-tenant SaaS with billing</li>
+    </ul>
+  </div>
+</div>
+
+<div class="footer">
+  FoodWise Platform &mdash; Built by Matt &mdash; March 2026<br>
+  github.com/MattyB6T/foodwise-platform
+</div>
+
+</body>
+</html>

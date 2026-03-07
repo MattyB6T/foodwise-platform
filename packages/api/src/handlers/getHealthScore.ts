@@ -7,6 +7,8 @@ import {
   WasteLog,
   HealthScoreBreakdown,
   StoreStatus,
+  OPERATOR_CONFIG,
+  OperatorType,
 } from "@foodwise/shared";
 import { docClient, TABLES } from "../utils/dynamo";
 import { success, error } from "../utils/response";
@@ -37,6 +39,8 @@ export const handler = async (
       return error("Store not found", 404, "STORE_NOT_FOUND");
     }
     const store = storeRes.Item as Store;
+    const opType: OperatorType = (store.operatorType as OperatorType) || "qsr";
+    const opConfig = OPERATOR_CONFIG[opType];
 
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
     const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
@@ -113,10 +117,10 @@ export const handler = async (
     const totalFoodCost = transactions.reduce((s, tx) => s + (tx.foodCost || 0), 0);
     const foodCostPercentage =
       totalRevenue > 0 ? Math.round((totalFoodCost / totalRevenue) * 10000) / 100 : 0;
-    // Ideal: 25-30%. Score drops as it goes above 30%
+    const foodCostThreshold = opConfig.foodCostTarget - 5;
     const foodCostScore = Math.max(
       0,
-      Math.min(100, 100 - Math.max(0, foodCostPercentage - 25) * 3)
+      Math.min(100, 100 - Math.max(0, foodCostPercentage - foodCostThreshold) * 3)
     );
 
     // --- Waste Score ---
@@ -198,42 +202,52 @@ export const handler = async (
     }
     const laborCostPercentage =
       totalRevenue > 0 ? Math.round((totalLaborCost / totalRevenue) * 10000) / 100 : 0;
-    // Ideal labor cost: 25-30% for food service. Score drops above 30%
+    const laborThreshold = opConfig.laborCostTarget - 5;
     const laborEfficiencyScore = totalLaborCost > 0
-      ? Math.max(0, Math.min(100, 100 - Math.max(0, laborCostPercentage - 25) * 3))
-      : 100; // No data = don't penalize
+      ? Math.max(0, Math.min(100, 100 - Math.max(0, laborCostPercentage - laborThreshold) * 3))
+      : 100;
 
-    // --- Overall Score (weighted) ---
+    // --- Overall Score (weighted by operator type) ---
     const hasLaborData = totalLaborCost > 0;
-    const overallScore = Math.round(
-      hasLaborData
-        ? foodCostScore * 0.25 +
-          wasteScore * 0.2 +
-          forecastAccuracyScore * 0.2 +
-          inventoryTurnoverScore * 0.1 +
-          stockoutScore * 0.1 +
-          laborEfficiencyScore * 0.15
-        : foodCostScore * 0.3 +
-          wasteScore * 0.25 +
-          forecastAccuracyScore * 0.25 +
-          inventoryTurnoverScore * 0.1 +
-          stockoutScore * 0.1
-    );
+    let overallScore: number;
+    if (hasLaborData) {
+      const w = opConfig.healthWeights;
+      overallScore = Math.round(
+        foodCostScore * w.foodCost +
+        wasteScore * w.waste +
+        forecastAccuracyScore * w.forecast +
+        inventoryTurnoverScore * w.turnover +
+        stockoutScore * w.stockout +
+        laborEfficiencyScore * w.labor
+      );
+    } else {
+      const w = opConfig.healthWeightsNoLabor;
+      overallScore = Math.round(
+        foodCostScore * w.foodCost +
+        wasteScore * w.waste +
+        forecastAccuracyScore * w.forecast +
+        inventoryTurnoverScore * w.turnover +
+        stockoutScore * w.stockout
+      );
+    }
 
     // --- Recommendations ---
     const recommendations: string[] = [];
 
-    if (foodCostPercentage > 35) {
+    const fcTarget = opConfig.foodCostTarget;
+    const costLabel = opConfig.primaryCostLabel;
+    if (foodCostPercentage > fcTarget + 5) {
       recommendations.push(
-        `Food cost is ${foodCostPercentage}% — review portion sizes and supplier pricing to get below 30%`
+        `${costLabel} is ${foodCostPercentage}% — review portion sizes and supplier pricing to get below ${fcTarget}%`
       );
-    } else if (foodCostPercentage > 30) {
+    } else if (foodCostPercentage > fcTarget) {
       recommendations.push(
-        `Food cost is ${foodCostPercentage}% — slightly above the 30% target. Check for portion creep`
+        `${costLabel} is ${foodCostPercentage}% — slightly above the ${fcTarget}% target. Check for portion creep`
       );
     }
 
-    if (wastePercentage > 7) {
+    const wasteWarn = opConfig.wasteTarget + 3;
+    if (wastePercentage > wasteWarn) {
       const topWasteReason = wasteLogs.reduce(
         (acc, w) => {
           acc[w.reason] = (acc[w.reason] || 0) + w.totalCost;
@@ -247,9 +261,9 @@ export const handler = async (
           `Waste is ${wastePercentage}% of food cost — primary cause is "${topReason[0]}" ($${topReason[1].toFixed(2)}). Focus waste reduction efforts here`
         );
       }
-    } else if (wastePercentage > 4) {
+    } else if (wastePercentage > opConfig.wasteTarget) {
       recommendations.push(
-        `Waste at ${wastePercentage}% — above the 4% industry benchmark. Review FIFO compliance`
+        `Waste at ${wastePercentage}% — above the ${opConfig.wasteTarget}% benchmark. Review FIFO compliance`
       );
     }
 
@@ -275,13 +289,14 @@ export const handler = async (
       );
     }
 
-    if (laborCostPercentage > 35) {
+    const laborTarget = opConfig.laborCostTarget;
+    if (laborCostPercentage > laborTarget + 5) {
       recommendations.push(
-        `Labor cost is ${laborCostPercentage}% of revenue — review scheduling to reduce overtime and align staffing with demand`
+        `Labor cost is ${laborCostPercentage}% of revenue — review scheduling to reduce overtime and align staffing with demand (target: ${laborTarget}%)`
       );
-    } else if (laborCostPercentage > 30 && totalLaborCost > 0) {
+    } else if (laborCostPercentage > laborTarget && totalLaborCost > 0) {
       recommendations.push(
-        `Labor cost at ${laborCostPercentage}% — slightly above the 30% target. Check for overstaffing during slow periods`
+        `Labor cost at ${laborCostPercentage}% — slightly above the ${laborTarget}% target. Check for overstaffing during slow periods`
       );
     }
 

@@ -2,10 +2,17 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { api } from "../utils/api";
 import { useAuth } from "./AuthContext";
 
+interface StoreInfo {
+  storeId: string;
+  name: string;
+  operatorType?: string;
+}
+
 interface StoreContextType {
   selectedStoreId: string | null;
   selectedStoreName: string | null;
-  stores: { storeId: string; name: string }[];
+  selectedOperatorType: string;
+  stores: StoreInfo[];
   storesLoading: boolean;
   setSelectedStore: (id: string, name: string) => void;
   refreshStores: () => void;
@@ -17,13 +24,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
   const [selectedStoreId, setStoreId] = useState<string | null>(null);
   const [selectedStoreName, setStoreName] = useState<string | null>(null);
-  const [stores, setStores] = useState<{ storeId: string; name: string }[]>([]);
+  const [stores, setStores] = useState<StoreInfo[]>([]);
   const [storesLoading, setStoresLoading] = useState(false);
 
   const setSelectedStore = (id: string, name: string) => {
     setStoreId(id);
     setStoreName(name);
   };
+
+  const selectedOperatorType = stores.find(s => s.storeId === selectedStoreId)?.operatorType || "qsr";
 
   const refreshStores = useCallback(async () => {
     if (!isAuthenticated) return;
@@ -33,9 +42,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const storeList = (res.stores || []).map((s: any) => ({
         storeId: s.storeId,
         name: s.name,
+        operatorType: s.operatorType || "qsr",
       }));
       setStores(storeList);
-      // Auto-select first store if none selected
       if (!selectedStoreId && storeList.length > 0) {
         setStoreId(storeList[0].storeId);
         setStoreName(storeList[0].name);
@@ -53,7 +62,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <StoreContext.Provider
-      value={{ selectedStoreId, selectedStoreName, stores, storesLoading, setSelectedStore, refreshStores }}
+      value={{ selectedStoreId, selectedStoreName, selectedOperatorType, stores, storesLoading, setSelectedStore, refreshStores }}
     >
       {children}
     </StoreContext.Provider>
