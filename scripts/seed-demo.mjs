@@ -245,13 +245,13 @@ const SUPPLIERS = [
 
 // ── Staff ──
 const STAFF = [
-  { storeId: STORE1, staffId: "staff-001", name: "Maria Garcia",   email: "maria@subway.example.com", role: "manager", phone: "512-555-1001", active: true },
-  { storeId: STORE1, staffId: "staff-002", name: "James Wilson",   email: "james@subway.example.com", role: "sandwich-artist", phone: "512-555-1002", active: true },
-  { storeId: STORE1, staffId: "staff-003", name: "Sarah Kim",      email: "sarah@subway.example.com", role: "sandwich-artist", phone: "512-555-1003", active: true },
-  { storeId: STORE1, staffId: "staff-004", name: "Mike Johnson",   email: "mike@subway.example.com",  role: "shift-lead", phone: "512-555-1004", active: true },
-  { storeId: STORE2, staffId: "staff-005", name: "Alex Rivera",    email: "alex@subway.example.com",  role: "manager", phone: "512-555-2001", active: true },
-  { storeId: STORE2, staffId: "staff-006", name: "Emma Davis",     email: "emma@subway.example.com",  role: "sandwich-artist", phone: "512-555-2002", active: true },
-  { storeId: STORE2, staffId: "staff-007", name: "Chris Taylor",   email: "chris@subway.example.com", role: "sandwich-artist", phone: "512-555-2003", active: true },
+  { storeId: STORE1, staffId: "staff-001", name: "Maria Garcia",   email: "maria@subway.example.com", role: "manager", phone: "512-555-1001", active: true, hourlyRate: 22.00 },
+  { storeId: STORE1, staffId: "staff-002", name: "James Wilson",   email: "james@subway.example.com", role: "sandwich-artist", phone: "512-555-1002", active: true, hourlyRate: 14.50 },
+  { storeId: STORE1, staffId: "staff-003", name: "Sarah Kim",      email: "sarah@subway.example.com", role: "sandwich-artist", phone: "512-555-1003", active: true, hourlyRate: 14.50 },
+  { storeId: STORE1, staffId: "staff-004", name: "Mike Johnson",   email: "mike@subway.example.com",  role: "shift-lead", phone: "512-555-1004", active: true, hourlyRate: 17.00 },
+  { storeId: STORE2, staffId: "staff-005", name: "Alex Rivera",    email: "alex@subway.example.com",  role: "manager", phone: "512-555-2001", active: true, hourlyRate: 22.00 },
+  { storeId: STORE2, staffId: "staff-006", name: "Emma Davis",     email: "emma@subway.example.com",  role: "sandwich-artist", phone: "512-555-2002", active: true, hourlyRate: 14.50 },
+  { storeId: STORE2, staffId: "staff-007", name: "Chris Taylor",   email: "chris@subway.example.com", role: "sandwich-artist", phone: "512-555-2003", active: true, hourlyRate: 14.50 },
 ];
 
 // ══════════════════════════════════════════════════════════════
@@ -555,12 +555,14 @@ async function seed() {
       if (rand(0, 6) === 0) continue; // ~14% days off
       const clockInH = s.role === "manager" ? rand(6, 8) : rand(9, 11);
       const hours = r2(rand(6, 9) + Math.random());
+      const clockInTime = tsAt(date, clockInH, rand(0, 15));
+      const clockOutTime = tsAt(date, clockInH + Math.floor(hours), rand(0, 59));
       clockBatch.push({
         storeId: s.storeId, entryId: `clock-${s.staffId}-d${day}`,
         staffId: s.staffId, staffName: s.name,
-        clockIn: tsAt(date, clockInH, rand(0, 15)),
-        clockOut: tsAt(date, clockInH + Math.floor(hours), rand(0, 59)),
-        hoursWorked: hours, status: "completed", date, approved: day > 0,
+        clockIn: clockInTime, clockOut: clockOutTime,
+        clockInTime, clockOutTime,
+        totalHours: hours, status: "completed", date, approved: day > 0,
       });
     }
   }

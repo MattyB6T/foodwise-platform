@@ -125,16 +125,37 @@ export async function getStoreSnapshot(store: Store): Promise<StoreSnapshot> {
     (i) => i.lowStockThreshold > 0 && i.quantity <= i.lowStockThreshold
   ).length;
 
-  // Health score (simple weighted average)
-  const foodCostScore = Math.max(0, 100 - Math.max(0, foodCostPercentage - 25) * 3);
-  const wasteScore = Math.max(0, 100 - wastePercentage * 10);
+  // Health score (weighted average — matches getHealthScore.ts no-labor formula)
+  const foodCostScore = Math.max(0, Math.min(100, 100 - Math.max(0, foodCostPercentage - 25) * 3));
+  const wasteScore = Math.max(0, Math.min(100, 100 - wastePercentage * 10));
   const forecastScore = forecastAccuracy;
   const stockoutScore = inventory.length > 0
     ? Math.max(0, 100 - (lowStockCount / inventory.length) * 200)
     : 100;
 
+  // Inventory turnover (days of inventory on hand)
+  const totalInventoryValue = inventory.reduce(
+    (s, i) => s + i.quantity * i.costPerUnit, 0
+  );
+  const dailyCOGS = totalFoodCost / 30;
+  const inventoryTurnoverDays = dailyCOGS > 0 ? Math.round(totalInventoryValue / dailyCOGS) : 0;
+  let inventoryTurnoverScore: number;
+  if (inventoryTurnoverDays <= 3) {
+    inventoryTurnoverScore = 60;
+  } else if (inventoryTurnoverDays <= 7) {
+    inventoryTurnoverScore = 100;
+  } else if (inventoryTurnoverDays <= 14) {
+    inventoryTurnoverScore = Math.max(50, 100 - (inventoryTurnoverDays - 7) * 7);
+  } else {
+    inventoryTurnoverScore = Math.max(0, 50 - (inventoryTurnoverDays - 14) * 3);
+  }
+
   const healthScore = Math.round(
-    foodCostScore * 0.3 + wasteScore * 0.25 + forecastScore * 0.25 + stockoutScore * 0.2
+    foodCostScore * 0.3 +
+    wasteScore * 0.25 +
+    forecastScore * 0.25 +
+    inventoryTurnoverScore * 0.1 +
+    stockoutScore * 0.1
   );
 
   return {

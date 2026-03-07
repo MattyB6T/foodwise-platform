@@ -225,6 +225,14 @@ function AppNavigator() {
     headerStyle: { backgroundColor: colors.primary },
     headerTintColor: "#fff",
     headerTitleStyle: { fontWeight: "700" as const },
+    headerLeft: () => (
+      <TouchableOpacity
+        onPress={() => navigation.navigate("MainTabs", { screen: "DashboardTab" })}
+        style={{ marginLeft: 14, padding: 4 }}
+      >
+        <Ionicons name="home-outline" size={21} color="rgba(255,255,255,0.85)" />
+      </TouchableOpacity>
+    ),
     headerRight: () => (
       <TouchableOpacity
         onPress={() => navigation.navigate("MainTabs", { screen: "SettingsTab" })}
