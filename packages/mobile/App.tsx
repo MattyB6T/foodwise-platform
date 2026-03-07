@@ -82,33 +82,48 @@ function MainTabs() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        headerStyle: { backgroundColor: colors.primary },
+        headerStyle: {
+          backgroundColor: colors.primary,
+          shadowColor: colors.primary,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.15,
+          shadowRadius: 6,
+          elevation: 4,
+        },
         headerTintColor: "#fff",
-        headerTitleStyle: { fontWeight: "700" },
+        headerTitleStyle: { fontWeight: "800", fontSize: 18, letterSpacing: -0.3 },
         tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textSecondary,
+        tabBarInactiveTintColor: colors.textMuted,
         tabBarStyle: {
           backgroundColor: colors.surface,
-          borderTopColor: colors.border,
-          paddingBottom: Platform.OS === "ios" ? 20 : 8,
-          paddingTop: 8,
-          height: Platform.OS === "ios" ? 85 : 65,
+          borderTopColor: colors.borderLight,
+          borderTopWidth: 1,
+          paddingBottom: Platform.OS === "ios" ? 24 : 10,
+          paddingTop: 10,
+          height: Platform.OS === "ios" ? 88 : 68,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.06,
+          shadowRadius: 8,
+          elevation: 8,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: "600",
+          fontSize: 10,
+          fontWeight: "700",
+          letterSpacing: 0.2,
+          marginTop: 2,
         },
-        tabBarIcon: ({ color, size }) => {
+        tabBarIcon: ({ color, focused, size }) => {
           let iconName: keyof typeof Ionicons.glyphMap = "home";
-          if (route.name === "DashboardTab") iconName = "grid";
-          else if (route.name === "ScannerTab") iconName = "scan";
-          else if (route.name === "CountTab") iconName = "clipboard-outline";
-          else if (route.name === "WasteTab") iconName = "trash";
-          else if (route.name === "OrdersTab") iconName = "clipboard";
-          else if (route.name === "SecurityTab") iconName = "shield-checkmark";
-          else if (route.name === "AssistantTab") iconName = "chatbubble-ellipses";
-          else if (route.name === "SettingsTab") iconName = "settings";
-          return <Ionicons name={iconName} size={size} color={color} />;
+          if (route.name === "DashboardTab") iconName = focused ? "grid" : "grid-outline";
+          else if (route.name === "ScannerTab") iconName = focused ? "scan" : "scan-outline";
+          else if (route.name === "CountTab") iconName = focused ? "clipboard" : "clipboard-outline";
+          else if (route.name === "WasteTab") iconName = focused ? "trash" : "trash-outline";
+          else if (route.name === "OrdersTab") iconName = focused ? "cart" : "cart-outline";
+          else if (route.name === "SecurityTab") iconName = focused ? "shield-checkmark" : "shield-checkmark-outline";
+          else if (route.name === "AssistantTab") iconName = focused ? "chatbubble-ellipses" : "chatbubble-ellipses-outline";
+          else if (route.name === "SettingsTab") iconName = focused ? "settings" : "settings-outline";
+          return <Ionicons name={iconName} size={focused ? size + 1 : size} color={color} />;
         },
       })}
     >
@@ -116,14 +131,14 @@ function MainTabs() {
         name="DashboardTab"
         component={DashboardScreen}
         options={({ navigation }) => ({
-          title: "Dashboard",
+          title: "Home",
           headerTitle: "FoodWise",
           headerRight: () => (
             <TouchableOpacity
               onPress={() => navigation.navigate("SettingsTab")}
-              style={{ marginRight: 12 }}
+              style={{ marginRight: 14, padding: 4 }}
             >
-              <Ionicons name="settings-outline" size={22} color="#fff" />
+              <Ionicons name="settings-outline" size={21} color="rgba(255,255,255,0.85)" />
             </TouchableOpacity>
           ),
         })}

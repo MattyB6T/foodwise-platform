@@ -1,35 +1,79 @@
 export type ColorScheme = typeof lightColors;
 
 export const lightColors = {
-  primary: "#2c5282",
-  primaryLight: "#4299e1",
-  secondary: "#38a169",
-  danger: "#e53e3e",
-  warning: "#d69e2e",
-  background: "#f7fafc",
+  // Brand
+  primary: "#16a34a",
+  primaryLight: "#22c55e",
+  primaryDark: "#15803d",
+  secondary: "#3b82f6",
+  secondaryLight: "#60a5fa",
+
+  // Semantic
+  danger: "#ef4444",
+  dangerLight: "#fecaca",
+  warning: "#f59e0b",
+  warningLight: "#fef3c7",
+  success: "#16a34a",
+  successLight: "#dcfce7",
+
+  // Surfaces
+  background: "#f8fafc",
   surface: "#ffffff",
-  text: "#1a202c",
-  textSecondary: "#718096",
+  surfaceHover: "#f1f5f9",
+  card: "#ffffff",
+
+  // Text
+  text: "#0f172a",
+  textSecondary: "#64748b",
+  textMuted: "#94a3b8",
+
+  // Borders & Dividers
   border: "#e2e8f0",
-  green: "#38a169",
-  yellow: "#d69e2e",
-  red: "#e53e3e",
+  borderLight: "#f1f5f9",
+  divider: "#e2e8f0",
+
+  // Status colors (kept for StatusBadge compat)
+  green: "#16a34a",
+  yellow: "#f59e0b",
+  red: "#ef4444",
 };
 
 export const darkColors: ColorScheme = {
-  primary: "#4299e1",
-  primaryLight: "#63b3ed",
-  secondary: "#48bb78",
-  danger: "#fc8181",
-  warning: "#f6e05e",
-  background: "#1A1A2E",
-  surface: "#16213E",
-  text: "#E0E0E0",
-  textSecondary: "#A0AEC0",
-  border: "#2A2A4A",
-  green: "#48bb78",
-  yellow: "#f6e05e",
-  red: "#fc8181",
+  // Brand
+  primary: "#22c55e",
+  primaryLight: "#4ade80",
+  primaryDark: "#16a34a",
+  secondary: "#60a5fa",
+  secondaryLight: "#93c5fd",
+
+  // Semantic
+  danger: "#f87171",
+  dangerLight: "#450a0a",
+  warning: "#fbbf24",
+  warningLight: "#451a03",
+  success: "#4ade80",
+  successLight: "#052e16",
+
+  // Surfaces
+  background: "#0f172a",
+  surface: "#1e293b",
+  surfaceHover: "#334155",
+  card: "#1e293b",
+
+  // Text
+  text: "#f1f5f9",
+  textSecondary: "#94a3b8",
+  textMuted: "#64748b",
+
+  // Borders & Dividers
+  border: "#334155",
+  borderLight: "#1e293b",
+  divider: "#334155",
+
+  // Status colors
+  green: "#4ade80",
+  yellow: "#fbbf24",
+  red: "#f87171",
 };
 
 // Default export for backward compat — screens that haven't migrated yet
@@ -41,13 +85,23 @@ export const spacing = {
   md: 16,
   lg: 24,
   xl: 32,
+  xxl: 48,
 };
 
 export const fontSize = {
-  xs: 12,
-  sm: 14,
-  md: 16,
-  lg: 20,
+  xs: 11,
+  sm: 13,
+  md: 15,
+  lg: 18,
   xl: 24,
   xxl: 32,
+  hero: 42,
+};
+
+export const borderRadius = {
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  full: 9999,
 };
