@@ -33,6 +33,7 @@ import { LiveStaffScreen } from "./src/screens/LiveStaffScreen";
 import { IntegrationsScreen } from "./src/screens/IntegrationsScreen";
 import { MappingScreen } from "./src/screens/MappingScreen";
 import { OnboardingScreen } from "./src/screens/OnboardingScreen";
+import { ManagementScreen } from "./src/screens/ManagementScreen";
 import type { RootStackParamList, TabParamList } from "./src/navigation/types";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -52,8 +53,6 @@ const linking: any = {
           ScannerTab: "scan",
           CountTab: "count",
           WasteTab: "waste",
-          OrdersTab: "orders",
-          SecurityTab: "security",
           AssistantTab: "assistant",
           SettingsTab: "settings",
         },
@@ -74,6 +73,7 @@ const linking: any = {
       Timesheet: "timesheet",
       TimeEntryDetail: "time-entry",
       LiveStaff: "live-staff",
+      Management: "management",
     },
   },
 };
@@ -123,8 +123,6 @@ function MainTabs() {
           else if (route.name === "ScannerTab") iconName = focused ? "scan" : "scan-outline";
           else if (route.name === "CountTab") iconName = focused ? "cube" : "cube-outline";
           else if (route.name === "WasteTab") iconName = focused ? "trash" : "trash-outline";
-          else if (route.name === "OrdersTab") iconName = focused ? "cart" : "cart-outline";
-          else if (route.name === "SecurityTab") iconName = focused ? "shield-checkmark" : "shield-checkmark-outline";
           else if (route.name === "AssistantTab") iconName = focused ? "chatbubble-ellipses" : "chatbubble-ellipses-outline";
           else if (route.name === "SettingsTab") iconName = focused ? "settings" : "settings-outline";
           return <Ionicons name={iconName} size={focused ? 22 : 20} color={color} />;
@@ -161,16 +159,6 @@ function MainTabs() {
         name="WasteTab"
         component={WasteLogScreen}
         options={{ title: "Waste", headerTitle: "Log Waste" }}
-      />
-      <Tab.Screen
-        name="OrdersTab"
-        component={OrderReviewScreen}
-        options={{ title: "Orders", headerTitle: "Purchase Orders" }}
-      />
-      <Tab.Screen
-        name="SecurityTab"
-        component={SecurityScreen}
-        options={{ title: "Security", headerTitle: "Security" }}
       />
       <Tab.Screen
         name="AssistantTab"
@@ -322,6 +310,7 @@ function AppNavigator() {
           <Stack.Screen name="Timesheet" component={TimesheetScreen} options={{ title: "Timesheets" }} />
           <Stack.Screen name="TimeEntryDetail" component={TimeEntryDetailScreen} options={{ title: "Entry Detail" }} />
           <Stack.Screen name="LiveStaff" component={LiveStaffScreen} options={{ title: "Who's In" }} />
+          <Stack.Screen name="Management" component={ManagementScreen} options={{ title: "Management" }} />
           <Stack.Screen name="Integrations" component={IntegrationsScreen} options={{ title: "POS Integrations" }} />
           <Stack.Screen name="MappingScreen" component={MappingScreen} options={{ title: "Item Mappings" }} />
         </>

@@ -138,6 +138,26 @@ export function DashboardScreen() {
         )}
       </View>
 
+      {/* Management Hub — manager/owner only */}
+      {user?.groups?.some((g: string) => ["owner", "manager"].includes(g)) && (
+        <TouchableOpacity
+          style={[s.managementCard, { backgroundColor: colors.primaryDark || colors.primary, borderColor: colors.primary }]}
+          onPress={() => navigation.navigate("Management" as any)}
+          activeOpacity={0.7}
+        >
+          <View style={s.managementLeft}>
+            <View style={s.managementIconWrap}>
+              <Ionicons name="briefcase" size={22} color="#fff" />
+            </View>
+            <View>
+              <Text style={s.managementTitle}>Management</Text>
+              <Text style={s.managementSubtitle}>Security, orders, timesheets, staff & reports</Text>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.7)" />
+        </TouchableOpacity>
+      )}
+
       {/* Stores Section */}
       <View style={s.sectionHeaderRow}>
         <View>
@@ -287,6 +307,42 @@ const makeStyles = (colors: ColorScheme) =>
       gap: spacing.sm,
     },
     metricHalf: { flex: 1 },
+
+    // Management card
+    managementCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginHorizontal: spacing.lg,
+      marginTop: spacing.lg,
+      padding: spacing.md,
+      borderRadius: borderRadius.lg,
+      borderWidth: 1,
+    },
+    managementLeft: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm + 2,
+      flex: 1,
+    },
+    managementIconWrap: {
+      width: 40,
+      height: 40,
+      borderRadius: borderRadius.sm,
+      backgroundColor: "rgba(255,255,255,0.2)",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    managementTitle: {
+      fontSize: fontSize.md,
+      fontWeight: "700",
+      color: "#fff",
+    },
+    managementSubtitle: {
+      fontSize: fontSize.xs,
+      color: "rgba(255,255,255,0.7)",
+      marginTop: 2,
+    },
 
     // Section header
     sectionHeaderRow: {

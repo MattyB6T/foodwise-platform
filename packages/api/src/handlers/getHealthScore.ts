@@ -1,5 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { QueryCommand, GetCommand } from "@aws-sdk/lib-dynamodb";
+import { QueryCommand, GetCommand, BatchGetCommand } from "@aws-sdk/lib-dynamodb";
 import {
   Store,
   InventoryItem,
@@ -42,7 +42,7 @@ export const handler = async (
     const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
 
     // Parallel data fetches
-    const [inventoryRes, txRes, wasteRes, forecastRes, receivingRes] =
+    const [inventoryRes, txRes, wasteRes, forecastRes, receivingRes, staffRes, timeClockRes] =
       await Promise.all([
         docClient.send(
           new QueryCommand({
@@ -83,6 +83,22 @@ export const handler = async (
             IndexName: "storeId-index",
             KeyConditionExpression: "storeId = :s",
             ExpressionAttributeValues: { ":s": storeId },
+          })
+        ),
+        docClient.send(
+          new QueryCommand({
+            TableName: TABLES.STAFF,
+            IndexName: "storeId-index",
+            KeyConditionExpression: "storeId = :s",
+            ExpressionAttributeValues: { ":s": storeId },
+          })
+        ),
+        docClient.send(
+          new QueryCommand({
+            TableName: TABLES.TIME_CLOCK,
+            IndexName: "storeId-clockInTime-index",
+            KeyConditionExpression: "storeId = :s AND clockInTime >= :since",
+            ExpressionAttributeValues: { ":s": storeId, ":since": thirtyDaysAgo },
           })
         ),
       ]);
@@ -166,13 +182,42 @@ export const handler = async (
         ? Math.max(0, 100 - (lowStockCount / inventory.length) * 200)
         : 100;
 
+    // --- Labor Efficiency Score ---
+    const staffItems = staffRes.Items || [];
+    const timeEntries = timeClockRes.Items || [];
+    const rateMap: Record<string, number> = {};
+    for (const s of staffItems) {
+      if (s.hourlyRate) rateMap[s.staffId] = s.hourlyRate;
+    }
+    let totalLaborHours = 0;
+    let totalLaborCost = 0;
+    for (const e of timeEntries) {
+      const hours = e.totalHours || 0;
+      totalLaborHours += hours;
+      totalLaborCost += hours * (rateMap[e.staffId] || 0);
+    }
+    const laborCostPercentage =
+      totalRevenue > 0 ? Math.round((totalLaborCost / totalRevenue) * 10000) / 100 : 0;
+    // Ideal labor cost: 25-30% for food service. Score drops above 30%
+    const laborEfficiencyScore = totalLaborCost > 0
+      ? Math.max(0, Math.min(100, 100 - Math.max(0, laborCostPercentage - 25) * 3))
+      : 100; // No data = don't penalize
+
     // --- Overall Score (weighted) ---
+    const hasLaborData = totalLaborCost > 0;
     const overallScore = Math.round(
-      foodCostScore * 0.3 +
-        wasteScore * 0.25 +
-        forecastAccuracyScore * 0.25 +
-        inventoryTurnoverScore * 0.1 +
-        stockoutScore * 0.1
+      hasLaborData
+        ? foodCostScore * 0.25 +
+          wasteScore * 0.2 +
+          forecastAccuracyScore * 0.2 +
+          inventoryTurnoverScore * 0.1 +
+          stockoutScore * 0.1 +
+          laborEfficiencyScore * 0.15
+        : foodCostScore * 0.3 +
+          wasteScore * 0.25 +
+          forecastAccuracyScore * 0.25 +
+          inventoryTurnoverScore * 0.1 +
+          stockoutScore * 0.1
     );
 
     // --- Recommendations ---
@@ -230,6 +275,16 @@ export const handler = async (
       );
     }
 
+    if (laborCostPercentage > 35) {
+      recommendations.push(
+        `Labor cost is ${laborCostPercentage}% of revenue — review scheduling to reduce overtime and align staffing with demand`
+      );
+    } else if (laborCostPercentage > 30 && totalLaborCost > 0) {
+      recommendations.push(
+        `Labor cost at ${laborCostPercentage}% — slightly above the 30% target. Check for overstaffing during slow periods`
+      );
+    }
+
     const result: HealthScoreBreakdown = {
       storeId,
       storeName: store.name,
@@ -241,6 +296,7 @@ export const handler = async (
         forecastAccuracyScore: Math.round(forecastAccuracyScore),
         inventoryTurnoverScore: Math.round(inventoryTurnoverScore),
         stockoutScore: Math.round(stockoutScore),
+        ...(hasLaborData ? { laborEfficiencyScore: Math.round(laborEfficiencyScore) } : {}),
       },
       details: {
         foodCostPercentage,
@@ -248,6 +304,11 @@ export const handler = async (
         forecastAccuracy,
         inventoryTurnoverDays,
         stockoutRate,
+        ...(hasLaborData ? {
+          laborCostPercentage,
+          totalLaborCost: Math.round(totalLaborCost * 100) / 100,
+          totalLaborHours: Math.round(totalLaborHours * 100) / 100,
+        } : {}),
       },
       recommendations,
       generatedAt: new Date().toISOString(),

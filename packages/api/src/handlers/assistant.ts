@@ -32,6 +32,15 @@ interface DataContext {
   forecasts?: { recipeKey: string; predicted: number; actual?: number }[];
   openPurchaseOrders?: { orderId: string; supplierName: string; status: string; totalCost: number; expectedDeliveryDate: string }[];
   peerStores?: { storeId: string; name: string; foodCostPercentage: number; wastePercentage: number }[];
+  labor?: {
+    totalHours: number;
+    totalCost: number;
+    laborCostPercentage: number;
+    activeStaff: number;
+    currentlyOnShift: number;
+    employees: { name: string; hours: number; cost: number }[];
+  };
+  schedule?: { staffName: string; date: string; startTime: string; endTime: string }[];
 }
 
 function classifyQuestion(question: string): string[] {
@@ -61,6 +70,11 @@ function classifyQuestion(question: string): string[] {
   }
   if (q.includes("sales") || q.includes("revenue") || q.includes("busy")) {
     topics.push("sales");
+  }
+  if (q.includes("staff") || q.includes("labor") || q.includes("schedule") || q.includes("employee") ||
+      q.includes("overtime") || q.includes("hours") || q.includes("shift") || q.includes("payroll") ||
+      q.includes("understaffed") || q.includes("overstaffed") || q.includes("clock")) {
+    topics.push("staffing");
   }
 
   // Default: fetch core data
@@ -252,6 +266,107 @@ async function fetchContextData(
     );
   }
 
+  // Staffing & labor data
+  if (topics.includes("staffing") || topics.includes("trends")) {
+    fetches.push(
+      (async () => {
+        // Get staff list with hourly rates
+        const staffResult = await docClient.send(
+          new QueryCommand({
+            TableName: TABLES.STAFF,
+            IndexName: "storeId-index",
+            KeyConditionExpression: "storeId = :s",
+            ExpressionAttributeValues: { ":s": storeId },
+          })
+        );
+        const staffItems = staffResult.Items || [];
+        const rateMap: Record<string, number> = {};
+        const nameMap: Record<string, string> = {};
+        for (const s of staffItems) {
+          if (s.hourlyRate) rateMap[s.staffId] = s.hourlyRate;
+          nameMap[s.staffId] = s.name;
+        }
+
+        // Get time clock entries for last 30 days
+        const tcResult = await docClient.send(
+          new QueryCommand({
+            TableName: TABLES.TIME_CLOCK,
+            IndexName: "storeId-clockInTime-index",
+            KeyConditionExpression: "storeId = :s AND clockInTime >= :since",
+            ExpressionAttributeValues: { ":s": storeId, ":since": thirtyDaysAgo },
+          })
+        );
+        const entries = tcResult.Items || [];
+
+        // Count currently on shift
+        const onShift = entries.filter((e: any) => !e.clockOutTime).length;
+
+        // Aggregate hours and cost by employee
+        const empMap: Record<string, { hours: number; cost: number }> = {};
+        for (const e of entries) {
+          const hours = e.totalHours || 0;
+          const rate = rateMap[e.staffId] || 0;
+          if (!empMap[e.staffId]) empMap[e.staffId] = { hours: 0, cost: 0 };
+          empMap[e.staffId].hours += hours;
+          empMap[e.staffId].cost += hours * rate;
+        }
+
+        let totalHours = 0;
+        let totalCost = 0;
+        const employees: { name: string; hours: number; cost: number }[] = [];
+        for (const [sid, data] of Object.entries(empMap)) {
+          totalHours += data.hours;
+          totalCost += data.cost;
+          employees.push({
+            name: nameMap[sid] || sid,
+            hours: Math.round(data.hours * 100) / 100,
+            cost: Math.round(data.cost * 100) / 100,
+          });
+        }
+        employees.sort((a, b) => b.hours - a.hours);
+
+        const revenue = ctx.recentTransactions?.totalRevenue || 0;
+        ctx.labor = {
+          totalHours: Math.round(totalHours * 100) / 100,
+          totalCost: Math.round(totalCost * 100) / 100,
+          laborCostPercentage: revenue > 0 ? Math.round((totalCost / revenue) * 10000) / 100 : 0,
+          activeStaff: staffItems.filter((s: any) => s.active !== false).length,
+          currentlyOnShift: onShift,
+          employees: employees.slice(0, 10),
+        };
+      })()
+    );
+  }
+
+  // Upcoming schedule
+  if (topics.includes("staffing")) {
+    fetches.push(
+      docClient
+        .send(
+          new QueryCommand({
+            TableName: TABLES.SCHEDULES,
+            IndexName: "storeId-date-index",
+            KeyConditionExpression: "storeId = :s AND #d >= :today",
+            ExpressionAttributeNames: { "#d": "date" },
+            ExpressionAttributeValues: {
+              ":s": storeId,
+              ":today": new Date().toISOString().split("T")[0],
+            },
+            Limit: 30,
+          })
+        )
+        .then((res) => {
+          ctx.schedule = (res.Items || []).map((s: any) => ({
+            staffName: s.staffName || s.staffId,
+            date: s.date,
+            startTime: s.startTime,
+            endTime: s.endTime,
+          }));
+        })
+        .catch(() => { /* schedule table may not exist yet */ })
+    );
+  }
+
   // Peer store comparison
   if (topics.includes("comparison")) {
     fetches.push(
@@ -401,6 +516,31 @@ function buildPrompt(question: string, ctx: DataContext): string {
             (po) =>
               `- ${po.supplierName}: $${po.totalCost.toFixed(2)} (${po.status}, expected ${po.expectedDeliveryDate})`
           )
+          .join("\n")
+    );
+  }
+
+  if (ctx.labor) {
+    const lb = ctx.labor;
+    sections.push(
+      `\n## Labor & Staffing (Last 30 Days)\n` +
+        `- Total labor hours: ${lb.totalHours}\n` +
+        `- Total labor cost: $${lb.totalCost.toFixed(2)}\n` +
+        `- Labor cost %: ${lb.laborCostPercentage}% of revenue\n` +
+        `- Industry target: 25-30% labor cost\n` +
+        `- Active employees: ${lb.activeStaff}\n` +
+        `- Currently on shift: ${lb.currentlyOnShift}\n` +
+        `- Top employees by hours:\n` +
+        lb.employees.map((e) => `  - ${e.name}: ${e.hours} hrs ($${e.cost.toFixed(2)})`).join("\n")
+    );
+  }
+
+  if (ctx.schedule && ctx.schedule.length > 0) {
+    sections.push(
+      `\n## Upcoming Schedule (next shifts)\n` +
+        ctx.schedule
+          .slice(0, 15)
+          .map((s) => `- ${s.staffName}: ${s.date} ${s.startTime}-${s.endTime}`)
           .join("\n")
     );
   }

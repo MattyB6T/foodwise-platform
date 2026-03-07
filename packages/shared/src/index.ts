@@ -280,6 +280,7 @@ export interface HealthScoreBreakdown {
     forecastAccuracyScore: number;
     inventoryTurnoverScore: number;
     stockoutScore: number;
+    laborEfficiencyScore?: number;
   };
   details: {
     foodCostPercentage: number;
@@ -287,6 +288,9 @@ export interface HealthScoreBreakdown {
     forecastAccuracy: number;
     inventoryTurnoverDays: number;
     stockoutRate: number;
+    laborCostPercentage?: number;
+    totalLaborCost?: number;
+    totalLaborHours?: number;
   };
   recommendations: string[];
   generatedAt: string;

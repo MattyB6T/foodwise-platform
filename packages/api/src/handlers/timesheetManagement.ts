@@ -1,5 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { QueryCommand, UpdateCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
+import { QueryCommand, UpdateCommand, PutCommand, BatchGetCommand } from "@aws-sdk/lib-dynamodb";
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { v4 as uuidv4 } from "uuid";
@@ -229,9 +229,41 @@ export const handler = async (
         byEmployee[e.staffId].totalHours += e.totalHours || 0;
       }
 
+      // If caller is manager+, enrich with labor cost from staff hourly rates
+      const isManager = auth.role === "manager" || auth.role === "owner";
+      let totalLaborCost = 0;
+
+      if (isManager) {
+        const staffIds = Object.keys(byEmployee);
+        if (staffIds.length > 0) {
+          // Batch get staff records for hourly rates (max 100 at a time)
+          const batchKeys = staffIds.map((id) => ({ staffId: id }));
+          const batchRes = await docClient.send(
+            new BatchGetCommand({
+              RequestItems: {
+                [TABLES.STAFF]: { Keys: batchKeys },
+              },
+            })
+          );
+          const staffRecords = batchRes.Responses?.[TABLES.STAFF] || [];
+          const rateMap: Record<string, number> = {};
+          for (const s of staffRecords) {
+            if (s.hourlyRate) rateMap[s.staffId] = s.hourlyRate;
+          }
+
+          for (const emp of Object.values(byEmployee)) {
+            const rate = rateMap[emp.staffId] || 0;
+            emp.hourlyRate = rate;
+            emp.laborCost = Math.round(emp.totalHours * rate * 100) / 100;
+            totalLaborCost += emp.laborCost;
+          }
+        }
+      }
+
       return success({
         employees: Object.values(byEmployee),
         totalEntries: entries.length,
+        ...(isManager ? { totalLaborCost: Math.round(totalLaborCost * 100) / 100 } : {}),
       });
     }
 

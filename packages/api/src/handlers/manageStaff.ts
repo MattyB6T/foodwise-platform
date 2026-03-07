@@ -10,6 +10,7 @@ interface StaffBody {
   name: string;
   role: Role;
   phone?: string;
+  hourlyRate?: number;
 }
 
 export const handler = async (
@@ -53,6 +54,7 @@ export const handler = async (
         name: body.name,
         role: body.role,
         phone: body.phone || null,
+        hourlyRate: body.hourlyRate ?? null,
         active: true,
         createdBy: auth.claims.email,
         createdAt: now,
@@ -99,6 +101,7 @@ export const handler = async (
       if (body.role) { updates.push("#role = :role"); values[":role"] = body.role; }
       if (body.phone !== undefined) { updates.push("phone = :phone"); values[":phone"] = body.phone; }
       if (body.active !== undefined) { updates.push("active = :active"); values[":active"] = body.active; }
+      if (body.hourlyRate !== undefined) { updates.push("hourlyRate = :rate"); values[":rate"] = body.hourlyRate; }
 
       await docClient.send(
         new UpdateCommand({

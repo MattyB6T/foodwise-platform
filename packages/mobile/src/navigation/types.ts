@@ -5,8 +5,6 @@ export type TabParamList = {
   ScannerTab: undefined;
   CountTab: undefined;
   WasteTab: undefined;
-  OrdersTab: undefined;
-  SecurityTab: undefined;
   AssistantTab: undefined;
   SettingsTab: undefined;
 };
@@ -42,6 +40,7 @@ export type RootStackParamList = {
     week: string;
   };
   LiveStaff: undefined;
+  Management: undefined;
   Integrations: undefined;
   MappingScreen: { connectionId?: string; posSystem?: string };
 };
