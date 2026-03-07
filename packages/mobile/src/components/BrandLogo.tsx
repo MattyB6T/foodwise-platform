@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { spacing } from "../utils/theme";
 
@@ -51,12 +51,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#2c5282",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#2c5282",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 8,
-  },
+    ...(Platform.OS === "web"
+      ? { boxShadow: "0px 4px 12px rgba(44, 82, 130, 0.35)" }
+      : { shadowColor: "#2c5282", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 12, elevation: 8 }),
+  } as any,
   textWrap: {
     flexDirection: "row",
   },
