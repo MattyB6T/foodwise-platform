@@ -34,6 +34,7 @@ import { IntegrationsScreen } from "./src/screens/IntegrationsScreen";
 import { MappingScreen } from "./src/screens/MappingScreen";
 import { OnboardingScreen } from "./src/screens/OnboardingScreen";
 import { ManagementScreen } from "./src/screens/ManagementScreen";
+import { WeeklyPlanScreen } from "./src/screens/WeeklyPlanScreen";
 import type { RootStackParamList, TabParamList } from "./src/navigation/types";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -74,6 +75,7 @@ const linking: any = {
       TimeEntryDetail: "time-entry",
       LiveStaff: "live-staff",
       Management: "management",
+      WeeklyPlan: "weekly-plan",
     },
   },
 };
@@ -311,6 +313,7 @@ function AppNavigator() {
           <Stack.Screen name="TimeEntryDetail" component={TimeEntryDetailScreen} options={{ title: "Entry Detail" }} />
           <Stack.Screen name="LiveStaff" component={LiveStaffScreen} options={{ title: "Who's In" }} />
           <Stack.Screen name="Management" component={ManagementScreen} options={{ title: "Management" }} />
+          <Stack.Screen name="WeeklyPlan" component={WeeklyPlanScreen} options={{ title: "Weekly Plan" }} />
           <Stack.Screen name="Integrations" component={IntegrationsScreen} options={{ title: "POS Integrations" }} />
           <Stack.Screen name="MappingScreen" component={MappingScreen} options={{ title: "Item Mappings" }} />
         </>

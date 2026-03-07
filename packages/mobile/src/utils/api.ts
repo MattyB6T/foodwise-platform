@@ -309,6 +309,15 @@ export const api = {
   syncSquareCatalog: (storeId: string, accessToken: string) =>
     request<any>("POST", `/stores/${storeId}/pos/square/catalog-sync`, { accessToken }),
 
+  // Weekly Planner (manager/owner)
+  getWeeklyPlan: (storeId: string, buffer?: number, lookback?: number) => {
+    const qs = new URLSearchParams();
+    if (buffer !== undefined) qs.set("buffer", String(buffer));
+    if (lookback !== undefined) qs.set("lookback", String(lookback));
+    const query = qs.toString();
+    return request<any>("GET", `/stores/${storeId}/weekly-plan${query ? `?${query}` : ""}`);
+  },
+
   // Transactions (for timeline view)
   getTransactions: (storeId: string, startDate?: string, endDate?: string) => {
     const qs = new URLSearchParams();

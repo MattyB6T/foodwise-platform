@@ -92,6 +92,7 @@ async function fetchContextData(
   const ctx: DataContext = {};
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
   const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
+  const oneEightyDaysAgo = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString();
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
   // Always fetch store info
@@ -119,8 +120,9 @@ async function fetchContextData(
     );
   }
 
-  // Recent transactions (last 30d)
+  // Recent transactions — use 180d window for trend questions, 30d otherwise
   if (topics.includes("food_cost") || topics.includes("sales") || topics.includes("trends")) {
+    const txLookback = topics.includes("trends") ? oneEightyDaysAgo : thirtyDaysAgo;
     fetches.push(
       docClient
         .send(
@@ -129,7 +131,7 @@ async function fetchContextData(
             IndexName: "timestamp-index",
             KeyConditionExpression: "storeId = :s AND #ts >= :since",
             ExpressionAttributeNames: { "#ts": "timestamp" },
-            ExpressionAttributeValues: { ":s": storeId, ":since": thirtyDaysAgo },
+            ExpressionAttributeValues: { ":s": storeId, ":since": txLookback },
           })
         )
         .then((res) => {

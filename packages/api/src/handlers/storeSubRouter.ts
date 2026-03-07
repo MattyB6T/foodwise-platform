@@ -14,6 +14,7 @@ import { handler as staffPinHandler } from "./staffPin";
 import { handler as setExpirationHandler } from "./setExpiration";
 import { handler as getExpirationAlertsHandler } from "./getExpirationAlerts";
 import { handler as posIntegrationHandler } from "./posIntegrationRouter";
+import { handler as weeklyPlannerHandler } from "./weeklyPlanner";
 import { error } from "../utils/response";
 
 const CORS_HEADERS = {
@@ -51,6 +52,9 @@ export const handler = async (
 
   // Staff routes
   if (path.includes("/staff")) return staffScheduleHandler(event);
+
+  // Weekly planner
+  if (path.includes("/weekly-plan")) return weeklyPlannerHandler(event);
 
   // Analytics routes
   if (path.includes("/menu-engineering") || path.includes("/health-score"))

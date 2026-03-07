@@ -41,6 +41,7 @@ export type RootStackParamList = {
   };
   LiveStaff: undefined;
   Management: undefined;
+  WeeklyPlan: undefined;
   Integrations: undefined;
   MappingScreen: { connectionId?: string; posSystem?: string };
 };

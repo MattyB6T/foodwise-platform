@@ -74,6 +74,14 @@ export function ManagementScreen() {
       screen: "LiveStaff",
     },
     {
+      title: "Weekly Plan",
+      subtitle: "AI-powered staffing, ordering & waste plan",
+      icon: "analytics",
+      iconColor: "#dd6b20",
+      bgColor: "#feebc8",
+      screen: "WeeklyPlan",
+    },
+    {
       title: "Reports",
       subtitle: "Weekly reports & data exports",
       icon: "bar-chart",
