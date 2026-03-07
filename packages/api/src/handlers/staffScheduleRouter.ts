@@ -18,9 +18,9 @@ export const handler = async (
     return manageScheduleHandler(event);
   }
   if (
-    resource.includes("/staff") &&
+    (resource.includes("/staff") || path.includes("/staff")) &&
     method === "GET" &&
-    resource.endsWith("/staff")
+    (resource.endsWith("/staff") || path.endsWith("/staff"))
   ) {
     return listStaffHandler(event);
   }
