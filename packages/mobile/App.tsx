@@ -84,11 +84,9 @@ function MainTabs() {
       screenOptions={({ route }) => ({
         headerStyle: {
           backgroundColor: colors.primary,
-          shadowColor: colors.primary,
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.15,
-          shadowRadius: 6,
-          elevation: 4,
+          shadowColor: "transparent",
+          shadowOpacity: 0,
+          elevation: 0,
         },
         headerTintColor: "#fff",
         headerTitleStyle: { fontWeight: "800", fontSize: 18, letterSpacing: -0.3 },
@@ -98,20 +96,14 @@ function MainTabs() {
           backgroundColor: colors.surface,
           borderTopColor: colors.borderLight,
           borderTopWidth: 1,
-          paddingBottom: Platform.OS === "ios" ? 24 : 10,
-          paddingTop: 10,
-          height: Platform.OS === "ios" ? 88 : 68,
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.06,
-          shadowRadius: 8,
-          elevation: 8,
+          paddingBottom: Platform.OS === "ios" ? 20 : 6,
+          paddingTop: 6,
+          height: Platform.OS === "ios" ? 80 : 60,
         },
         tabBarLabelStyle: {
-          fontSize: 10,
-          fontWeight: "700",
-          letterSpacing: 0.2,
-          marginTop: 2,
+          fontSize: 9,
+          fontWeight: "600",
+          marginTop: 1,
         },
         tabBarIcon: ({ color, focused, size }) => {
           let iconName: keyof typeof Ionicons.glyphMap = "home";
@@ -123,7 +115,7 @@ function MainTabs() {
           else if (route.name === "SecurityTab") iconName = focused ? "shield-checkmark" : "shield-checkmark-outline";
           else if (route.name === "AssistantTab") iconName = focused ? "chatbubble-ellipses" : "chatbubble-ellipses-outline";
           else if (route.name === "SettingsTab") iconName = focused ? "settings" : "settings-outline";
-          return <Ionicons name={iconName} size={focused ? size + 1 : size} color={color} />;
+          return <Ionicons name={iconName} size={focused ? 22 : 20} color={color} />;
         },
       })}
     >
