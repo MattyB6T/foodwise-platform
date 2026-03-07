@@ -83,7 +83,7 @@ function MainTabs() {
 
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
+      screenOptions={({ route, navigation }) => ({
         headerStyle: {
           backgroundColor: colors.primary,
           shadowColor: "transparent",
@@ -92,6 +92,16 @@ function MainTabs() {
         },
         headerTintColor: "#fff",
         headerTitleStyle: { fontWeight: "800", fontSize: 18, letterSpacing: -0.3 },
+        headerLeft: route.name !== "DashboardTab"
+          ? () => (
+              <TouchableOpacity
+                onPress={() => navigation.navigate("DashboardTab")}
+                style={{ marginLeft: 14, padding: 4 }}
+              >
+                <Ionicons name="home-outline" size={21} color="rgba(255,255,255,0.85)" />
+              </TouchableOpacity>
+            )
+          : undefined,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarStyle: {
