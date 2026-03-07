@@ -494,6 +494,7 @@ export const handler = async (
       return error("AI assistant is temporarily unavailable due to high usage. Please try again later.", 429, "THROTTLED");
     }
     if (errName === "AccessDeniedException") {
+      console.error("Bedrock AccessDeniedException:", (err as any)?.message);
       return error("AI assistant model access is not configured. Please contact support.", 503, "MODEL_ACCESS_DENIED");
     }
     console.error("Assistant error:", err);

@@ -370,14 +370,8 @@ export class FoodwiseCoreStack extends cdk.NestedStack {
       },
       accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
-      signInCaseSensitive: false,
     });
 
-    // Enable Cognito Advanced Security (brute force protection, adaptive auth)
-    const cfnUserPool = this.userPool.node.defaultChild as cognito.CfnUserPool;
-    cfnUserPool.userPoolAddOns = {
-      advancedSecurityMode: "ENFORCED",
-    };
 
     this.userPoolClient = this.userPool.addClient("FoodwiseAppClient", {
       userPoolClientName: "foodwise-app-client",
