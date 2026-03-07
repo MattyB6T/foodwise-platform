@@ -3,6 +3,7 @@ import { handler as registerPushTokenHandler } from "./registerPushToken";
 import { handler as getNotificationPrefsHandler } from "./getNotificationPrefs";
 import { handler as updateNotificationPrefsHandler } from "./updateNotificationPrefs";
 import { handler as sendNotificationHandler } from "./sendNotification";
+import { error } from "../utils/response";
 
 export const handler = async (
   event: APIGatewayProxyEvent
@@ -47,13 +48,5 @@ export const handler = async (
     return sendNotificationHandler(event);
   }
 
-  return {
-    statusCode: 404,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers": "Content-Type,Authorization",
-      "Access-Control-Allow-Methods": "GET,POST,PUT,OPTIONS",
-    },
-    body: JSON.stringify({ message: "Notification route not found" }),
-  };
+  return error("Notification route not found", 404, "NOT_FOUND");
 };

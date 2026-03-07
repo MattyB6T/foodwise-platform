@@ -3,6 +3,7 @@ import { handler as createCountHandler } from "./createCount";
 import { handler as listCountsHandler } from "./listCounts";
 import { handler as saveCountHandler } from "./saveCount";
 import { handler as getCountVarianceHandler } from "./getCountVariance";
+import { error } from "../utils/response";
 
 export const handler = async (
   event: APIGatewayProxyEvent
@@ -45,13 +46,5 @@ export const handler = async (
     return listCountsHandler(event);
   }
 
-  return {
-    statusCode: 404,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers": "Content-Type,Authorization",
-      "Access-Control-Allow-Methods": "GET,POST,PUT,OPTIONS",
-    },
-    body: JSON.stringify({ message: "Count route not found" }),
-  };
+  return error("Count route not found", 404, "NOT_FOUND");
 };

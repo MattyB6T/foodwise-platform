@@ -2,6 +2,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { handler as recordWasteHandler } from "./recordWaste";
 import { handler as listWasteHandler } from "./listWaste";
 import { handler as getWasteAnalyticsHandler } from "./getWasteAnalytics";
+import { error } from "../utils/response";
 
 export const handler = async (
   event: APIGatewayProxyEvent
@@ -35,13 +36,5 @@ export const handler = async (
     return listWasteHandler(event);
   }
 
-  return {
-    statusCode: 404,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers": "Content-Type,Authorization",
-      "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-    },
-    body: JSON.stringify({ message: "Waste route not found" }),
-  };
+  return error("Waste route not found", 404, "NOT_FOUND");
 };

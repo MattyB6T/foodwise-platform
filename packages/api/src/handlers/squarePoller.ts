@@ -64,10 +64,10 @@ async function getSquareConnections() {
         ":ps": "square",
         ":active": "active",
       },
-    }).catch(() => null) as any
-  );
+    })
+  ).catch(() => null);
 
-  return stores?.Items ?? [];
+  return (stores as any)?.Items ?? [];
 }
 
 async function fetchSquareOrders(accessToken: string, locationId: string, beginTime: string): Promise<SquareOrder[]> {
@@ -245,14 +245,14 @@ export const catalogSyncHandler = async (
     const items = catalogData.objects || [];
 
     // Get existing recipes for fuzzy matching
-    const recipes = await docClient.send(
+    const recipesRes = await docClient.send(
       new QueryCommand({
         TableName: TABLES.RECIPES,
         IndexName: undefined,
         Limit: 500,
-      }).catch(() => ({ Items: [] })) as any
-    );
-    const recipeList: any[] = recipes.Items || [];
+      })
+    ).catch(() => ({ Items: [] as any[] }));
+    const recipeList: any[] = recipesRes.Items || [];
 
     let autoMapped = 0;
     let needsReview = 0;

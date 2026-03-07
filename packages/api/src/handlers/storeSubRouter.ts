@@ -14,6 +14,7 @@ import { handler as staffPinHandler } from "./staffPin";
 import { handler as setExpirationHandler } from "./setExpiration";
 import { handler as getExpirationAlertsHandler } from "./getExpirationAlerts";
 import { handler as posIntegrationHandler } from "./posIntegrationRouter";
+import { error } from "../utils/response";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -87,9 +88,5 @@ export const handler = async (
   )
     return storeOpsHandler(event);
 
-  return {
-    statusCode: 404,
-    headers: CORS_HEADERS,
-    body: JSON.stringify({ message: "Store sub-route not found", path }),
-  };
+  return error("Store sub-route not found", 404, "NOT_FOUND");
 };

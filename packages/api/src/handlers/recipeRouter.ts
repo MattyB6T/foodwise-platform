@@ -4,6 +4,7 @@ import { handler as listRecipesHandler } from "./listRecipes";
 import { handler as getRecipeHandler } from "./getRecipe";
 import { handler as upsertIngredientHandler } from "./upsertIngredient";
 import { handler as recipeScalingHandler } from "./recipeScaling";
+import { error } from "../utils/response";
 
 export const handler = async (
   event: APIGatewayProxyEvent
@@ -55,13 +56,5 @@ export const handler = async (
     return listRecipesHandler(event);
   }
 
-  return {
-    statusCode: 404,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers": "Content-Type,Authorization",
-      "Access-Control-Allow-Methods": "GET,POST,PUT,OPTIONS",
-    },
-    body: JSON.stringify({ message: "Recipe route not found" }),
-  };
+  return error("Recipe route not found", 404, "NOT_FOUND");
 };

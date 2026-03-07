@@ -261,11 +261,11 @@ async function seed() {
   // ── 1. STORES ──
   console.log("=== Stores ===");
   await put(T.STORES, {
-    storeId: STORE1, ownerId: "demo-owner", name: "Subway - Downtown Austin",
+    storeId: STORE1, ownerId: "a4c8f448-1031-70dc-991e-a60bc878349d", name: "Subway - Downtown Austin",
     address: "123 Congress Ave, Austin TX 78701", createdAt: NOW, updatedAt: NOW,
   });
   await put(T.STORES, {
-    storeId: STORE2, ownerId: "demo-owner", name: "Subway - Lakeline Mall",
+    storeId: STORE2, ownerId: "a4c8f448-1031-70dc-991e-a60bc878349d", name: "Subway - Lakeline Mall",
     address: "11200 Lakeline Mall Dr, Austin TX 78717", createdAt: NOW, updatedAt: NOW,
   });
 
@@ -601,8 +601,60 @@ async function seed() {
   await batchWrite(T.TEMP_LOGS, tempBatch);
   console.log(`  → ${tempBatch.length} temp logs`);
 
-  // ── 14. FORECASTS (7 days ahead) ──
+  // ── 14. FORECASTS (with predicted vs actual for accuracy scoring) ──
   console.log("=== Forecasts ===");
+  // Health score handler queries: forecastId = 'latest-${storeId}', checks f.predicted & f.actual
+  const forecastItems = [
+    { item: INV.turkey, avgDaily: 14, variance: 2 },
+    { item: INV.lettuce, avgDaily: 9, variance: 3 },
+    { item: INV.italian, avgDaily: 40, variance: 8 },
+    { item: INV.chicken, avgDaily: 12, variance: 3 },
+    { item: INV.ham, avgDaily: 10, variance: 2 },
+    { item: INV.tuna, avgDaily: 6, variance: 2 },
+    { item: INV.tomatoes, avgDaily: 7, variance: 2 },
+    { item: INV.wheat, avgDaily: 25, variance: 5 },
+  ];
+
+  // Store 1 forecasts — good accuracy (~82%)
+  for (const fi of forecastItems) {
+    const predicted = fi.avgDaily + rand(-fi.variance, fi.variance);
+    // Actual deviates somewhat from predicted — Store 1 has moderate accuracy
+    const errorPct = 0.10 + Math.random() * 0.15; // 10-25% error
+    const actual = Math.max(1, Math.round(predicted * (1 + (Math.random() > 0.5 ? errorPct : -errorPct))));
+    await put(T.FORECASTS, {
+      forecastId: `latest-${STORE1}`,
+      storeRecipeKey: `${fi.item.itemId}-${daysAgo(0)}`,
+      storeId: STORE1,
+      itemId: fi.item.itemId,
+      itemName: fi.item.name,
+      predicted,
+      actual,
+      unit: fi.item.unit,
+      date: daysAgo(0),
+      createdAt: NOW,
+    });
+  }
+
+  // Store 2 forecasts — better accuracy (~90%)
+  for (const fi of forecastItems) {
+    const predicted = Math.round(fi.avgDaily * 0.7) + rand(-1, 1); // smaller store
+    const errorPct = 0.05 + Math.random() * 0.10; // 5-15% error
+    const actual = Math.max(1, Math.round(predicted * (1 + (Math.random() > 0.5 ? errorPct : -errorPct))));
+    await put(T.FORECASTS, {
+      forecastId: `latest-${STORE2}`,
+      storeRecipeKey: `${fi.item.itemId}-${daysAgo(0)}`,
+      storeId: STORE2,
+      itemId: fi.item.itemId,
+      itemName: fi.item.name,
+      predicted,
+      actual,
+      unit: fi.item.unit,
+      date: daysAgo(0),
+      createdAt: NOW,
+    });
+  }
+
+  // Also keep demand forecasts for the forecast screen (7 days ahead)
   for (let day = 0; day < 7; day++) {
     const date = daysAgo(-day);
     await put(T.FORECASTS, {
@@ -741,7 +793,7 @@ async function seed() {
   console.log(`  Time Clock:       ${clockBatch.length} entries`);
   console.log(`  Cameras:          4`);
   console.log(`  Temp Logs:        ${tempBatch.length}`);
-  console.log(`  Forecasts:        7 days`);
+  console.log(`  Forecasts:        ${forecastItems.length * 2} accuracy records + 7 demand days`);
   console.log(`  Incidents:        3`);
   console.log(`  Price History:    ${priceItems.length * 4} entries`);
   console.log("");

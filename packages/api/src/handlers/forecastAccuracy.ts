@@ -33,8 +33,8 @@ export const handler = async (): Promise<void> => {
             ":start": oneWeekAgo.toISOString().split("T")[0],
             ":end": now.toISOString().split("T")[0],
           },
-        }).catch(() => ({ Items: [] })) as any
-      );
+        })
+      ).catch(() => ({ Items: [] as any[] }));
 
       // Get actual transactions for that period
       const transactions = await docClient.send(

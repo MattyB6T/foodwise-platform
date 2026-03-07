@@ -5,6 +5,7 @@ import { handler as clockInHandler } from "./kioskClockIn";
 import { handler as clockOutHandler } from "./kioskClockOut";
 import { handler as breakHandler } from "./kioskBreak";
 import { handler as activeHandler } from "./kioskActive";
+import { error } from "../utils/response";
 
 // Single Lambda that routes to the appropriate kiosk sub-handler
 // This reduces CloudFormation resource count (1 Lambda instead of 6)
@@ -33,13 +34,5 @@ export const handler = async (
     return activeHandler(event);
   }
 
-  return {
-    statusCode: 404,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers": "Content-Type,Authorization,x-kiosk-api-key,x-kiosk-device-id",
-      "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-    },
-    body: JSON.stringify({ message: "Kiosk route not found" }),
-  };
+  return error("Kiosk route not found", 404, "NOT_FOUND");
 };

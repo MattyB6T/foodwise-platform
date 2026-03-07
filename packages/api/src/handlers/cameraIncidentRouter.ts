@@ -4,6 +4,7 @@ import { handler as listCamerasHandler } from "./listCameras";
 import { handler as getCameraFootageHandler } from "./getCameraFootage";
 import { handler as createIncidentHandler } from "./createIncident";
 import { handler as listIncidentsHandler } from "./listIncidents";
+import { error } from "../utils/response";
 
 export const handler = async (
   event: APIGatewayProxyEvent
@@ -55,13 +56,5 @@ export const handler = async (
     return listIncidentsHandler(event);
   }
 
-  return {
-    statusCode: 404,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers": "Content-Type,Authorization",
-      "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-    },
-    body: JSON.stringify({ message: "Camera/incident route not found" }),
-  };
+  return error("Camera/incident route not found", 404, "NOT_FOUND");
 };

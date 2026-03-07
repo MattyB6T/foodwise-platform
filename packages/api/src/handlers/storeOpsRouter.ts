@@ -6,6 +6,7 @@ import { handler as updateInventoryHandler } from "./updateInventory";
 import { handler as recordTransactionHandler } from "./recordTransaction";
 import { handler as listTransactionsHandler } from "./listTransactions";
 import { handler as getDashboardHandler } from "./getDashboard";
+import { error } from "../utils/response";
 
 // Single Lambda that routes to the appropriate store-ops sub-handler
 // This reduces CloudFormation resource count (1 Lambda instead of 7)
@@ -38,13 +39,5 @@ export const handler = async (
     return listStoresHandler(event);
   }
 
-  return {
-    statusCode: 404,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers": "Content-Type,Authorization",
-      "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-    },
-    body: JSON.stringify({ message: "Store ops route not found" }),
-  };
+  return error("Store ops route not found", 404, "NOT_FOUND");
 };

@@ -4,6 +4,7 @@ import { handler as getStoreComparisonHandler } from "./getStoreComparison";
 import { handler as getHealthScoreHandler } from "./getHealthScore";
 import { handler as generateReportHandler } from "./generateReport";
 import { handler as menuEngineeringHandler } from "./menuEngineering";
+import { error } from "../utils/response";
 
 // Single Lambda that routes to the appropriate analytics sub-handler
 // This reduces CloudFormation resource count (1 Lambda instead of 5)
@@ -29,13 +30,5 @@ export const handler = async (
     return getOwnerDashboardHandler(event);
   }
 
-  return {
-    statusCode: 404,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers": "Content-Type,Authorization",
-      "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-    },
-    body: JSON.stringify({ message: "Analytics route not found" }),
-  };
+  return error("Analytics route not found", 404, "NOT_FOUND");
 };

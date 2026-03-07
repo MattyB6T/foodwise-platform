@@ -6,6 +6,7 @@ import { handler as listPurchaseOrdersHandler } from "./listPurchaseOrders";
 import { handler as receiveShipmentHandler } from "./receiveShipment";
 import { handler as listReceivingLogsHandler } from "./listReceivingLogs";
 import { handler as lookupBarcodeHandler } from "./lookupBarcode";
+import { error } from "../utils/response";
 
 // Single Lambda that routes to the appropriate supply-chain sub-handler
 // This reduces CloudFormation resource count (1 Lambda instead of 7)
@@ -42,13 +43,5 @@ export const handler = async (
     return lookupBarcodeHandler(event);
   }
 
-  return {
-    statusCode: 404,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers": "Content-Type,Authorization",
-      "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-    },
-    body: JSON.stringify({ message: "Supply chain route not found" }),
-  };
+  return error("Supply chain route not found", 404, "NOT_FOUND");
 };
