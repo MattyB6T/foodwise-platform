@@ -172,6 +172,7 @@ function AppNavigator() {
   const { colors } = useTheme();
   const [kioskEnabled, setKioskEnabled] = useState<boolean | null>(null);
   const [showModeSelection, setShowModeSelection] = useState(false);
+  const [pendingKiosk, setPendingKiosk] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -179,6 +180,15 @@ function AppNavigator() {
       setKioskEnabled(enabled === "true");
     })();
   }, []);
+
+  // When user logs in after tapping "Employee Kiosk", activate kiosk mode
+  useEffect(() => {
+    if (isAuthenticated && pendingKiosk) {
+      setPendingKiosk(false);
+      AsyncStorage.setItem("kiosk_enabled", "true");
+      setKioskEnabled(true);
+    }
+  }, [isAuthenticated, pendingKiosk]);
 
   const stackScreenOptions = ({ navigation }: { navigation: any }) => ({
     headerStyle: { backgroundColor: colors.primary },
@@ -235,10 +245,13 @@ function AppNavigator() {
             name="ModeSelection"
             options={{ headerShown: false }}
           >
-            {() => (
+            {({ navigation }: any) => (
               <ModeSelectionScreen
-                onManagerLogin={() => {}}
-                onKioskMode={() => {}}
+                onManagerLogin={() => navigation.navigate("Login")}
+                onKioskMode={() => {
+                  setPendingKiosk(true);
+                  navigation.navigate("Login");
+                }}
               />
             )}
           </Stack.Screen>
