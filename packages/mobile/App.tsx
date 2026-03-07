@@ -30,6 +30,8 @@ import { KioskScreen } from "./src/screens/KioskScreen";
 import { TimesheetScreen } from "./src/screens/TimesheetScreen";
 import { TimeEntryDetailScreen } from "./src/screens/TimeEntryDetailScreen";
 import { LiveStaffScreen } from "./src/screens/LiveStaffScreen";
+import { IntegrationsScreen } from "./src/screens/IntegrationsScreen";
+import { MappingScreen } from "./src/screens/MappingScreen";
 import type { RootStackParamList, TabParamList } from "./src/navigation/types";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -268,6 +270,8 @@ function AppNavigator() {
           <Stack.Screen name="Timesheet" component={TimesheetScreen} options={{ title: "Timesheets" }} />
           <Stack.Screen name="TimeEntryDetail" component={TimeEntryDetailScreen} options={{ title: "Entry Detail" }} />
           <Stack.Screen name="LiveStaff" component={LiveStaffScreen} options={{ title: "Who's In" }} />
+          <Stack.Screen name="Integrations" component={IntegrationsScreen} options={{ title: "POS Integrations" }} />
+          <Stack.Screen name="MappingScreen" component={MappingScreen} options={{ title: "Item Mappings" }} />
         </>
       )}
     </Stack.Navigator>

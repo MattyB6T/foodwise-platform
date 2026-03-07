@@ -249,6 +249,30 @@ export const api = {
   updateSupplierOrder: (supplierId: string, orderId: string, body: { status?: string; expectedDelivery?: string; supplierNotes?: string }) =>
     request<any>("PUT", `/supplier-portal/${supplierId}/orders/${orderId}`, body),
 
+  // POS Integration
+  listPosConnections: (storeId: string) =>
+    request<any>("GET", `/stores/${storeId}/pos/connections`),
+  createPosConnection: (storeId: string, body: { posSystem: string; config?: any }) =>
+    request<any>("POST", `/stores/${storeId}/pos/connections`, body),
+  updatePosConnection: (storeId: string, connectionId: string, body: { status?: string; config?: any }) =>
+    request<any>("PUT", `/stores/${storeId}/pos/connections/${connectionId}`, body),
+  deletePosConnection: (storeId: string, connectionId: string) =>
+    request<any>("DELETE", `/stores/${storeId}/pos/connections/${connectionId}`),
+  listPosMappings: (storeId: string) =>
+    request<any>("GET", `/stores/${storeId}/pos/mappings`),
+  createPosMapping: (storeId: string, body: { posSystem: string; posItemId: string; posItemName: string; recipeId?: string; ingredientId?: string; quantityPerUnit?: number }) =>
+    request<any>("POST", `/stores/${storeId}/pos/mappings`, body),
+  updatePosMapping: (storeId: string, body: { posItemKey: string; recipeId?: string; ingredientId?: string; quantityPerUnit?: number; confidence?: number }) =>
+    request<any>("PUT", `/stores/${storeId}/pos/mappings`, body),
+  listPosTransactions: (storeId: string, limit?: number) =>
+    request<any>("GET", `/stores/${storeId}/pos/transactions${limit ? `?limit=${limit}` : ""}`),
+  getPosSyncStatus: (storeId: string) =>
+    request<any>("GET", `/stores/${storeId}/pos/sync-status`),
+  importCsv: (storeId: string, csvContent: string) =>
+    request<any>("POST", `/stores/${storeId}/pos/csv-import`, csvContent),
+  syncSquareCatalog: (storeId: string, accessToken: string) =>
+    request<any>("POST", `/stores/${storeId}/pos/square/catalog-sync`, { accessToken }),
+
   // Transactions (for timeline view)
   getTransactions: (storeId: string, startDate?: string, endDate?: string) => {
     const qs = new URLSearchParams();
