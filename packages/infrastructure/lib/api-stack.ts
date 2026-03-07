@@ -355,12 +355,7 @@ export class FoodwiseApiStack extends cdk.NestedStack {
         throttlingBurstLimit: 200,
       },
       defaultCorsPreflightOptions: {
-        allowOrigins: [
-          "https://foodwise.io",
-          "https://*.foodwise.io",
-          "http://localhost:8081",
-          "http://localhost:19006",
-        ],
+        allowOrigins: apigateway.Cors.ALL_ORIGINS,
         allowMethods: apigateway.Cors.ALL_METHODS,
         allowHeaders: [
           "Content-Type",
