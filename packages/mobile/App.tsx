@@ -109,7 +109,7 @@ function MainTabs() {
           let iconName: keyof typeof Ionicons.glyphMap = "home";
           if (route.name === "DashboardTab") iconName = focused ? "grid" : "grid-outline";
           else if (route.name === "ScannerTab") iconName = focused ? "scan" : "scan-outline";
-          else if (route.name === "CountTab") iconName = focused ? "clipboard" : "clipboard-outline";
+          else if (route.name === "CountTab") iconName = focused ? "cube" : "cube-outline";
           else if (route.name === "WasteTab") iconName = focused ? "trash" : "trash-outline";
           else if (route.name === "OrdersTab") iconName = focused ? "cart" : "cart-outline";
           else if (route.name === "SecurityTab") iconName = focused ? "shield-checkmark" : "shield-checkmark-outline";
@@ -143,7 +143,7 @@ function MainTabs() {
       <Tab.Screen
         name="CountTab"
         component={CountScreen}
-        options={{ title: "Count", headerTitle: "Inventory Count" }}
+        options={{ title: "Inventory", headerTitle: "Inventory" }}
       />
       <Tab.Screen
         name="WasteTab"

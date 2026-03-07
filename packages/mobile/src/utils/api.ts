@@ -87,6 +87,8 @@ export const api = {
     request<any>("GET", `/stores/${storeId}/health-score`),
   getInventory: (storeId: string) =>
     request<any>("GET", `/stores/${storeId}/inventory`),
+  updateInventory: (storeId: string, body: { items: { itemId?: string; name: string; category: string; quantity: number; unit: string; costPerUnit: number; lowStockThreshold: number }[] }) =>
+    request<any>("POST", `/stores/${storeId}/inventory`, body),
   getPurchaseOrders: (storeId: string, status?: string) =>
     request<any>(
       "GET",
