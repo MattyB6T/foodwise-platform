@@ -25,7 +25,7 @@ const APP_VERSION = "1.0.0";
 
 export function SettingsScreen() {
   const { user, logout } = useAuth();
-  const { stores, selectedStoreId } = useStore();
+  const { stores, selectedStoreId, refreshStores } = useStore();
   const { colors, isDark, toggleTheme } = useTheme();
   const navigation = useNavigation<NavProp>();
   const s = makeStyles(colors);
@@ -40,6 +40,12 @@ export function SettingsScreen() {
   const [showPasswordChange, setShowPasswordChange] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
+
+  // Add store
+  const [showAddStore, setShowAddStore] = useState(false);
+  const [newStoreName, setNewStoreName] = useState("");
+  const [newStoreAddress, setNewStoreAddress] = useState("");
+  const [addingStore, setAddingStore] = useState(false);
 
   // Kiosk mode
   const [showKioskSetup, setShowKioskSetup] = useState(false);
@@ -64,6 +70,32 @@ export function SettingsScreen() {
     setShowPasswordChange(false);
     setCurrentPassword("");
     setNewPassword("");
+  };
+
+  const handleAddStore = async () => {
+    const name = newStoreName.trim();
+    const address = newStoreAddress.trim();
+    if (!name) {
+      Alert.alert("Required", "Enter a store name.");
+      return;
+    }
+    if (!address) {
+      Alert.alert("Required", "Enter a store address.");
+      return;
+    }
+    setAddingStore(true);
+    try {
+      await api.createStore({ name, address });
+      Alert.alert("Store Added", `"${name}" has been created.`);
+      setShowAddStore(false);
+      setNewStoreName("");
+      setNewStoreAddress("");
+      refreshStores();
+    } catch (err: any) {
+      Alert.alert("Error", err.message || "Failed to create store");
+    } finally {
+      setAddingStore(false);
+    }
   };
 
   const handleEnableKiosk = async () => {
@@ -212,15 +244,50 @@ export function SettingsScreen() {
             </View>
           </View>
         ))}
-        <TouchableOpacity
-          style={s.row}
-          onPress={() => Alert.alert("Coming Soon", "Store management will be available in the next update.")}
-        >
-          <View style={s.rowLeft}>
-            <Text style={s.rowIcon}>➕</Text>
-            <Text style={[s.rowLabel, { color: colors.primary }]}>Add Store</Text>
+        {!showAddStore ? (
+          <TouchableOpacity style={s.row} onPress={() => setShowAddStore(true)}>
+            <View style={s.rowLeft}>
+              <Text style={s.rowIcon}>➕</Text>
+              <Text style={[s.rowLabel, { color: colors.primary }]}>Add Store</Text>
+            </View>
+            <Text style={[s.rowArrow, { color: colors.textSecondary }]}>→</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={s.passwordForm}>
+            <Text style={[s.fieldLabel, { color: colors.textSecondary }]}>Store Name</Text>
+            <TextInput
+              style={[s.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+              value={newStoreName}
+              onChangeText={setNewStoreName}
+              placeholder="e.g. Downtown Location"
+              placeholderTextColor={colors.textSecondary}
+              autoFocus
+            />
+            <Text style={[s.fieldLabel, { color: colors.textSecondary }]}>Address</Text>
+            <TextInput
+              style={[s.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+              value={newStoreAddress}
+              onChangeText={setNewStoreAddress}
+              placeholder="123 Main St, City, State"
+              placeholderTextColor={colors.textSecondary}
+            />
+            <View style={s.passwordActions}>
+              <TouchableOpacity
+                style={[s.cancelBtn, { borderColor: colors.border }]}
+                onPress={() => { setShowAddStore(false); setNewStoreName(""); setNewStoreAddress(""); }}
+              >
+                <Text style={[s.cancelText, { color: colors.textSecondary }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.saveBtn, { backgroundColor: colors.primary }]}
+                onPress={handleAddStore}
+                disabled={addingStore}
+              >
+                <Text style={s.saveText}>{addingStore ? "Adding..." : "Add Store"}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </TouchableOpacity>
+        )}
       </View>
 
       {/* Kiosk Mode */}

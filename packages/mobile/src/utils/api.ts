@@ -73,6 +73,8 @@ async function request<T>(
 export const api = {
   // Stores
   listStores: () => request<{ stores: any[] }>("GET", "/stores"),
+  createStore: (body: { name: string; address: string }) =>
+    request<any>("POST", "/stores", body),
 
   // Dashboard
   getOwnerDashboard: () => request<any>("GET", "/dashboard"),
