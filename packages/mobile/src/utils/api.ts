@@ -1,13 +1,31 @@
 import { CONFIG } from "./config";
 
 let authToken: string | null = null;
+let lastActivityTime: number = Date.now();
+const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 
 export function setAuthToken(token: string | null) {
   authToken = token;
+  if (token) lastActivityTime = Date.now();
 }
 
 export function getAuthToken(): string | null {
   return authToken;
+}
+
+export function isSessionExpired(): boolean {
+  if (!authToken) return false;
+  return Date.now() - lastActivityTime > SESSION_TIMEOUT_MS;
+}
+
+export function resetSessionTimer() {
+  lastActivityTime = Date.now();
+}
+
+let onSessionExpired: (() => void) | null = null;
+
+export function setSessionExpiredCallback(cb: () => void) {
+  onSessionExpired = cb;
 }
 
 async function request<T>(
@@ -15,12 +33,21 @@ async function request<T>(
   path: string,
   body?: unknown
 ): Promise<T> {
+  // Check session timeout before each request
+  if (authToken && isSessionExpired()) {
+    authToken = null;
+    if (onSessionExpired) onSessionExpired();
+    throw new Error("Session expired. Please log in again.");
+  }
+
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
+    "X-Request-Timestamp": new Date().toISOString(),
   };
 
   if (authToken) {
     headers["Authorization"] = authToken;
+    lastActivityTime = Date.now();
   }
 
   const response = await fetch(`${CONFIG.API_URL}${path}`, {
@@ -28,6 +55,12 @@ async function request<T>(
     headers,
     body: body ? JSON.stringify(body) : undefined,
   });
+
+  if (response.status === 401 && authToken) {
+    authToken = null;
+    if (onSessionExpired) onSessionExpired();
+    throw new Error("Session expired. Please log in again.");
+  }
 
   const data = await response.json();
 

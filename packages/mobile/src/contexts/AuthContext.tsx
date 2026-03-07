@@ -6,7 +6,7 @@ import {
   CognitoUserSession,
 } from "amazon-cognito-identity-js";
 import { CONFIG } from "../utils/config";
-import { setAuthToken } from "../utils/api";
+import { setAuthToken, setSessionExpiredCallback } from "../utils/api";
 
 const userPool = new CognitoUserPool({
   UserPoolId: CONFIG.COGNITO_USER_POOL_ID,
@@ -119,7 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const logout = () => {
+  const logout = useCallback(() => {
     const currentUser = userPool.getCurrentUser();
     if (currentUser) {
       currentUser.signOut();
@@ -131,7 +131,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user: null,
       error: null,
     });
-  };
+  }, []);
+
+  // Register session expiry callback so API client can auto-logout
+  useEffect(() => {
+    setSessionExpiredCallback(logout);
+  }, [logout]);
 
   return (
     <AuthContext.Provider value={{ ...state, login, loginDemo, logout }}>

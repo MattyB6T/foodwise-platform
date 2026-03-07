@@ -15,7 +15,8 @@
     "@aws-sdk/lib-dynamodb": "^3.500.0",
     "@aws-sdk/s3-request-presigner": "^3.1003.0",
     "@foodwise/shared": "*",
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.131",

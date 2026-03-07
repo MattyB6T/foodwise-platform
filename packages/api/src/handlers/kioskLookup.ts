@@ -1,9 +1,17 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { QueryCommand } from "@aws-sdk/lib-dynamodb";
+import { z } from "zod";
 import { docClient, TABLES } from "../utils/dynamo";
 import { success, error } from "../utils/response";
 import { validateKioskAuth } from "../utils/kioskAuth";
+import { logSecurityEvent, extractClientInfo } from "../utils/securityEvents";
+import { parseBody, storeIdSchema, pinSchema } from "../utils/validate";
 import { createHash } from "crypto";
+
+const lookupSchema = z.object({
+  storeId: storeIdSchema,
+  pin: pinSchema,
+});
 
 function hashPin(pin: string): string {
   return createHash("sha256").update(pin).digest("hex");
@@ -16,11 +24,9 @@ export const handler = async (
     const device = await validateKioskAuth(event);
     if (!device) return error("Unauthorized kiosk device", 401);
 
-    if (!event.body) return error("Request body is required", 400);
-    const body = JSON.parse(event.body);
-
-    const { storeId, pin } = body;
-    if (!storeId || !pin) return error("storeId and pin are required", 400);
+    const parsed = parseBody(event, lookupSchema);
+    if (parsed.error) return parsed.error;
+    const { storeId, pin } = parsed.data;
 
     if (storeId !== device.storeId) {
       return error("Device not authorized for this store", 403);
@@ -42,6 +48,13 @@ export const handler = async (
     );
 
     if (!employee) {
+      await logSecurityEvent({
+        eventType: "failed_pin_attempt",
+        storeId,
+        deviceId: device.deviceId,
+        ...extractClientInfo(event),
+        details: { reason: "No matching active employee for PIN" },
+      });
       return success({ found: false });
     }
 

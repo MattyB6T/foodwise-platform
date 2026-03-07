@@ -3,6 +3,9 @@ import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import * as iam from "aws-cdk-lib/aws-iam";
+import * as logs from "aws-cdk-lib/aws-logs";
+import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
+import * as sns from "aws-cdk-lib/aws-sns";
 import * as path from "path";
 import { Construct } from "constructs";
 import { FoodwiseCoreStack } from "./core-stack";
@@ -50,6 +53,7 @@ export class FoodwiseApiStack extends cdk.NestedStack {
       POS_TRANSACTIONS_RAW_TABLE: core.posTransactionsRawTable.tableName,
       INGREDIENT_MAPPINGS_TABLE: core.ingredientMappingsTable.tableName,
       FORECAST_ACCURACY_TABLE: core.forecastAccuracyTable.tableName,
+      SECURITY_EVENTS_TABLE: core.securityEventsTable.tableName,
     };
 
     const handlersPath = path.join(__dirname, "../../api/src/handlers");
@@ -310,16 +314,69 @@ export class FoodwiseApiStack extends cdk.NestedStack {
       authorizationType: apigateway.AuthorizationType.COGNITO,
     };
 
+    // API Gateway access logging
+    const apiAccessLogGroup = new logs.LogGroup(this, "ApiAccessLogs", {
+      retention: logs.RetentionDays.THREE_MONTHS,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
     this.api = new apigateway.RestApi(this, "FoodwiseApi", {
       restApiName: "foodwise-api",
       description: "FoodWise Platform API",
       deployOptions: {
         stageName: "v1",
+        accessLogDestination: new apigateway.LogGroupLogDestination(apiAccessLogGroup),
+        accessLogFormat: apigateway.AccessLogFormat.jsonWithStandardFields({
+          caller: true,
+          httpMethod: true,
+          ip: true,
+          protocol: true,
+          requestTime: true,
+          resourcePath: true,
+          responseLength: true,
+          status: true,
+          user: true,
+        }),
+        loggingLevel: apigateway.MethodLoggingLevel.ERROR,
+        throttlingRateLimit: 100,
+        throttlingBurstLimit: 200,
       },
       defaultCorsPreflightOptions: {
-        allowOrigins: apigateway.Cors.ALL_ORIGINS,
+        allowOrigins: [
+          "https://foodwise.io",
+          "https://*.foodwise.io",
+          "http://localhost:8081",
+          "http://localhost:19006",
+        ],
         allowMethods: apigateway.Cors.ALL_METHODS,
-        allowHeaders: ["Content-Type", "Authorization"],
+        allowHeaders: [
+          "Content-Type",
+          "Authorization",
+          "X-Request-Timestamp",
+          "X-Api-Key",
+          "X-Device-Id",
+        ],
+        maxAge: cdk.Duration.hours(1),
+      },
+    });
+
+    // Gateway Response security headers (applied to all responses including errors)
+    this.api.addGatewayResponse("Default4xx", {
+      type: apigateway.ResponseType.DEFAULT_4XX,
+      responseHeaders: {
+        "Access-Control-Allow-Origin": "'*'",
+        "Strict-Transport-Security": "'max-age=31536000; includeSubDomains'",
+        "X-Content-Type-Options": "'nosniff'",
+        "X-Frame-Options": "'DENY'",
+      },
+    });
+    this.api.addGatewayResponse("Default5xx", {
+      type: apigateway.ResponseType.DEFAULT_5XX,
+      responseHeaders: {
+        "Access-Control-Allow-Origin": "'*'",
+        "Strict-Transport-Security": "'max-age=31536000; includeSubDomains'",
+        "X-Content-Type-Options": "'nosniff'",
+        "X-Frame-Options": "'DENY'",
       },
     });
 
@@ -483,5 +540,72 @@ export class FoodwiseApiStack extends cdk.NestedStack {
 
     webhookUsagePlan.addApiKey(webhookApiKey);
     webhookUsagePlan.addApiStage({ stage: this.api.deploymentStage });
+
+    // --- Security Events Table Grants ---
+    core.securityEventsTable.grantWriteData(kioskRouterFn);
+    core.securityEventsTable.grantWriteData(storeSubRouterFn);
+    core.securityEventsTable.grantWriteData(storeOpsRouterFn);
+    core.securityEventsTable.grantReadWriteData(analyticsRouterFn);
+
+    // --- CloudWatch Alarms ---
+
+    const securityAlarmTopic = new sns.Topic(this, "SecurityAlarmTopic", {
+      topicName: "foodwise-security-alarms",
+      displayName: "FoodWise Security Alarms",
+    });
+
+    // High 4xx error rate (potential brute force / scanning)
+    new cloudwatch.Alarm(this, "High4xxAlarm", {
+      metric: this.api.metricClientError({
+        period: cdk.Duration.minutes(5),
+        statistic: "Sum",
+      }),
+      threshold: 100,
+      evaluationPeriods: 2,
+      alarmDescription: "High 4xx error rate — possible brute force or scanning",
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    }).addAlarmAction({ bind: () => ({ alarmActionArn: securityAlarmTopic.topicArn }) });
+
+    // High 5xx error rate (application errors)
+    new cloudwatch.Alarm(this, "High5xxAlarm", {
+      metric: this.api.metricServerError({
+        period: cdk.Duration.minutes(5),
+        statistic: "Sum",
+      }),
+      threshold: 20,
+      evaluationPeriods: 2,
+      alarmDescription: "High 5xx error rate — application errors",
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    }).addAlarmAction({ bind: () => ({ alarmActionArn: securityAlarmTopic.topicArn }) });
+
+    // Throttling alarm
+    new cloudwatch.Alarm(this, "ThrottlingAlarm", {
+      metric: this.api.metricCount({
+        period: cdk.Duration.minutes(1),
+        statistic: "Sum",
+      }),
+      threshold: 1000,
+      evaluationPeriods: 3,
+      alarmDescription: "High request volume — potential DoS",
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    }).addAlarmAction({ bind: () => ({ alarmActionArn: securityAlarmTopic.topicArn }) });
+
+    // Lambda error alarms for critical functions
+    for (const [name, fn] of [
+      ["KioskRouter", kioskRouterFn],
+      ["StoreSubRouter", storeSubRouterFn],
+      ["Assistant", assistantFn],
+    ] as const) {
+      new cloudwatch.Alarm(this, `${name}ErrorAlarm`, {
+        metric: (fn as NodejsFunction).metricErrors({
+          period: cdk.Duration.minutes(5),
+          statistic: "Sum",
+        }),
+        threshold: 10,
+        evaluationPeriods: 2,
+        alarmDescription: `High error rate on ${name} Lambda`,
+        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+      });
+    }
   }
 }

@@ -1,6 +1,7 @@
 import { APIGatewayProxyEvent } from "aws-lambda";
 import { QueryCommand } from "@aws-sdk/lib-dynamodb";
 import { docClient, TABLES } from "./dynamo";
+import { logSecurityEvent, extractClientInfo } from "./securityEvents";
 
 export interface KioskDevice {
   deviceId: string;
@@ -33,7 +34,17 @@ export async function validateKioskAuth(event: APIGatewayProxyEvent): Promise<Ki
   );
 
   const device = result.Items?.[0] as KioskDevice | undefined;
-  if (!device || device.apiKey !== apiKey || !device.active) return null;
+  if (!device || device.apiKey !== apiKey || !device.active) {
+    await logSecurityEvent({
+      eventType: "invalid_token",
+      deviceId,
+      ...extractClientInfo(event),
+      details: {
+        reason: !device ? "Unknown device" : !device.active ? "Inactive device" : "Invalid API key",
+      },
+    });
+    return null;
+  }
 
   return device;
 }

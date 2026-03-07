@@ -30,6 +30,7 @@ export class FoodwiseCoreStack extends cdk.NestedStack {
   public readonly posTransactionsRawTable: dynamodb.Table;
   public readonly ingredientMappingsTable: dynamodb.Table;
   public readonly forecastAccuracyTable: dynamodb.Table;
+  public readonly securityEventsTable: dynamodb.Table;
 
   public readonly userPool: cognito.UserPool;
   public readonly userPoolClient: cognito.UserPoolClient;
@@ -326,26 +327,57 @@ export class FoodwiseCoreStack extends cdk.NestedStack {
       projectionType: dynamodb.ProjectionType.ALL,
     });
 
+    // --- Security Events Table ---
+
+    this.securityEventsTable = new dynamodb.Table(this, "SecurityEventsTable", {
+      partitionKey: { name: "eventId", type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      timeToLiveAttribute: "ttl",
+    });
+
+    this.securityEventsTable.addGlobalSecondaryIndex({
+      indexName: "eventType-timestamp-index",
+      partitionKey: { name: "eventType", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "timestamp", type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
+    this.securityEventsTable.addGlobalSecondaryIndex({
+      indexName: "storeId-timestamp-index",
+      partitionKey: { name: "storeId", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "timestamp", type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
     // --- Cognito User Pool ---
 
     this.userPool = new cognito.UserPool(this, "FoodwiseUserPool", {
       userPoolName: "foodwise-users",
-      selfSignUpEnabled: true,
+      selfSignUpEnabled: false, // Disable self sign-up — admins create users
       signInAliases: { email: true },
       autoVerify: { email: true },
       standardAttributes: {
         email: { required: true, mutable: true },
       },
       passwordPolicy: {
-        minLength: 8,
+        minLength: 12,
         requireUppercase: true,
         requireLowercase: true,
         requireDigits: true,
-        requireSymbols: false,
+        requireSymbols: true,
+        tempPasswordValidity: cdk.Duration.days(3),
       },
       accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
+      signInCaseSensitive: false,
     });
+
+    // Enable Cognito Advanced Security (brute force protection, adaptive auth)
+    const cfnUserPool = this.userPool.node.defaultChild as cognito.CfnUserPool;
+    cfnUserPool.userPoolAddOns = {
+      advancedSecurityMode: "ENFORCED",
+    };
 
     this.userPoolClient = this.userPool.addClient("FoodwiseAppClient", {
       userPoolClientName: "foodwise-app-client",
@@ -353,6 +385,10 @@ export class FoodwiseCoreStack extends cdk.NestedStack {
         userPassword: true,
         userSrp: true,
       },
+      preventUserExistenceErrors: true,
+      accessTokenValidity: cdk.Duration.hours(1),
+      idTokenValidity: cdk.Duration.hours(1),
+      refreshTokenValidity: cdk.Duration.days(30),
     });
 
     new cognito.CfnUserPoolGroup(this, "OwnerGroup", {
@@ -384,8 +420,22 @@ export class FoodwiseCoreStack extends cdk.NestedStack {
     this.reportsBucket = new s3.Bucket(this, "ReportsBucket", {
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       encryption: s3.BucketEncryption.S3_MANAGED,
+      enforceSSL: true,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
+      versioned: true,
+      lifecycleRules: [
+        {
+          id: "clock-in-photos-cleanup",
+          prefix: "photos/clockin/",
+          expiration: cdk.Duration.days(90),
+        },
+        {
+          id: "temp-uploads-cleanup",
+          prefix: "uploads/",
+          expiration: cdk.Duration.days(7),
+        },
+      ],
     });
   }
 }

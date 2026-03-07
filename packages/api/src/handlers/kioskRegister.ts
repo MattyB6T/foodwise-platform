@@ -2,10 +2,23 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { PutCommand } from "@aws-sdk/lib-dynamodb";
 import { v4 as uuidv4 } from "uuid";
 import { randomBytes } from "crypto";
+import { z } from "zod";
 import { docClient, TABLES } from "../utils/dynamo";
 import { success, error } from "../utils/response";
 import { getUserClaims } from "../utils/auth";
 import { requireRole, isErrorResult } from "../utils/roles";
+import { parseBody, storeIdSchema, safeString } from "../utils/validate";
+
+const registerSchema = z.object({
+  storeId: storeIdSchema,
+  deviceName: safeString,
+  storeHoursOpen: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+  storeHoursClose: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+  storeAddress: safeString.optional(),
+  storeLat: z.number().min(-90).max(90).optional(),
+  storeLng: z.number().min(-180).max(180).optional(),
+  managerExitPin: z.string().regex(/^\d{6}$/, "managerExitPin must be exactly 6 digits"),
+});
 
 export const handler = async (
   event: APIGatewayProxyEvent
@@ -14,17 +27,9 @@ export const handler = async (
     const auth = requireRole(event, "manager");
     if (isErrorResult(auth)) return auth;
 
-    if (!event.body) return error("Request body is required", 400);
-    const body = JSON.parse(event.body);
-
-    const { storeId, deviceName, storeHoursOpen, storeHoursClose, storeAddress, storeLat, storeLng, managerExitPin } = body;
-
-    if (!storeId || !deviceName) {
-      return error("storeId and deviceName are required", 400);
-    }
-    if (!managerExitPin || managerExitPin.length !== 6) {
-      return error("managerExitPin must be 6 digits", 400);
-    }
+    const parsed = parseBody(event, registerSchema);
+    if (parsed.error) return parsed.error;
+    const { storeId, deviceName, storeHoursOpen, storeHoursClose, storeAddress, storeLat, storeLng, managerExitPin } = parsed.data;
 
     const deviceId = uuidv4();
     const apiKey = randomBytes(32).toString("hex");

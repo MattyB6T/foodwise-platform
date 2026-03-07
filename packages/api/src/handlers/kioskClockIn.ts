@@ -1,9 +1,23 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { PutCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import { v4 as uuidv4 } from "uuid";
+import { z } from "zod";
 import { docClient, TABLES } from "../utils/dynamo";
 import { success, error } from "../utils/response";
 import { validateKioskAuth } from "../utils/kioskAuth";
+import { parseBody, storeIdSchema, staffIdSchema, safeString } from "../utils/validate";
+import { logSecurityEvent, extractClientInfo } from "../utils/securityEvents";
+
+const clockInSchema = z.object({
+  storeId: storeIdSchema,
+  staffId: staffIdSchema,
+  staffName: safeString.optional(),
+  photoKey: z.string().max(500).optional(),
+  location: z.object({
+    lat: z.number().min(-90).max(90),
+    lng: z.number().min(-180).max(180),
+  }).optional(),
+});
 
 function getDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371e3;
@@ -28,11 +42,9 @@ export const handler = async (
     const device = await validateKioskAuth(event);
     if (!device) return error("Unauthorized kiosk device", 401);
 
-    if (!event.body) return error("Request body is required", 400);
-    const body = JSON.parse(event.body);
-
-    const { storeId, staffId, photoKey, location } = body;
-    if (!storeId || !staffId) return error("storeId and staffId are required", 400);
+    const parsed = parseBody(event, clockInSchema);
+    if (parsed.error) return parsed.error;
+    const { storeId, staffId, photoKey, location, staffName } = parsed.data;
     if (storeId !== device.storeId) return error("Device not authorized for this store", 403);
 
     // Check for duplicate: already clocked in
@@ -75,7 +87,7 @@ export const handler = async (
       entryId,
       storeId,
       staffId,
-      staffName: body.staffName || "",
+      staffName: staffName || "",
       clockInTime: now,
       clockOutTime: null,
       breakEvents: [],
@@ -95,8 +107,15 @@ export const handler = async (
       new PutCommand({ TableName: TABLES.TIME_CLOCK, Item: entry })
     );
 
-    // If flagged, log to audit trail
+    // If flagged, log security event and audit trail
     if (flagged) {
+      await logSecurityEvent({
+        eventType: "suspicious_activity",
+        storeId,
+        deviceId: device.deviceId,
+        ...extractClientInfo(event),
+        details: { staffId, flagReason, entryId },
+      });
       try {
         await docClient.send(
           new PutCommand({
