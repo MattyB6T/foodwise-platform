@@ -66,12 +66,12 @@ export function ManagementScreen() {
       screen: "Schedule",
     },
     {
-      title: "Staff Management",
-      subtitle: "Employees, roles & pay rates",
+      title: "Team",
+      subtitle: "Invite users, assign roles & manage access",
       icon: "people",
       iconColor: "#d69e2e",
       bgColor: "#fefcbf",
-      screen: "LiveStaff",
+      screen: "Team",
     },
     {
       title: "Weekly Plan",

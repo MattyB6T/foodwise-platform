@@ -59,7 +59,7 @@ export class FoodwiseApiStack extends cdk.NestedStack {
     const handlersPath = path.join(__dirname, "../../api/src/handlers");
 
     const nodejsFnProps = {
-      runtime: lambda.Runtime.NODEJS_20_X,
+      runtime: lambda.Runtime.NODEJS_22_X,
       environment: lambdaEnvironment,
       bundling: {
         externalModules: [] as string[],
@@ -84,8 +84,25 @@ export class FoodwiseApiStack extends cdk.NestedStack {
       environment: {
         ...lambdaEnvironment,
         REPORTS_BUCKET: core.reportsBucket.bucketName,
+        USER_POOL_ID: core.userPool.userPoolId,
       },
     });
+
+    // Cognito admin permissions for user invitations and role management
+    storeSubRouterFn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: [
+          "cognito-idp:AdminCreateUser",
+          "cognito-idp:AdminGetUser",
+          "cognito-idp:AdminAddUserToGroup",
+          "cognito-idp:AdminRemoveUserFromGroup",
+          "cognito-idp:AdminListGroupsForUser",
+          "cognito-idp:AdminDeleteUser",
+          "cognito-idp:ListUsers",
+        ],
+        resources: [core.userPool.userPoolArn],
+      })
+    );
 
     const recipeRouterFn = new NodejsFunction(this, "RecipeRouterFn", {
       ...nodejsFnProps,
@@ -272,6 +289,22 @@ export class FoodwiseApiStack extends cdk.NestedStack {
     core.receivingLogsTable.grantReadData(analyticsRouterFn);
     core.purchaseOrdersTable.grantReadData(analyticsRouterFn);
     core.recipesTable.grantReadData(analyticsRouterFn);
+    // Staff, TimeClock, InventoryCounts access for labor/P&L/count-variance reports
+    // Using a single managed policy to avoid IAM policy size limits
+    analyticsRouterFn.role?.addManagedPolicy(
+      new iam.ManagedPolicy(this, "AnalyticsExtraTablesPolicy", {
+        statements: [
+          new iam.PolicyStatement({
+            actions: ["dynamodb:Query", "dynamodb:Scan", "dynamodb:GetItem", "dynamodb:BatchGetItem"],
+            resources: [
+              core.staffTable.tableArn, core.staffTable.tableArn + "/index/*",
+              core.timeClockTable.tableArn, core.timeClockTable.tableArn + "/index/*",
+              core.inventoryCountsTable.tableArn, core.inventoryCountsTable.tableArn + "/index/*",
+            ],
+          }),
+        ],
+      })
+    );
 
     // Weekly report
     core.storesTable.grantReadData(this.generateWeeklyReportFn);

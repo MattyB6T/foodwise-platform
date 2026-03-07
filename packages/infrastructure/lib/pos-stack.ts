@@ -54,7 +54,7 @@ export class FoodwisePosStack extends cdk.NestedStack {
     };
 
     const nodejsFnProps = {
-      runtime: lambda.Runtime.NODEJS_20_X,
+      runtime: lambda.Runtime.NODEJS_22_X,
       environment: posLambdaEnvironment,
       bundling: {
         externalModules: [] as string[],

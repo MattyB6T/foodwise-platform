@@ -15,6 +15,7 @@ import { handler as setExpirationHandler } from "./setExpiration";
 import { handler as getExpirationAlertsHandler } from "./getExpirationAlerts";
 import { handler as posIntegrationHandler } from "./posIntegrationRouter";
 import { handler as weeklyPlannerHandler } from "./weeklyPlanner";
+import { handler as userManagementHandler } from "./userManagement";
 import { error } from "../utils/response";
 
 const CORS_HEADERS = {
@@ -49,6 +50,10 @@ export const handler = async (
 
   // Staff PIN route (must come before general staff route)
   if (path.includes("/pin")) return staffPinHandler(event);
+
+  // User management routes (invite, role change, team list, deactivate)
+  if (path.includes("/invite") || path.includes("/team")) return userManagementHandler(event);
+  if (path.includes("/role") || path.includes("/deactivate")) return userManagementHandler(event);
 
   // Staff routes
   if (path.includes("/staff")) return staffScheduleHandler(event);

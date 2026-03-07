@@ -194,6 +194,16 @@ export const api = {
   removeStaff: (storeId: string, staffId: string) =>
     request<any>("DELETE", `/stores/${storeId}/staff/${staffId}`),
 
+  // Team management (user invitations & roles)
+  getTeam: (storeId: string) =>
+    request<any>("GET", `/stores/${storeId}/team`),
+  inviteUser: (storeId: string, body: { email: string; name: string; role: string; phone?: string; hourlyRate?: number }) =>
+    request<any>("POST", `/stores/${storeId}/invite`, body),
+  updateRole: (storeId: string, staffId: string, role: string) =>
+    request<any>("PUT", `/stores/${storeId}/staff/${staffId}/role`, { role }),
+  deactivateUser: (storeId: string, staffId: string) =>
+    request<any>("POST", `/stores/${storeId}/staff/${staffId}/deactivate`),
+
   // Schedule
   getSchedule: (storeId: string, weekStart?: string) =>
     request<any>("GET", `/stores/${storeId}/schedule${weekStart ? `?weekStart=${weekStart}` : ""}`),

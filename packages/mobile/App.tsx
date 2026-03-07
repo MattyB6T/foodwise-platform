@@ -35,6 +35,7 @@ import { MappingScreen } from "./src/screens/MappingScreen";
 import { OnboardingScreen } from "./src/screens/OnboardingScreen";
 import { ManagementScreen } from "./src/screens/ManagementScreen";
 import { WeeklyPlanScreen } from "./src/screens/WeeklyPlanScreen";
+import { TeamScreen } from "./src/screens/TeamScreen";
 import type { RootStackParamList, TabParamList } from "./src/navigation/types";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -76,12 +77,19 @@ const linking: any = {
       LiveStaff: "live-staff",
       Management: "management",
       WeeklyPlan: "weekly-plan",
+      Team: "team",
     },
   },
 };
 
 function MainTabs() {
   const { colors, isDark } = useTheme();
+  const { user } = useAuth();
+
+  const groups = user?.groups || [];
+  const isManager = groups.includes("owner") || groups.includes("manager");
+  const isStaff = groups.includes("staff");
+  // readonly users get minimal tabs
 
   return (
     <Tab.Navigator
@@ -147,26 +155,34 @@ function MainTabs() {
           ),
         })}
       />
-      <Tab.Screen
-        name="ScannerTab"
-        component={BarcodeScannerScreen}
-        options={{ title: "Scanner", headerTitle: "Receive Shipment" }}
-      />
-      <Tab.Screen
-        name="CountTab"
-        component={CountScreen}
-        options={{ title: "Inventory", headerTitle: "Inventory" }}
-      />
-      <Tab.Screen
-        name="WasteTab"
-        component={WasteLogScreen}
-        options={{ title: "Waste", headerTitle: "Log Waste" }}
-      />
-      <Tab.Screen
-        name="AssistantTab"
-        component={AssistantScreen}
-        options={{ title: "Assistant", headerTitle: "AI Assistant" }}
-      />
+      {(isManager || isStaff) && (
+        <Tab.Screen
+          name="ScannerTab"
+          component={BarcodeScannerScreen}
+          options={{ title: "Scanner", headerTitle: "Receive Shipment" }}
+        />
+      )}
+      {(isManager || isStaff) && (
+        <Tab.Screen
+          name="CountTab"
+          component={CountScreen}
+          options={{ title: "Inventory", headerTitle: "Inventory" }}
+        />
+      )}
+      {(isManager || isStaff) && (
+        <Tab.Screen
+          name="WasteTab"
+          component={WasteLogScreen}
+          options={{ title: "Waste", headerTitle: "Log Waste" }}
+        />
+      )}
+      {isManager && (
+        <Tab.Screen
+          name="AssistantTab"
+          component={AssistantScreen}
+          options={{ title: "Assistant", headerTitle: "AI Assistant" }}
+        />
+      )}
       <Tab.Screen
         name="SettingsTab"
         component={SettingsScreen}
@@ -177,8 +193,9 @@ function MainTabs() {
 }
 
 function AppNavigator() {
-  const { isLoading, isAuthenticated } = useAuth();
+  const { isLoading, isAuthenticated, user } = useAuth();
   const { colors } = useTheme();
+  const isManager = user?.groups?.includes("owner") || user?.groups?.includes("manager");
   const [kioskEnabled, setKioskEnabled] = useState<boolean | null>(null);
   const [showModeSelection, setShowModeSelection] = useState(false);
   const [pendingKiosk, setPendingKiosk] = useState(false);
@@ -297,25 +314,33 @@ function AppNavigator() {
             component={MainTabs}
             options={{ headerShown: false }}
           />
+          {/* Screens available to all authenticated users */}
           <Stack.Screen name="StoreDetail" component={StoreDetailScreen} options={{ title: "Store Details" }} />
           <Stack.Screen name="BarcodeScanner" component={BarcodeScannerScreen} options={{ title: "Receive Shipment" }} />
           <Stack.Screen name="WasteLog" component={WasteLogScreen} options={{ title: "Log Waste" }} />
-          <Stack.Screen name="OrderReview" component={OrderReviewScreen} options={{ title: "Purchase Orders" }} />
-          <Stack.Screen name="Assistant" component={AssistantScreen} options={{ title: "AI Assistant" }} />
-          <Stack.Screen name="Security" component={SecurityScreen} options={{ title: "Security" }} />
-          <Stack.Screen name="TransactionDetail" component={TransactionDetailScreen} options={{ title: "Transaction Detail" }} />
-          <Stack.Screen name="Reports" component={ReportsScreen} options={{ title: "Reports" }} />
-          <Stack.Screen name="Expiration" component={ExpirationScreen} options={{ title: "Expiration Tracking" }} />
-          <Stack.Screen name="Schedule" component={ScheduleScreen} options={{ title: "Staff Schedule" }} />
           <Stack.Screen name="TempLog" component={TempLogScreen} options={{ title: "Temperature Logs" }} />
-          <Stack.Screen name="Forecast" component={ForecastScreen} options={{ title: "Demand Forecasts" }} />
-          <Stack.Screen name="Timesheet" component={TimesheetScreen} options={{ title: "Timesheets" }} />
-          <Stack.Screen name="TimeEntryDetail" component={TimeEntryDetailScreen} options={{ title: "Entry Detail" }} />
-          <Stack.Screen name="LiveStaff" component={LiveStaffScreen} options={{ title: "Who's In" }} />
-          <Stack.Screen name="Management" component={ManagementScreen} options={{ title: "Management" }} />
-          <Stack.Screen name="WeeklyPlan" component={WeeklyPlanScreen} options={{ title: "Weekly Plan" }} />
-          <Stack.Screen name="Integrations" component={IntegrationsScreen} options={{ title: "POS Integrations" }} />
-          <Stack.Screen name="MappingScreen" component={MappingScreen} options={{ title: "Item Mappings" }} />
+          <Stack.Screen name="Expiration" component={ExpirationScreen} options={{ title: "Expiration Tracking" }} />
+
+          {/* Manager/Owner only screens */}
+          {isManager && (
+            <>
+              <Stack.Screen name="OrderReview" component={OrderReviewScreen} options={{ title: "Purchase Orders" }} />
+              <Stack.Screen name="Assistant" component={AssistantScreen} options={{ title: "AI Assistant" }} />
+              <Stack.Screen name="Security" component={SecurityScreen} options={{ title: "Security" }} />
+              <Stack.Screen name="TransactionDetail" component={TransactionDetailScreen} options={{ title: "Transaction Detail" }} />
+              <Stack.Screen name="Reports" component={ReportsScreen} options={{ title: "Reports" }} />
+              <Stack.Screen name="Schedule" component={ScheduleScreen} options={{ title: "Staff Schedule" }} />
+              <Stack.Screen name="Forecast" component={ForecastScreen} options={{ title: "Demand Forecasts" }} />
+              <Stack.Screen name="Timesheet" component={TimesheetScreen} options={{ title: "Timesheets" }} />
+              <Stack.Screen name="TimeEntryDetail" component={TimeEntryDetailScreen} options={{ title: "Entry Detail" }} />
+              <Stack.Screen name="LiveStaff" component={LiveStaffScreen} options={{ title: "Who's In" }} />
+              <Stack.Screen name="Management" component={ManagementScreen} options={{ title: "Management" }} />
+              <Stack.Screen name="WeeklyPlan" component={WeeklyPlanScreen} options={{ title: "Weekly Plan" }} />
+              <Stack.Screen name="Team" component={TeamScreen} options={{ title: "Team" }} />
+              <Stack.Screen name="Integrations" component={IntegrationsScreen} options={{ title: "POS Integrations" }} />
+              <Stack.Screen name="MappingScreen" component={MappingScreen} options={{ title: "Item Mappings" }} />
+            </>
+          )}
         </>
       )}
     </Stack.Navigator>

@@ -16,10 +16,14 @@ import { fontSize, spacing, type ColorScheme } from "../utils/theme";
 import { StorePicker } from "../components/StorePicker";
 
 const REPORT_TYPES = [
+  { key: "profit_loss", label: "Profit & Loss", icon: "📊", description: "Revenue, costs, and profit margins" },
+  { key: "labor", label: "Labor Report", icon: "👥", description: "Hours, labor cost, overtime by employee" },
+  { key: "food_cost", label: "Food Cost Trend", icon: "📈", description: "Weekly food cost % over time" },
   { key: "inventory", label: "Inventory Snapshot", icon: "📦", description: "Current stock levels and values" },
   { key: "waste", label: "Waste Report", icon: "🗑️", description: "Waste logs for the selected period" },
   { key: "sales", label: "Sales & Food Cost", icon: "💰", description: "Revenue, food cost, and margins" },
   { key: "purchase_orders", label: "Purchase Orders", icon: "📋", description: "All POs and spend totals" },
+  { key: "count_variance", label: "Count Variance", icon: "🔍", description: "Inventory count discrepancies" },
 ];
 
 export function ReportsScreen() {
@@ -129,19 +133,62 @@ export function ReportsScreen() {
                 <Text style={[s.summaryLine, { color: colors.textSecondary }]}>Total Spend: ${reportData.totalSpend?.toFixed(2)}</Text>
               </>
             )}
+            {selectedType === "labor" && (
+              <>
+                <Text style={[s.summaryLine, { color: colors.textSecondary }]}>Employees: {reportData.totalEmployees}</Text>
+                <Text style={[s.summaryLine, { color: colors.textSecondary }]}>Total Hours: {reportData.totalHours}</Text>
+                <Text style={[s.summaryLine, { color: colors.textSecondary }]}>Total Labor Cost: ${reportData.totalLaborCost?.toFixed(2)}</Text>
+                <Text style={[s.summaryLine, { color: colors.textSecondary }]}>Overtime Hours: {reportData.totalOvertime}</Text>
+                <Text style={[s.summaryLine, { color: colors.textSecondary }]}>Labor Cost %: {reportData.laborCostPercentage}%</Text>
+                <Text style={[s.summaryLine, { color: colors.textSecondary }]}>Revenue: ${reportData.revenue?.toFixed(2)}</Text>
+              </>
+            )}
+            {selectedType === "profit_loss" && (
+              <>
+                <Text style={[s.summaryLine, { color: colors.textSecondary }]}>Period: {reportData.period?.startDate?.split("T")[0]} to {reportData.period?.endDate?.split("T")[0]}</Text>
+                <Text style={[s.summaryLine, { color: colors.text, fontWeight: "600", marginTop: 4 }]}>Revenue: ${reportData.revenue?.toFixed(2)}</Text>
+                <Text style={[s.summaryLine, { color: colors.textSecondary }]}>Food Cost: ${reportData.foodCost?.toFixed(2)} ({reportData.foodCostPercent}%)</Text>
+                <Text style={[s.summaryLine, { color: colors.textSecondary }]}>Labor Cost: ${reportData.laborCost?.toFixed(2)} ({reportData.laborCostPercent}%)</Text>
+                <Text style={[s.summaryLine, { color: colors.textSecondary }]}>Waste Cost: ${reportData.wasteCost?.toFixed(2)} ({reportData.wasteCostPercent}%)</Text>
+                <Text style={[s.summaryLine, { color: colors.textSecondary, fontWeight: "600", marginTop: 4 }]}>Total Expenses: ${reportData.totalExpenses?.toFixed(2)}</Text>
+                <Text style={[s.summaryLine, { color: reportData.grossProfit >= 0 ? "#38a169" : "#e53e3e", fontWeight: "600" }]}>Gross Profit: ${reportData.grossProfit?.toFixed(2)} ({reportData.grossMargin}%)</Text>
+                <Text style={[s.summaryLine, { color: reportData.netProfit >= 0 ? "#38a169" : "#e53e3e", fontWeight: "700" }]}>Net Profit: ${reportData.netProfit?.toFixed(2)} ({reportData.netMargin}%)</Text>
+              </>
+            )}
+            {selectedType === "food_cost" && (
+              <>
+                <Text style={[s.summaryLine, { color: colors.textSecondary }]}>Overall Food Cost: {reportData.overallFoodCostPercent}%</Text>
+                <Text style={[s.summaryLine, { color: colors.textSecondary }]}>Revenue: ${reportData.totalRevenue?.toFixed(2)}</Text>
+                <Text style={[s.summaryLine, { color: colors.textSecondary }]}>Food Cost: ${reportData.totalFoodCost?.toFixed(2)}</Text>
+                <Text style={[s.summaryLine, { color: colors.textSecondary }]}>Weeks Analyzed: {reportData.weeksAnalyzed}</Text>
+                <Text style={[s.summaryLine, { color: reportData.trendDirection === "increasing" ? "#e53e3e" : reportData.trendDirection === "decreasing" ? "#38a169" : colors.textSecondary, fontWeight: "600" }]}>
+                  Trend: {reportData.trendDirection} ({reportData.trendChange > 0 ? "+" : ""}{reportData.trendChange}%)
+                </Text>
+              </>
+            )}
+            {selectedType === "count_variance" && (
+              <>
+                <Text style={[s.summaryLine, { color: colors.textSecondary }]}>Counts Analyzed: {reportData.countsAnalyzed}</Text>
+                <Text style={[s.summaryLine, { color: colors.textSecondary }]}>Items with Variance ({">"}2%): {reportData.totalVarianceItems}</Text>
+                <Text style={[s.summaryLine, { color: colors.textSecondary }]}>Overall Variance: {reportData.overallVariancePercent}%</Text>
+              </>
+            )}
           </View>
 
           {/* Data rows */}
-          {(reportData.items || reportData.logs || reportData.transactions || reportData.orders || []).map((row: any, idx: number) => (
+          {selectedType === "profit_loss" ? null : (reportData.items || reportData.logs || reportData.transactions || reportData.orders || reportData.employees || reportData.weeks || reportData.variances || []).map((row: any, idx: number) => (
             <View key={idx} style={[s.dataRow, { backgroundColor: colors.surface }]}>
               <Text style={[s.dataName, { color: colors.text }]}>
-                {row.name || row.ingredientId || row.transactionId || row.orderId}
+                {row.name || row.ingredientId || row.transactionId || row.orderId || row.itemName || (row.weekStart && `Week of ${row.weekStart}`)}
               </Text>
               <Text style={[s.dataDetail, { color: colors.textSecondary }]}>
                 {selectedType === "inventory" && `${row.quantity} ${row.unit} | $${row.totalValue?.toFixed(2)}`}
                 {selectedType === "waste" && `${row.quantity} | ${row.reason} | ${row.timestamp?.split("T")[0]}`}
                 {selectedType === "sales" && `$${row.totalAmount?.toFixed(2)} | FC: ${row.foodCostPercentage}% | ${row.timestamp?.split("T")[0]}`}
                 {selectedType === "purchase_orders" && `$${row.totalAmount?.toFixed(2)} | ${row.status} | ${row.createdAt?.split("T")[0]}`}
+                {selectedType === "labor" && `${row.totalHours}h | $${row.totalCost?.toFixed(2)} | OT: ${row.overtime}h | $${row.hourlyRate}/hr`}
+                {selectedType === "food_cost" && `Revenue: $${row.revenue?.toFixed(2)} | FC: $${row.foodCost?.toFixed(2)} (${row.foodCostPercent}%) | ${row.transactions} txns`}
+                {selectedType === "count_variance" && `Expected: ${row.expected} → Actual: ${row.actual} | ${row.variancePercent > 0 ? "+" : ""}${row.variancePercent}% | ${row.date}`}
               </Text>
             </View>
           ))}
