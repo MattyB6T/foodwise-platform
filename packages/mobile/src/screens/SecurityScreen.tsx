@@ -304,7 +304,7 @@ function TimelineTab({ transactions, cameras, storeId, navigation, onCreateIncid
   navigation: any; onCreateIncident: (txn: TransactionItem) => void; colors: any; s: any;
 }) {
   const formatTime = (ts: string) => new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  const formatAmount = (n: number) => `$${n.toFixed(2)}`;
+  const formatAmount = (n: number) => `$${(n ?? 0).toFixed(2)}`;
 
   if (transactions.length === 0) {
     return (
@@ -320,7 +320,7 @@ function TimelineTab({ transactions, cameras, storeId, navigation, onCreateIncid
       keyExtractor={(item) => item.transactionId}
       contentContainerStyle={{ padding: spacing.md, paddingBottom: 80 }}
       renderItem={({ item }) => {
-        const highCost = item.foodCostPercentage > 35;
+        const highCost = (item.foodCostPercentage ?? 0) > 35;
         return (
           <TouchableOpacity
             style={s.timelineCard}
@@ -340,7 +340,7 @@ function TimelineTab({ transactions, cameras, storeId, navigation, onCreateIncid
               </Text>
               <View style={s.timelineFooter}>
                 <Text style={[s.foodCostBadge, { color: colors.textSecondary, backgroundColor: colors.background }, highCost && { backgroundColor: colors.danger + "20", color: colors.danger }]}>
-                  {item.foodCostPercentage.toFixed(1)}% food cost
+                  {(item.foodCostPercentage ?? 0).toFixed(1)}% food cost
                 </Text>
                 <TouchableOpacity style={s.flagBtn} onPress={() => onCreateIncident(item)}>
                   <Text style={s.flagText}>🚩 Flag</Text>
