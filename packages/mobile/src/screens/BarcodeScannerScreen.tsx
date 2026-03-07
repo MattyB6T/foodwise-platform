@@ -42,10 +42,14 @@ export function BarcodeScannerScreen() {
 
   useEffect(() => {
     if (Platform.OS === "web") {
-      navigator.mediaDevices
-        .getUserMedia({ video: true })
-        .then(() => setWebPermission(true))
-        .catch(() => setWebPermission(false));
+      if (navigator.mediaDevices?.getUserMedia) {
+        navigator.mediaDevices
+          .getUserMedia({ video: true })
+          .then(() => setWebPermission(true))
+          .catch(() => setWebPermission(false));
+      } else {
+        setWebPermission(false);
+      }
     } else {
       requestPermission();
     }
@@ -53,6 +57,10 @@ export function BarcodeScannerScreen() {
 
   const requestWebPermission = async () => {
     try {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        Alert.alert("Not Available", "Camera access requires HTTPS. Use the manual barcode entry instead.");
+        return;
+      }
       await navigator.mediaDevices.getUserMedia({ video: true });
       setWebPermission(true);
     } catch {

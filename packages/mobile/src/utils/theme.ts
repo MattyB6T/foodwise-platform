@@ -1,79 +1,79 @@
 export type ColorScheme = typeof lightColors;
 
 export const lightColors = {
-  // Brand
-  primary: "#16a34a",
-  primaryLight: "#22c55e",
-  primaryDark: "#15803d",
-  secondary: "#3b82f6",
-  secondaryLight: "#60a5fa",
+  // Brand — original blue
+  primary: "#2c5282",
+  primaryLight: "#4299e1",
+  primaryDark: "#1a365d",
+  secondary: "#38a169",
+  secondaryLight: "#68d391",
 
   // Semantic
-  danger: "#ef4444",
-  dangerLight: "#fecaca",
-  warning: "#f59e0b",
-  warningLight: "#fef3c7",
-  success: "#16a34a",
-  successLight: "#dcfce7",
+  danger: "#e53e3e",
+  dangerLight: "#fed7d7",
+  warning: "#d69e2e",
+  warningLight: "#fefcbf",
+  success: "#38a169",
+  successLight: "#c6f6d5",
 
   // Surfaces
-  background: "#f8fafc",
+  background: "#f7fafc",
   surface: "#ffffff",
-  surfaceHover: "#f1f5f9",
+  surfaceHover: "#edf2f7",
   card: "#ffffff",
 
   // Text
-  text: "#0f172a",
-  textSecondary: "#64748b",
-  textMuted: "#94a3b8",
+  text: "#1a202c",
+  textSecondary: "#718096",
+  textMuted: "#a0aec0",
 
   // Borders & Dividers
   border: "#e2e8f0",
-  borderLight: "#f1f5f9",
+  borderLight: "#edf2f7",
   divider: "#e2e8f0",
 
   // Status colors (kept for StatusBadge compat)
-  green: "#16a34a",
-  yellow: "#f59e0b",
-  red: "#ef4444",
+  green: "#38a169",
+  yellow: "#d69e2e",
+  red: "#e53e3e",
 };
 
 export const darkColors: ColorScheme = {
   // Brand
-  primary: "#22c55e",
-  primaryLight: "#4ade80",
-  primaryDark: "#16a34a",
-  secondary: "#60a5fa",
-  secondaryLight: "#93c5fd",
+  primary: "#4299e1",
+  primaryLight: "#63b3ed",
+  primaryDark: "#2c5282",
+  secondary: "#48bb78",
+  secondaryLight: "#68d391",
 
   // Semantic
-  danger: "#f87171",
-  dangerLight: "#450a0a",
-  warning: "#fbbf24",
-  warningLight: "#451a03",
-  success: "#4ade80",
-  successLight: "#052e16",
+  danger: "#fc8181",
+  dangerLight: "#1a0a0a",
+  warning: "#f6e05e",
+  warningLight: "#1a1503",
+  success: "#48bb78",
+  successLight: "#0a1a10",
 
   // Surfaces
-  background: "#0f172a",
-  surface: "#1e293b",
-  surfaceHover: "#334155",
-  card: "#1e293b",
+  background: "#1A1A2E",
+  surface: "#16213E",
+  surfaceHover: "#1a2744",
+  card: "#16213E",
 
   // Text
-  text: "#f1f5f9",
-  textSecondary: "#94a3b8",
-  textMuted: "#64748b",
+  text: "#E0E0E0",
+  textSecondary: "#A0AEC0",
+  textMuted: "#718096",
 
   // Borders & Dividers
-  border: "#334155",
-  borderLight: "#1e293b",
-  divider: "#334155",
+  border: "#2A2A4A",
+  borderLight: "#1e2d4a",
+  divider: "#2A2A4A",
 
   // Status colors
-  green: "#4ade80",
-  yellow: "#fbbf24",
-  red: "#f87171",
+  green: "#48bb78",
+  yellow: "#f6e05e",
+  red: "#fc8181",
 };
 
 // Default export for backward compat — screens that haven't migrated yet

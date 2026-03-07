@@ -48,10 +48,10 @@ const styles = StyleSheet.create({
     gap: spacing.sm + 2,
   },
   iconContainer: {
-    backgroundColor: "#16a34a",
+    backgroundColor: "#2c5282",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#16a34a",
+    shadowColor: "#2c5282",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
     shadowRadius: 12,
@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
   },
   titleFood: {},
   titleWise: {
-    color: "#22c55e",
+    color: "#4299e1",
   },
   tagline: {
     fontSize: 14,

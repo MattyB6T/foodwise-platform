@@ -19,7 +19,7 @@ export function ModeSelectionScreen({ onManagerLogin, onKioskMode }: ModeSelecti
       <View style={s.buttonSection}>
         <TouchableOpacity style={s.managerBtn} onPress={onManagerLogin} activeOpacity={0.85}>
           <View style={s.btnIconWrap}>
-            <Ionicons name="briefcase" size={28} color="#22c55e" />
+            <Ionicons name="briefcase" size={28} color="#4299e1" />
           </View>
           <View style={s.btnTextWrap}>
             <Text style={s.btnTitle}>Manager Login</Text>
@@ -83,7 +83,7 @@ const s = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: borderRadius.md,
-    backgroundColor: "rgba(34,197,94,0.15)",
+    backgroundColor: "rgba(66,153,225,0.15)",
     alignItems: "center",
     justifyContent: "center",
     marginRight: spacing.md,
