@@ -25,31 +25,7 @@ export class FoodwisePosStack extends cdk.NestedStack {
     const handlersPath = path.join(__dirname, "../../api/src/handlers");
 
     const posLambdaEnvironment: Record<string, string> = {
-      STORES_TABLE: core.storesTable.tableName,
-      INVENTORY_TABLE: core.inventoryTable.tableName,
-      TRANSACTIONS_TABLE: core.transactionsTable.tableName,
-      RECIPES_TABLE: core.recipesTable.tableName,
-      FORECASTS_TABLE: core.forecastsTable.tableName,
-      SUPPLIERS_TABLE: core.suppliersTable.tableName,
-      PURCHASE_ORDERS_TABLE: core.purchaseOrdersTable.tableName,
-      RECEIVING_LOGS_TABLE: core.receivingLogsTable.tableName,
-      WASTE_LOGS_TABLE: core.wasteLogsTable.tableName,
-      CAMERAS_TABLE: core.camerasTable.tableName,
-      INCIDENTS_TABLE: core.incidentsTable.tableName,
-      INVENTORY_COUNTS_TABLE: core.inventoryCountsTable.tableName,
-      NOTIFICATIONS_TABLE: core.notificationsTable.tableName,
-      STAFF_TABLE: core.staffTable.tableName,
-      SCHEDULES_TABLE: core.schedulesTable.tableName,
-      TIME_CLOCK_TABLE: core.timeClockTable.tableName,
-      KIOSK_DEVICES_TABLE: core.kioskDevicesTable.tableName,
-      TEMP_LOGS_TABLE: core.tempLogsTable.tableName,
-      PRICE_HISTORY_TABLE: core.priceHistoryTable.tableName,
-      PREP_LISTS_TABLE: core.prepListsTable.tableName,
-      AUDIT_TRAIL_TABLE: core.auditTrailTable.tableName,
-      POS_CONNECTIONS_TABLE: core.posConnectionsTable.tableName,
-      POS_TRANSACTIONS_RAW_TABLE: core.posTransactionsRawTable.tableName,
-      INGREDIENT_MAPPINGS_TABLE: core.ingredientMappingsTable.tableName,
-      FORECAST_ACCURACY_TABLE: core.forecastAccuracyTable.tableName,
+      SSM_TABLE_NAMES_PATH: "/foodwise/table-names",
       REPORTS_BUCKET: core.reportsBucket.bucketName,
     };
 
@@ -90,6 +66,11 @@ export class FoodwisePosStack extends cdk.NestedStack {
       timeout: cdk.Duration.minutes(5),
       memorySize: 512,
     });
+
+    // --- SSM Parameter read access ---
+    for (const fn of [this.toastWebhookFn, this.squarePollerFn, this.csvImportFn, this.forecastAccuracyFn]) {
+      core.tableNamesParam.grantRead(fn);
+    }
 
     // --- DynamoDB Permissions ---
 

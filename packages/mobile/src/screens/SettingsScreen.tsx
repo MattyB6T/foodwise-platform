@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   TextInput,
   Alert,
   Platform,
+  Linking,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
@@ -18,6 +19,13 @@ import { useStore } from "../contexts/StoreContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { api } from "../utils/api";
 import { fontSize, spacing, type ColorScheme } from "../utils/theme";
+import {
+  isBiometricAvailable,
+  getBiometricType,
+  isBiometricLoginEnabled,
+  setBiometricLoginEnabled,
+  authenticateWithBiometrics,
+} from "../utils/biometrics";
 import type { RootStackParamList } from "../navigation/types";
 
 type NavProp = NativeStackNavigationProp<RootStackParamList>;
@@ -47,6 +55,37 @@ export function SettingsScreen() {
   const [newStoreAddress, setNewStoreAddress] = useState("");
   const [newStoreOperatorType, setNewStoreOperatorType] = useState("qsr");
   const [addingStore, setAddingStore] = useState(false);
+
+  // Biometric auth
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [biometricType, setBiometricType] = useState("Biometrics");
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const available = await isBiometricAvailable();
+      setBiometricAvailable(available);
+      if (available) {
+        const type = await getBiometricType();
+        setBiometricType(type);
+        const enabled = await isBiometricLoginEnabled();
+        setBiometricEnabled(enabled);
+      }
+    })();
+  }, []);
+
+  const handleToggleBiometric = async (value: boolean) => {
+    if (value) {
+      // Verify biometric works before enabling
+      const success = await authenticateWithBiometrics(`Enable ${biometricType} for LeanTable`);
+      if (!success) {
+        Alert.alert("Failed", `${biometricType} authentication failed. Please try again.`);
+        return;
+      }
+    }
+    await setBiometricLoginEnabled(value);
+    setBiometricEnabled(value);
+  };
 
   // Kiosk mode
   const [showKioskSetup, setShowKioskSetup] = useState(false);
@@ -226,6 +265,24 @@ export function SettingsScreen() {
                 <Text style={s.saveText}>Update</Text>
               </TouchableOpacity>
             </View>
+          </View>
+        )}
+
+        {biometricAvailable && (
+          <View style={s.row}>
+            <View style={s.rowLeft}>
+              <Text style={s.rowIcon}>{biometricType.includes("Face") ? "👤" : "👆"}</Text>
+              <View>
+                <Text style={[s.rowLabel, { color: colors.text }]}>{biometricType}</Text>
+                <Text style={[s.rowSub, { color: colors.textSecondary }]}>Quick sign-in with {biometricType}</Text>
+              </View>
+            </View>
+            <Switch
+              value={biometricEnabled}
+              onValueChange={handleToggleBiometric}
+              trackColor={{ false: colors.border, true: colors.primary }}
+              thumbColor="#fff"
+            />
           </View>
         )}
       </View>
@@ -433,6 +490,32 @@ export function SettingsScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Other Revenue */}
+      <View style={[s.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Text style={[s.sectionTitle, { color: colors.text }]}>Other Revenue</Text>
+        <TouchableOpacity style={s.row} onPress={() => navigation.navigate("RevenueSources" as any)}>
+          <View style={s.rowLeft}>
+            <Text style={s.rowIcon}>💰</Text>
+            <Text style={[s.rowLabel, { color: colors.primary }]}>Manage Revenue Sources</Text>
+          </View>
+          <Text style={[s.rowArrow, { color: colors.textSecondary }]}>→</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={s.row} onPress={() => navigation.navigate("LogRevenue" as any)}>
+          <View style={s.rowLeft}>
+            <Text style={s.rowIcon}>➕</Text>
+            <Text style={[s.rowLabel, { color: colors.primary }]}>Log Revenue Entry</Text>
+          </View>
+          <Text style={[s.rowArrow, { color: colors.textSecondary }]}>→</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={s.row} onPress={() => navigation.navigate("RevenueHistory" as any)}>
+          <View style={s.rowLeft}>
+            <Text style={s.rowIcon}>📊</Text>
+            <Text style={[s.rowLabel, { color: colors.primary }]}>Revenue History</Text>
+          </View>
+          <Text style={[s.rowArrow, { color: colors.textSecondary }]}>→</Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Notifications */}
       <View style={[s.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <Text style={[s.sectionTitle, { color: colors.text }]}>Notifications</Text>
@@ -481,13 +564,63 @@ export function SettingsScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Legal */}
+      <View style={[s.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Text style={[s.sectionTitle, { color: colors.text }]}>Legal</Text>
+        <TouchableOpacity style={s.row} onPress={() => Linking.openURL("https://leantable.app/privacy")}>
+          <View style={s.rowLeft}>
+            <Text style={s.rowIcon}>🔒</Text>
+            <Text style={[s.rowLabel, { color: colors.primary }]}>Privacy Policy</Text>
+          </View>
+          <Text style={[s.rowArrow, { color: colors.textSecondary }]}>→</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={s.row} onPress={() => Linking.openURL("https://leantable.app/terms")}>
+          <View style={s.rowLeft}>
+            <Text style={s.rowIcon}>📄</Text>
+            <Text style={[s.rowLabel, { color: colors.primary }]}>Terms of Service</Text>
+          </View>
+          <Text style={[s.rowArrow, { color: colors.textSecondary }]}>→</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={s.row}
+          onPress={() => {
+            Alert.alert(
+              "Delete Account",
+              "This will permanently delete your account and all associated data. This action cannot be undone.",
+              [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Delete My Account",
+                  style: "destructive",
+                  onPress: async () => {
+                    try {
+                      await api.deleteAccount();
+                      Alert.alert("Account Deleted", "Your account and data have been removed.");
+                      logout();
+                    } catch (err: any) {
+                      Alert.alert("Error", err.message || "Failed to delete account. Contact support@leantable.app");
+                    }
+                  },
+                },
+              ]
+            );
+          }}
+        >
+          <View style={s.rowLeft}>
+            <Text style={s.rowIcon}>⚠️</Text>
+            <Text style={[s.rowLabel, { color: colors.danger }]}>Delete Account</Text>
+          </View>
+          <Text style={[s.rowArrow, { color: colors.textSecondary }]}>→</Text>
+        </TouchableOpacity>
+      </View>
+
       {/* About */}
       <View style={[s.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <Text style={[s.sectionTitle, { color: colors.text }]}>About</Text>
         <View style={s.row}>
           <View style={s.rowLeft}>
             <Text style={s.rowIcon}>ℹ</Text>
-            <Text style={[s.rowLabel, { color: colors.text }]}>FoodWise Platform</Text>
+            <Text style={[s.rowLabel, { color: colors.text }]}>LeanTable Platform</Text>
           </View>
           <Text style={[s.versionText, { color: colors.textSecondary }]}>v{APP_VERSION}</Text>
         </View>

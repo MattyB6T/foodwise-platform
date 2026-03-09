@@ -13,7 +13,7 @@ import {
   ReceivingLog,
   ScannedItem,
   ReceivingDiscrepancy,
-} from "@foodwise/shared";
+} from "@leantable/shared";
 import { docClient, TABLES } from "../utils/dynamo";
 import { success, error } from "../utils/response";
 import { getUserClaims } from "../utils/auth";
@@ -30,9 +30,18 @@ function normalizeBarcode(barcode: string): string {
   return barcode.replace(/[^0-9A-Za-z]/g, "");
 }
 
+// Cache supplier barcode index at module level (persists across warm Lambda invocations)
+let cachedBarcodeIndex: Map<string, { supplier: Supplier; catalogItem: CatalogItem }> | null = null;
+let cacheTimestamp = 0;
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
 async function buildBarcodeIndex(): Promise<
   Map<string, { supplier: Supplier; catalogItem: CatalogItem }>
 > {
+  if (cachedBarcodeIndex && Date.now() - cacheTimestamp < CACHE_TTL_MS) {
+    return cachedBarcodeIndex;
+  }
+
   const result = await docClient.send(
     new ScanCommand({ TableName: TABLES.SUPPLIERS })
   );
@@ -49,6 +58,8 @@ async function buildBarcodeIndex(): Promise<
     }
   }
 
+  cachedBarcodeIndex = index;
+  cacheTimestamp = Date.now();
   return index;
 }
 
@@ -161,22 +172,24 @@ export const handler = async (
       }
     }
 
-    // Update inventory for each scanned item
-    for (const [itemId, update] of inventoryUpdates) {
-      await docClient.send(
-        new UpdateCommand({
-          TableName: TABLES.INVENTORY,
-          Key: { storeId, itemId },
-          UpdateExpression:
-            "SET quantity = if_not_exists(quantity, :zero) + :qty, updatedAt = :now",
-          ExpressionAttributeValues: {
-            ":qty": update.quantity,
-            ":zero": 0,
-            ":now": now,
-          },
-        })
-      );
-    }
+    // Update inventory for all scanned items in parallel
+    await Promise.all(
+      Array.from(inventoryUpdates).map(([itemId, update]) =>
+        docClient.send(
+          new UpdateCommand({
+            TableName: TABLES.INVENTORY,
+            Key: { storeId, itemId },
+            UpdateExpression:
+              "SET quantity = if_not_exists(quantity, :zero) + :qty, updatedAt = :now",
+            ExpressionAttributeValues: {
+              ":qty": update.quantity,
+              ":zero": 0,
+              ":now": now,
+            },
+          })
+        )
+      )
+    );
 
     // Update PO line quantities and check for discrepancies
     if (order && body.orderId) {

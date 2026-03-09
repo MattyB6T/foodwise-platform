@@ -1,5 +1,5 @@
 /**
- * FoodWise Demo Seed Script — Subway Store Model
+ * LeanTable Demo Seed Script — Subway Store Model
  *
  * Creates a realistic 30-day dataset for 2 Subway franchise locations.
  * All data follows the exact shared type schemas so the app flows work end-to-end:
@@ -528,15 +528,17 @@ async function seed() {
   // ── 9. STAFF ──
   console.log("=== Staff ===");
   for (const s of STAFF) {
-    await put(T.STAFF, { ...s, createdAt: NOW });
+    await put(T.STAFF, { ...s, createdAt: NOW, updatedAt: NOW });
   }
 
-  // ── 10. SCHEDULES (upcoming 7 days) ──
+  // ── 10. SCHEDULES (30 days historical + 7 days forward) ──
   console.log("=== Schedules ===");
-  for (let day = 0; day < 7; day++) {
-    const date = daysAgo(-day);
+  const scheduleBatch = [];
+  for (let day = 29; day >= -7; day--) {
+    const date = daysAgo(day);
     for (const s of STAFF) {
-      await put(T.SCHEDULES, {
+      if (rand(0, 6) === 0) continue; // ~14% days off
+      scheduleBatch.push({
         shiftId: `shift-${s.staffId}-d${day}`, storeId: s.storeId,
         staffId: s.staffId, staffName: s.name, date,
         startTime: s.role === "manager" ? "07:00" : "10:00",
@@ -545,6 +547,7 @@ async function seed() {
       });
     }
   }
+  await batchWrite(T.SCHEDULES, scheduleBatch);
 
   // ── 11. TIME CLOCK (30 days) ──
   console.log("=== Time Clock ===");
@@ -590,12 +593,17 @@ async function seed() {
     const date = daysAgo(day);
     for (const tz of tempZones) {
       for (const hour of [7, 12, 17]) {
+        const temp = rand(tz.min, tz.max);
+        const isCooler = tz.loc.includes("Cooler") || tz.loc.includes("Fridge");
+        const isFreezer = tz.loc.includes("Freezer");
+        const inRange = isFreezer ? temp <= 0 : isCooler ? temp <= 40 : true;
+        const ts = tsAt(date, hour);
         tempBatch.push({
           storeId: tz.store,
           logId: `temp-${tz.store}-${tz.loc.replace(/\s/g, "")}-d${day}-h${hour}`,
-          location: tz.loc, temperature: rand(tz.min, tz.max),
-          unit: "F", notes: null,
-          loggedBy: "System", timestamp: tsAt(date, hour),
+          location: tz.loc, temperature: temp,
+          unit: "F", inRange, rangeNote: inRange ? "" : `Temperature ${temp}F out of range`,
+          recordedBy: "System", timestamp: ts, createdAt: ts,
         });
       }
     }
@@ -632,7 +640,7 @@ async function seed() {
       predicted,
       actual,
       unit: fi.item.unit,
-      date: daysAgo(0),
+      forecastDate: daysAgo(0),
       createdAt: NOW,
     });
   }
@@ -651,7 +659,7 @@ async function seed() {
       predicted,
       actual,
       unit: fi.item.unit,
-      date: daysAgo(0),
+      forecastDate: daysAgo(0),
       createdAt: NOW,
     });
   }
@@ -660,8 +668,8 @@ async function seed() {
   for (let day = 0; day < 7; day++) {
     const date = daysAgo(-day);
     await put(T.FORECASTS, {
-      forecastId: `fc-${date}`, storeRecipeKey: `${STORE1}#${date}`, storeId: STORE1, date,
-      type: "demand",
+      forecastId: `fc-${date}`, storeRecipeKey: `${STORE1}#${date}`, storeId: STORE1, forecastDate: date,
+      type: "demand", predictedRevenue: r2(rand(800, 1500) + Math.random() * 100), predictedValue: r2(rand(800, 1500) + Math.random() * 100),
       predictions: [
         { itemId: INV.turkey.itemId, name: INV.turkey.name, predictedUsage: rand(10, 18), unit: "lb", confidence: r2(0.80 + Math.random() * 0.15) },
         { itemId: INV.lettuce.itemId, name: INV.lettuce.name, predictedUsage: rand(6, 12), unit: "lb", confidence: r2(0.75 + Math.random() * 0.15) },
@@ -805,7 +813,7 @@ async function seed() {
   console.log("    - Tuna over-prepped daily (making too much tuna salad)");
   console.log("    - Avocado going brown (expensive waste)");
   console.log("  Store 2 (Lakeline) runs tighter operations");
-  console.log("  → Compare the two to show how FoodWise identifies savings");
+  console.log("  → Compare the two to show how LeanTable identifies savings");
   console.log("═══════════════════════════════════════\n");
 }
 

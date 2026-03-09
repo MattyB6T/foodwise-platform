@@ -1,6 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { QueryCommand } from "@aws-sdk/lib-dynamodb";
-import { ReceivingLog } from "@foodwise/shared";
+import { ReceivingLog } from "@leantable/shared";
 import { docClient, TABLES } from "../utils/dynamo";
 import { success, error } from "../utils/response";
 import { getUserClaims } from "../utils/auth";
@@ -23,6 +23,7 @@ export const handler = async (
         KeyConditionExpression: "storeId = :storeId",
         ExpressionAttributeValues: { ":storeId": storeId },
         ScanIndexForward: false,
+        Limit: 50,
       })
     );
 

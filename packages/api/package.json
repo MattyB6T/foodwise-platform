@@ -1,5 +1,5 @@
 {
-  "name": "@foodwise/api",
+  "name": "@leantable/api",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -12,9 +12,10 @@
     "@aws-sdk/client-dynamodb": "^3.500.0",
     "@aws-sdk/client-s3": "^3.1003.0",
     "@aws-sdk/client-ses": "^3.500.0",
+    "@aws-sdk/client-ssm": "^3.1004.0",
     "@aws-sdk/lib-dynamodb": "^3.500.0",
     "@aws-sdk/s3-request-presigner": "^3.1003.0",
-    "@foodwise/shared": "*",
+    "@leantable/shared": "*",
     "uuid": "^9.0.0",
     "zod": "^4.3.6"
   },

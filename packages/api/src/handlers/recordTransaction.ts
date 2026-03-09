@@ -12,7 +12,7 @@ import {
   IngredientDeduction,
   Recipe,
   InventoryItem,
-} from "@foodwise/shared";
+} from "@leantable/shared";
 import { docClient, TABLES } from "../utils/dynamo";
 import { success, error } from "../utils/response";
 import { getUserClaims } from "../utils/auth";

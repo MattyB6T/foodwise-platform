@@ -1,5 +1,5 @@
 {
-  "name": "@foodwise/infrastructure",
+  "name": "@leantable/infrastructure",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -12,7 +12,7 @@
     "diff": "cdk diff"
   },
   "dependencies": {
-    "@foodwise/shared": "*",
+    "@leantable/shared": "*",
     "aws-cdk-lib": "^2.130.0",
     "constructs": "^10.3.0"
   },

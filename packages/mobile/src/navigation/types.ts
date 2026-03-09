@@ -45,4 +45,7 @@ export type RootStackParamList = {
   Team: undefined;
   Integrations: undefined;
   MappingScreen: { connectionId?: string; posSystem?: string };
+  RevenueSources: undefined;
+  LogRevenue: undefined;
+  RevenueHistory: undefined;
 };

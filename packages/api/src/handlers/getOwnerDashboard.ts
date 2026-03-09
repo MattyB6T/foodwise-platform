@@ -1,5 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { OwnerDashboard } from "@foodwise/shared";
+import { OwnerDashboard } from "@leantable/shared";
 import { success, error } from "../utils/response";
 import { getUserClaims } from "../utils/auth";
 import { getAllStores, getStoreSnapshot } from "../utils/storeMetrics";

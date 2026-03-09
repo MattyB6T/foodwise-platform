@@ -1,6 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { ScanCommand } from "@aws-sdk/lib-dynamodb";
-import { Store } from "@foodwise/shared";
+import { QueryCommand } from "@aws-sdk/lib-dynamodb";
+import { Store } from "@leantable/shared";
 import { docClient, TABLES } from "../utils/dynamo";
 import { success, error } from "../utils/response";
 import { getUserClaims } from "../utils/auth";
@@ -12,9 +12,10 @@ export const handler = async (
     const user = getUserClaims(event);
 
     const result = await docClient.send(
-      new ScanCommand({
+      new QueryCommand({
         TableName: TABLES.STORES,
-        FilterExpression: "ownerId = :ownerId",
+        IndexName: "ownerId-index",
+        KeyConditionExpression: "ownerId = :ownerId",
         ExpressionAttributeValues: {
           ":ownerId": user.sub,
         },

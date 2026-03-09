@@ -1,4 +1,4 @@
-# FoodWise Seed Data Script
+# LeanTable Seed Data Script
 # Run from: d:\Projects\foodwise-platform
 # Usage: .\scripts\seed-data.ps1
 
@@ -8,7 +8,7 @@ $ErrorActionPreference = "Stop"
 $baseUrl = "https://l6ayozti46.execute-api.us-east-1.amazonaws.com/v1"
 $userPoolClientId = "2ub76h3h848ngbpk22fmlljsp8"
 $username = "admin@foodwise.io"
-$password = "FoodWise2026!"
+$password = "LeanTable2026!"
 
 # --- Authenticate ---
 Write-Host "`n=== Authenticating ===" -ForegroundColor Cyan

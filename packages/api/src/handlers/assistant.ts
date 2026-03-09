@@ -13,8 +13,8 @@ import {
   OPERATOR_CONFIG,
   OPERATOR_TYPE_LABELS,
   OperatorType,
-} from "@foodwise/shared";
-import { docClient, TABLES } from "../utils/dynamo";
+} from "@leantable/shared";
+import { docClient, TABLES, initTables } from "../utils/dynamo";
 import { success, error } from "../utils/response";
 import { getUserClaims } from "../utils/auth";
 
@@ -44,6 +44,7 @@ interface DataContext {
     employees: { name: string; hours: number; cost: number }[];
   };
   schedule?: { staffName: string; date: string; startTime: string; endTime: string }[];
+  ancillaryRevenue?: { total: number; topSources: { name: string; amount: number }[] };
 }
 
 function classifyQuestion(question: string): string[] {
@@ -71,8 +72,11 @@ function classifyQuestion(question: string): string[] {
   if (q.includes("trend") || q.includes("getting better") || q.includes("getting worse") || q.includes("over time")) {
     topics.push("trends");
   }
-  if (q.includes("sales") || q.includes("revenue") || q.includes("busy")) {
+  if (q.includes("sales") || q.includes("revenue") || q.includes("busy") || q.includes("income")) {
     topics.push("sales");
+  }
+  if (q.includes("revenue") || q.includes("other income") || q.includes("ancillary") || q.includes("pool") || q.includes("event") || q.includes("trivia") || q.includes("cover charge") || q.includes("catering")) {
+    topics.push("revenue");
   }
   if (q.includes("staff") || q.includes("labor") || q.includes("schedule") || q.includes("employee") ||
       q.includes("overtime") || q.includes("hours") || q.includes("shift") || q.includes("payroll") ||
@@ -426,6 +430,49 @@ async function fetchContextData(
     );
   }
 
+  // Ancillary revenue — always fetch for bars/hybrids, or when topic is revenue/sales
+  const opType = (ctx.store?.operatorType || "qsr") as string;
+  if (topics.includes("revenue") || topics.includes("sales") || ["bar", "hybrid", "restaurant"].includes(opType)) {
+    fetches.push(
+      (async () => {
+        const [sourcesRes, entriesRes] = await Promise.all([
+          docClient.send(
+            new QueryCommand({
+              TableName: TABLES.REVENUE_SOURCES,
+              KeyConditionExpression: "storeId = :s",
+              ExpressionAttributeValues: { ":s": storeId },
+            })
+          ),
+          docClient.send(
+            new QueryCommand({
+              TableName: TABLES.REVENUE_ENTRIES,
+              IndexName: "storeId-date-index",
+              KeyConditionExpression: "storeId = :s AND #d >= :since",
+              ExpressionAttributeNames: { "#d": "date" },
+              ExpressionAttributeValues: { ":s": storeId, ":since": thirtyDaysAgo.split("T")[0] },
+            })
+          ),
+        ]);
+        const sourceMap: Record<string, string> = {};
+        for (const s of sourcesRes.Items || []) sourceMap[s.sourceId] = s.name;
+        const entries = entriesRes.Items || [];
+        const total = entries.reduce((sum: number, e: any) => sum + (e.amount || 0), 0) / 100;
+        const bySource: Record<string, number> = {};
+        for (const e of entries) {
+          const name = sourceMap[e.sourceId] || "Unknown";
+          bySource[name] = (bySource[name] || 0) + (e.amount || 0) / 100;
+        }
+        const topSources = Object.entries(bySource)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5)
+          .map(([name, amount]) => ({ name, amount: Math.round(amount * 100) / 100 }));
+        if (total > 0) {
+          ctx.ancillaryRevenue = { total: Math.round(total * 100) / 100, topSources };
+        }
+      })()
+    );
+  }
+
   await Promise.all(fetches);
   return ctx;
 }
@@ -438,7 +485,7 @@ function buildPrompt(question: string, ctx: DataContext): string {
   const opLabel = OPERATOR_TYPE_LABELS[opType];
 
   sections.push(
-    `You are the FoodWise AI operations assistant for a ${opLabel} establishment. ` +
+    `You are the LeanTable AI operations assistant for a ${opLabel} establishment. ` +
       `You help managers understand their store's performance and make data-driven decisions. ` +
       `Be specific, use numbers from the data, and give actionable recommendations. ` +
       `Keep responses concise but thorough. Use bullet points for lists.\n` +
@@ -572,6 +619,16 @@ function buildPrompt(question: string, ctx: DataContext): string {
     );
   }
 
+  if (ctx.ancillaryRevenue) {
+    const ar = ctx.ancillaryRevenue;
+    sections.push(
+      `\n## Other Revenue (Last 30 Days)\n` +
+        `- Total ancillary revenue: $${ar.total.toFixed(2)}\n` +
+        `- Top sources: ${ar.topSources.map((s) => `${s.name}: $${s.amount.toFixed(2)}`).join(", ")}\n` +
+        `Note: Ancillary revenue is included in total revenue for labor cost % calculations but excluded from ${opConfig.primaryCostLabel.toLowerCase()} calculations.`
+    );
+  }
+
   sections.push(`\n## Manager's Question\n${question}`);
 
   return sections.join("\n");
@@ -580,6 +637,7 @@ function buildPrompt(question: string, ctx: DataContext): string {
 export const handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
+  await initTables();
   try {
     const user = getUserClaims(event);
 

@@ -4,6 +4,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { v4 as uuidv4 } from "uuid";
 import { success, error } from "../utils/response";
 import { getUserClaims } from "../utils/auth";
+import { initTables } from "../utils/dynamo";
 
 const s3 = new S3Client({});
 const BUCKET = process.env.REPORTS_BUCKET || "";
@@ -11,6 +12,7 @@ const BUCKET = process.env.REPORTS_BUCKET || "";
 export const handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
+  await initTables();
   try {
     const claims = getUserClaims(event);
     const method = event.httpMethod;

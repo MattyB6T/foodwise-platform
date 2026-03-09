@@ -1,27 +1,64 @@
 {
   "expo": {
-    "name": "FoodWise",
-    "slug": "foodwise",
+    "name": "LeanTable",
+    "slug": "leantable",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "backgroundColor": "#2c5282"
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1a1625"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "io.foodwise.app",
+      "bundleIdentifier": "io.leantable.app",
+      "buildNumber": "1",
       "infoPlist": {
-        "NSCameraUsageDescription": "FoodWise needs camera access to scan barcodes during shipment receiving."
+        "NSCameraUsageDescription": "LeanTable needs camera access to scan barcodes and invoices during shipment receiving.",
+        "NSLocationWhenInUseUsageDescription": "LeanTable uses your location to verify employee clock-in at your store location.",
+        "NSPhotoLibraryUsageDescription": "LeanTable needs photo library access to save exported reports.",
+        "NSFaceIDUsageDescription": "LeanTable uses Face ID for quick and secure sign-in."
+      },
+      "privacyManifests": {
+        "NSPrivacyAccessedAPITypes": [
+          {
+            "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryUserDefaults",
+            "NSPrivacyAccessedAPITypeReasons": [
+              "CA92.1"
+            ]
+          },
+          {
+            "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryDiskSpace",
+            "NSPrivacyAccessedAPITypeReasons": [
+              "E174.1"
+            ]
+          }
+        ]
       }
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#2c5282"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1a1625"
       },
-      "package": "io.foodwise.app",
-      "permissions": ["CAMERA"]
-    }
+      "package": "io.leantable.app",
+      "versionCode": 1,
+      "permissions": [
+        "CAMERA",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT"
+      ]
+    },
+    "plugins": [
+      "expo-secure-store",
+      "@sentry/react-native"
+    ]
   }
 }

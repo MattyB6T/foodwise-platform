@@ -12,7 +12,7 @@ interface ThemeContextType {
   isDark: boolean;
 }
 
-const THEME_KEY = "@foodwise_theme";
+const THEME_KEY = "@leantable_theme";
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 

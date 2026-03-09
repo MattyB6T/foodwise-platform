@@ -9,7 +9,7 @@ import {
   StoreStatus,
   OPERATOR_CONFIG,
   OperatorType,
-} from "@foodwise/shared";
+} from "@leantable/shared";
 import { docClient, TABLES } from "../utils/dynamo";
 import { success, error } from "../utils/response";
 import { getUserClaims } from "../utils/auth";
@@ -46,7 +46,7 @@ export const handler = async (
     const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
 
     // Parallel data fetches
-    const [inventoryRes, txRes, wasteRes, forecastRes, receivingRes, staffRes, timeClockRes] =
+    const [inventoryRes, txRes, wasteRes, forecastRes, receivingRes, staffRes, timeClockRes, revenueRes] =
       await Promise.all([
         docClient.send(
           new QueryCommand({
@@ -105,6 +105,15 @@ export const handler = async (
             ExpressionAttributeValues: { ":s": storeId, ":since": thirtyDaysAgo },
           })
         ),
+        docClient.send(
+          new QueryCommand({
+            TableName: TABLES.REVENUE_ENTRIES,
+            IndexName: "storeId-date-index",
+            KeyConditionExpression: "storeId = :s AND #d >= :since",
+            ExpressionAttributeNames: { "#d": "date" },
+            ExpressionAttributeValues: { ":s": storeId, ":since": thirtyDaysAgo.split("T")[0] },
+          })
+        ),
       ]);
 
     const inventory = (inventoryRes.Items || []) as InventoryItem[];
@@ -112,11 +121,17 @@ export const handler = async (
     const wasteLogs = (wasteRes.Items || []) as WasteLog[];
     const forecasts = forecastRes.Items || [];
 
+    // --- Ancillary Revenue ---
+    const revenueEntries = revenueRes.Items || [];
+    const ancillaryRevenue = revenueEntries.reduce((s: number, e: any) => s + (e.amount || 0), 0) / 100; // cents → dollars
+
     // --- Food Cost Score ---
-    const totalRevenue = transactions.reduce((s, tx) => s + tx.totalAmount, 0);
+    const salesRevenue = transactions.reduce((s, tx) => s + tx.totalAmount, 0);
+    const totalRevenue = salesRevenue + ancillaryRevenue;
     const totalFoodCost = transactions.reduce((s, tx) => s + (tx.foodCost || 0), 0);
+    // Food cost % is against food/bev sales only (not ancillary revenue)
     const foodCostPercentage =
-      totalRevenue > 0 ? Math.round((totalFoodCost / totalRevenue) * 10000) / 100 : 0;
+      salesRevenue > 0 ? Math.round((totalFoodCost / salesRevenue) * 10000) / 100 : 0;
     const foodCostThreshold = opConfig.foodCostTarget - 5;
     const foodCostScore = Math.max(
       0,
@@ -323,6 +338,10 @@ export const handler = async (
           laborCostPercentage,
           totalLaborCost: Math.round(totalLaborCost * 100) / 100,
           totalLaborHours: Math.round(totalLaborHours * 100) / 100,
+        } : {}),
+        ...(ancillaryRevenue > 0 ? {
+          ancillaryRevenue: Math.round(ancillaryRevenue * 100) / 100,
+          totalRevenue: Math.round(totalRevenue * 100) / 100,
         } : {}),
       },
       recommendations,

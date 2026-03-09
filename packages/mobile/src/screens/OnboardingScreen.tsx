@@ -21,13 +21,13 @@ const OPERATOR_TYPES = [
 
 const STEPS = [
   {
-    title: "Welcome to FoodWise",
+    title: "Welcome to LeanTable",
     description: "Your complete food service management platform. Track inventory, reduce waste, and optimize operations — all in one place.",
     icon: "🍽️",
   },
   {
     title: "What type of operation?",
-    description: "Select your business type so FoodWise can calibrate benchmarks, forecasts, and recommendations for your industry.",
+    description: "Select your business type so LeanTable can calibrate benchmarks, forecasts, and recommendations for your industry.",
     icon: "🏪",
     isOperatorStep: true,
   },

@@ -197,7 +197,7 @@ export function DashboardScreen() {
               </View>
               <StatusBadge
                 status={store.healthStatus}
-                label={`${store.healthScore}/100`}
+                label={`${store.healthScore ?? '—'}/100`}
               />
             </View>
 

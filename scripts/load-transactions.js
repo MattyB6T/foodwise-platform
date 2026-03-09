@@ -8,7 +8,7 @@ const BASE = "https://l6ayozti46.execute-api.us-east-1.amazonaws.com/v1";
 const STORE_ID = "2c51e75b-6026-407a-ab2a-8e7d9d556bff";
 const CLIENT_ID = "2ub76h3h848ngbpk22fmlljsp8";
 const USERNAME = "admin@foodwise.io";
-const PASSWORD = "FoodWise2026A";
+const PASSWORD = "LeanTable2026A";
 
 const cognito = new CognitoIdentityProviderClient({ region: "us-east-1" });
 

@@ -6,17 +6,23 @@ import { handler as updateInventoryHandler } from "./updateInventory";
 import { handler as recordTransactionHandler } from "./recordTransaction";
 import { handler as listTransactionsHandler } from "./listTransactions";
 import { handler as getDashboardHandler } from "./getDashboard";
+import { handler as deleteAccountHandler } from "./deleteAccount";
 import { error } from "../utils/response";
+import { initTables } from "../utils/dynamo";
 
 // Single Lambda that routes to the appropriate store-ops sub-handler
 // This reduces CloudFormation resource count (1 Lambda instead of 7)
 export const handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
+  await initTables();
   const resource = event.resource || "";
   const path = event.path || "";
   const method = event.httpMethod || "";
 
+  if ((resource.includes("/account") || path.includes("/account")) && method === "DELETE") {
+    return deleteAccountHandler(event);
+  }
   if (resource.includes("/dashboard") || path.includes("/dashboard")) {
     return getDashboardHandler(event);
   }

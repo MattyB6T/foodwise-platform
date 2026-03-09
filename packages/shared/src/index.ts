@@ -356,6 +356,62 @@ export interface HealthScoreBreakdown {
   generatedAt: string;
 }
 
+// --- Revenue Tracking ---
+
+export type RevenueSourceType =
+  | "pool_tables"
+  | "darts"
+  | "arcade"
+  | "cover_charge"
+  | "live_music"
+  | "private_events"
+  | "trivia"
+  | "catering"
+  | "merchandise"
+  | "custom";
+
+export const REVENUE_SOURCE_LABELS: Record<RevenueSourceType, string> = {
+  pool_tables: "Pool / Billiards",
+  darts: "Dart Boards",
+  arcade: "Arcade Machines",
+  cover_charge: "Cover Charge / Door Fees",
+  live_music: "Live Music",
+  private_events: "Private Events / Bookings",
+  trivia: "Trivia Night",
+  catering: "Catering",
+  merchandise: "Merchandise / Retail",
+  custom: "Custom",
+};
+
+/** Default revenue source suggestions per operator type. */
+export const DEFAULT_REVENUE_SOURCES: Record<OperatorType, RevenueSourceType[]> = {
+  bar: ["pool_tables", "darts", "cover_charge", "live_music", "trivia", "private_events"],
+  hybrid: ["pool_tables", "live_music", "private_events", "catering", "trivia"],
+  cafe: ["catering", "merchandise", "private_events"],
+  restaurant: ["private_events", "catering", "merchandise"],
+  qsr: ["catering"],
+};
+
+export interface RevenueSource {
+  storeId: string;
+  sourceId: string;
+  name: string;
+  type: RevenueSourceType;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface RevenueEntry {
+  storeId: string;
+  entryId: string;
+  sourceId: string;
+  amount: number;
+  date: string;
+  note?: string;
+  createdBy: string;
+  createdAt: string;
+}
+
 // --- Camera / Surveillance ---
 
 export type CameraLocation = "register" | "prep-area" | "drive-thru" | "storage" | "dining" | "entrance";

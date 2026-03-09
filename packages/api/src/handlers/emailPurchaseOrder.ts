@@ -1,12 +1,13 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { GetCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
-import { docClient, TABLES } from "../utils/dynamo";
+import { docClient, TABLES, initTables } from "../utils/dynamo";
 import { success, error } from "../utils/response";
 import { requireRole, isErrorResult } from "../utils/roles";
 
 export const handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
+  await initTables();
   try {
     const auth = requireRole(event, "manager");
     if (isErrorResult(auth)) return auth;
@@ -44,7 +45,7 @@ export const handler = async (
       .map((item: any, i: number) => `${i + 1}. ${item.name || item.itemId} - Qty: ${item.quantity} ${item.unit || ""}`)
       .join("\n");
 
-    const emailBody = `Purchase Order: ${orderId}\nDate: ${new Date().toLocaleDateString()}\nStore: ${order.storeId}\n\nItems:\n${itemLines}\n\nTotal: $${order.totalAmount?.toFixed(2) || "TBD"}\n\nPlease confirm receipt of this order.\n\nThank you,\nFoodWise Platform`;
+    const emailBody = `Purchase Order: ${orderId}\nDate: ${new Date().toLocaleDateString()}\nStore: ${order.storeId}\n\nItems:\n${itemLines}\n\nTotal: $${order.totalAmount?.toFixed(2) || "TBD"}\n\nPlease confirm receipt of this order.\n\nThank you,\nLeanTable Platform`;
 
     // In production, this would call SES to send the email
     console.log(`Would send PO email to ${supplierEmail}:\n${emailBody}`);

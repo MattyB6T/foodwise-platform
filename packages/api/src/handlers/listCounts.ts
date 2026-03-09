@@ -19,6 +19,7 @@ export const handler = async (
         KeyConditionExpression: "storeId = :sid",
         ExpressionAttributeValues: { ":sid": storeId },
         ScanIndexForward: false,
+        Limit: 50,
       })
     );
 

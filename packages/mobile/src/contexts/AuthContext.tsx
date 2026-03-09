@@ -6,7 +6,8 @@ import {
   CognitoUserSession,
 } from "amazon-cognito-identity-js";
 import { CONFIG } from "../utils/config";
-import { setAuthToken, setSessionExpiredCallback } from "../utils/api";
+import { setAuthToken, setSessionExpiredCallback, loadPersistedToken } from "../utils/api";
+import { setSentryUser, clearSentryUser } from "../utils/sentry";
 
 const userPool = new CognitoUserPool({
   UserPoolId: CONFIG.COGNITO_USER_POOL_ID,
@@ -42,6 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAuthToken(token);
 
     const payload = idToken.decodePayload();
+    setSentryUser(payload.email);
     setState({
       isLoading: false,
       isAuthenticated: true,
@@ -53,22 +55,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  // Check for existing session on mount
+  // Check for existing session on mount + restore persisted token
   useEffect(() => {
-    const currentUser = userPool.getCurrentUser();
-    if (currentUser) {
-      currentUser.getSession(
-        (err: Error | null, session: CognitoUserSession | null) => {
-          if (err || !session || !session.isValid()) {
-            setState((s) => ({ ...s, isLoading: false }));
-          } else {
-            setSession(session);
+    (async () => {
+      // Try to restore token from SecureStore first
+      await loadPersistedToken();
+
+      const currentUser = userPool.getCurrentUser();
+      if (currentUser) {
+        currentUser.getSession(
+          (err: Error | null, session: CognitoUserSession | null) => {
+            if (err || !session || !session.isValid()) {
+              setState((s) => ({ ...s, isLoading: false }));
+            } else {
+              setSession(session);
+            }
           }
-        }
-      );
-    } else {
-      setState((s) => ({ ...s, isLoading: false }));
-    }
+        );
+      } else {
+        setState((s) => ({ ...s, isLoading: false }));
+      }
+    })();
   }, [setSession]);
 
   const login = async (email: string, password: string) => {
@@ -114,7 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setState({
       isLoading: false,
       isAuthenticated: true,
-      user: { email: "demo@foodwise.io", groups: ["owner"] },
+      user: { email: "demo@leantable.app", groups: ["owner"] },
       error: null,
     });
   };
@@ -125,6 +132,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       currentUser.signOut();
     }
     setAuthToken(null);
+    clearSentryUser();
     setState({
       isLoading: false,
       isAuthenticated: false,

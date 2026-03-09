@@ -82,6 +82,14 @@ export function ManagementScreen() {
       screen: "WeeklyPlan",
     },
     {
+      title: "Other Revenue",
+      subtitle: "Log & track non-food income",
+      icon: "cash",
+      iconColor: "#38a169",
+      bgColor: "#c6f6d5",
+      screen: "LogRevenue",
+    },
+    {
       title: "Reports",
       subtitle: "Weekly reports & data exports",
       icon: "bar-chart",

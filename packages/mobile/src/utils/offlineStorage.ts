@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const OFFLINE_QUEUE_KEY = "foodwise_offline_queue";
-const OFFLINE_CACHE_PREFIX = "foodwise_cache_";
+const OFFLINE_QUEUE_KEY = "leantable_offline_queue";
+const OFFLINE_CACHE_PREFIX = "leantable_cache_";
 
 interface OfflineAction {
   id: string;

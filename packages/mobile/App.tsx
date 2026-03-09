@@ -9,6 +9,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
 import { StoreProvider, useStore } from "./src/contexts/StoreContext";
 import { ThemeProvider, useTheme } from "./src/contexts/ThemeContext";
+import { ErrorBoundary } from "./src/components/ErrorBoundary";
+import { initSentry, sentryWrap } from "./src/utils/sentry";
 import { LoginScreen } from "./src/screens/LoginScreen";
 import { DashboardScreen } from "./src/screens/DashboardScreen";
 import { StoreDetailScreen } from "./src/screens/StoreDetailScreen";
@@ -36,6 +38,9 @@ import { OnboardingScreen } from "./src/screens/OnboardingScreen";
 import { ManagementScreen } from "./src/screens/ManagementScreen";
 import { WeeklyPlanScreen } from "./src/screens/WeeklyPlanScreen";
 import { TeamScreen } from "./src/screens/TeamScreen";
+import { RevenueSourcesScreen } from "./src/screens/RevenueSourcesScreen";
+import { LogRevenueScreen } from "./src/screens/LogRevenueScreen";
+import { RevenueHistoryScreen } from "./src/screens/RevenueHistoryScreen";
 import type { RootStackParamList, TabParamList } from "./src/navigation/types";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -78,6 +83,9 @@ const linking: any = {
       Management: "management",
       WeeklyPlan: "weekly-plan",
       Team: "team",
+      RevenueSources: "revenue-sources",
+      LogRevenue: "log-revenue",
+      RevenueHistory: "revenue-history",
     },
   },
 };
@@ -151,7 +159,7 @@ function MainTabs() {
         component={DashboardScreen}
         options={({ navigation }) => ({
           title: "Home",
-          headerTitle: "FoodWise",
+          headerTitle: "LeanTable",
           headerRight: () => (
             <TouchableOpacity
               onPress={() => navigation.navigate("SettingsTab")}
@@ -357,6 +365,9 @@ function AppNavigator() {
               <Stack.Screen name="Team" component={TeamScreen} options={{ title: "Team" }} />
               <Stack.Screen name="Integrations" component={IntegrationsScreen} options={{ title: "POS Integrations" }} />
               <Stack.Screen name="MappingScreen" component={MappingScreen} options={{ title: "Item Mappings" }} />
+              <Stack.Screen name="RevenueSources" component={RevenueSourcesScreen} options={{ title: "Revenue Sources" }} />
+              <Stack.Screen name="LogRevenue" component={LogRevenueScreen} options={{ title: "Log Revenue" }} />
+              <Stack.Screen name="RevenueHistory" component={RevenueHistoryScreen} options={{ title: "Revenue History" }} />
             </>
           )}
         </>
@@ -365,7 +376,10 @@ function AppNavigator() {
   );
 }
 
-export default function App() {
+// Initialize Sentry before rendering
+initSentry();
+
+function App() {
   useEffect(() => {
     if (Platform.OS === "web") {
       const style = document.createElement("style");
@@ -375,15 +389,19 @@ export default function App() {
   }, []);
 
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <StoreProvider>
-          <NavigationContainer linking={linking}>
-            <AppNavigator />
-            <StatusBar style="light" />
-          </NavigationContainer>
-        </StoreProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <AuthProvider>
+          <StoreProvider>
+            <NavigationContainer linking={linking}>
+              <AppNavigator />
+              <StatusBar style="light" />
+            </NavigationContainer>
+          </StoreProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
+
+export default sentryWrap(App);

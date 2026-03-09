@@ -8,7 +8,7 @@ import {
   StoreStatus,
   OPERATOR_CONFIG,
   OperatorType,
-} from "@foodwise/shared";
+} from "@leantable/shared";
 import { docClient, TABLES } from "./dynamo";
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
@@ -89,13 +89,13 @@ export async function getStoreSnapshot(store: Store): Promise<StoreSnapshot> {
   const wasteLogs = (wasteRes.Items || []) as WasteLog[];
 
   // Food cost %
-  const totalRevenue = transactions.reduce((s, tx) => s + tx.totalAmount, 0);
+  const totalRevenue = transactions.reduce((s, tx) => s + (tx.totalAmount || 0), 0);
   const totalFoodCost = transactions.reduce((s, tx) => s + (tx.foodCost || 0), 0);
   const foodCostPercentage =
     totalRevenue > 0 ? Math.round((totalFoodCost / totalRevenue) * 10000) / 100 : 0;
 
   // Waste %
-  const totalWasteCost = wasteLogs.reduce((s, w) => s + w.totalCost, 0);
+  const totalWasteCost = wasteLogs.reduce((s, w) => s + (w.totalCost || 0), 0);
   const wastePercentage =
     totalFoodCost > 0
       ? Math.round((totalWasteCost / totalFoodCost) * 10000) / 100
@@ -127,7 +127,7 @@ export async function getStoreSnapshot(store: Store): Promise<StoreSnapshot> {
 
   // Low stock count
   const lowStockCount = inventory.filter(
-    (i) => i.lowStockThreshold > 0 && i.quantity <= i.lowStockThreshold
+    (i) => (i.lowStockThreshold || 0) > 0 && (i.quantity || 0) <= i.lowStockThreshold
   ).length;
 
   // Health score (weighted average — uses operator-type config)
@@ -141,7 +141,7 @@ export async function getStoreSnapshot(store: Store): Promise<StoreSnapshot> {
 
   // Inventory turnover (days of inventory on hand)
   const totalInventoryValue = inventory.reduce(
-    (s, i) => s + i.quantity * i.costPerUnit, 0
+    (s, i) => s + (i.quantity || 0) * (i.costPerUnit || 0), 0
   );
   const dailyCOGS = totalFoodCost / 30;
   const inventoryTurnoverDays = dailyCOGS > 0 ? Math.round(totalInventoryValue / dailyCOGS) : 0;
@@ -157,13 +157,13 @@ export async function getStoreSnapshot(store: Store): Promise<StoreSnapshot> {
   }
 
   const w = opConfig.healthWeightsNoLabor;
-  const healthScore = Math.round(
+  const rawScore =
     foodCostScore * w.foodCost +
     wasteScore * w.waste +
     forecastScore * w.forecast +
     inventoryTurnoverScore * w.turnover +
-    stockoutScore * w.stockout
-  );
+    stockoutScore * w.stockout;
+  const healthScore = Math.round(isNaN(rawScore) ? 0 : rawScore);
 
   return {
     storeId: store.storeId,

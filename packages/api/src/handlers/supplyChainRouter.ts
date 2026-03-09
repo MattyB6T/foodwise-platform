@@ -7,12 +7,14 @@ import { handler as receiveShipmentHandler } from "./receiveShipment";
 import { handler as listReceivingLogsHandler } from "./listReceivingLogs";
 import { handler as lookupBarcodeHandler } from "./lookupBarcode";
 import { error } from "../utils/response";
+import { initTables } from "../utils/dynamo";
 
 // Single Lambda that routes to the appropriate supply-chain sub-handler
 // This reduces CloudFormation resource count (1 Lambda instead of 7)
 export const handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
+  await initTables();
   const resource = event.resource || "";
   const path = event.path || "";
   const method = event.httpMethod || "";

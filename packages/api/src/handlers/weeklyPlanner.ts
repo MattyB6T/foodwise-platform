@@ -4,7 +4,7 @@ import {
   BedrockRuntimeClient,
   InvokeModelCommand,
 } from "@aws-sdk/client-bedrock-runtime";
-import { Transaction, WasteLog, Store } from "@foodwise/shared";
+import { Transaction, WasteLog, Store } from "@leantable/shared";
 import { docClient, TABLES } from "../utils/dynamo";
 import { success, error } from "../utils/response";
 import { requireRole, isErrorResult } from "../utils/roles";

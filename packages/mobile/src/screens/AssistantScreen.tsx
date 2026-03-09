@@ -112,7 +112,7 @@ export function AssistantScreen() {
     return (
       <View style={[s.container, { backgroundColor: colors.background }]}>
         <View style={s.emptyState}>
-          <Text style={[s.emptyTitle, { color: colors.text }]}>FoodWise Assistant</Text>
+          <Text style={[s.emptyTitle, { color: colors.text }]}>LeanTable Assistant</Text>
           <Text style={[s.emptySubtitle, { color: colors.textSecondary }]}>
             Select a store from the Dashboard to start asking questions
           </Text>
@@ -131,7 +131,7 @@ export function AssistantScreen() {
 
       {messages.length === 0 ? (
         <View style={s.emptyState}>
-          <Text style={[s.emptyTitle, { color: colors.text }]}>FoodWise Assistant</Text>
+          <Text style={[s.emptyTitle, { color: colors.text }]}>LeanTable Assistant</Text>
           <Text style={[s.emptySubtitle, { color: colors.textSecondary }]}>
             Ask me anything about your store's operations
           </Text>

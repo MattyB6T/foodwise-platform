@@ -1,5 +1,5 @@
 {
-  "name": "foodwise-platform",
+  "name": "leantable-platform",
   "version": "0.1.0",
   "private": true,
   "description": "FoodWise Platform - Monorepo for API, ML models, and infrastructure",

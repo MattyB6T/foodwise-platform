@@ -1,6 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { QueryCommand } from "@aws-sdk/lib-dynamodb";
-import { WasteLog } from "@foodwise/shared";
+import { WasteLog } from "@leantable/shared";
 import { docClient, TABLES } from "../utils/dynamo";
 import { success, error } from "../utils/response";
 import { getUserClaims } from "../utils/auth";
@@ -38,6 +38,11 @@ export const handler = async (
 
     const needsTimestampAlias = startDate || endDate;
 
+    const limit = parseInt(event.queryStringParameters?.limit || "200", 10);
+    const exclusiveStartKey = event.queryStringParameters?.cursor
+      ? JSON.parse(Buffer.from(event.queryStringParameters.cursor, "base64").toString())
+      : undefined;
+
     const result = await docClient.send(
       new QueryCommand({
         TableName: TABLES.WASTE_LOGS,
@@ -57,6 +62,8 @@ export const handler = async (
           ...(reason && { ":reason": reason }),
         },
         ScanIndexForward: false,
+        Limit: limit,
+        ...(exclusiveStartKey && { ExclusiveStartKey: exclusiveStartKey }),
       })
     );
 
@@ -64,6 +71,10 @@ export const handler = async (
 
     const totalWasteCost = logs.reduce((sum, l) => sum + l.totalCost, 0);
     const totalQuantity = logs.reduce((sum, l) => sum + l.quantity, 0);
+
+    const nextCursor = result.LastEvaluatedKey
+      ? Buffer.from(JSON.stringify(result.LastEvaluatedKey)).toString("base64")
+      : undefined;
 
     return success({
       storeId,
@@ -73,6 +84,7 @@ export const handler = async (
         totalQuantity: Math.round(totalQuantity * 100) / 100,
         totalCost: Math.round(totalWasteCost * 100) / 100,
       },
+      ...(nextCursor && { nextCursor }),
     });
   } catch (err) {
     console.error("ListWaste error:", err);

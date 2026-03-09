@@ -10,7 +10,7 @@
     "rootDir": "src",
     "baseUrl": ".",
     "paths": {
-      "@foodwise/shared": ["../shared/dist"]
+      "@leantable/shared": ["../shared/dist"]
     },
     "esModuleInterop": true,
     "skipLibCheck": true,

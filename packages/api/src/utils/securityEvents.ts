@@ -1,10 +1,7 @@
-import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { PutCommand } from "@aws-sdk/lib-dynamodb";
 import { APIGatewayProxyEvent } from "aws-lambda";
 import { v4 as uuid } from "uuid";
-
-const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
-const TABLE = process.env.SECURITY_EVENTS_TABLE || "";
+import { docClient, TABLES } from "./dynamo";
 
 export type SecurityEventType =
   | "failed_login"
@@ -37,11 +34,11 @@ export function extractClientInfo(event: APIGatewayProxyEvent) {
 }
 
 export async function logSecurityEvent(secEvent: SecurityEvent): Promise<void> {
-  if (!TABLE) return; // Skip if table not configured
+  if (!TABLES.SECURITY_EVENTS) return; // Skip if table not configured
 
   try {
-    await ddb.send(new PutCommand({
-      TableName: TABLE,
+    await docClient.send(new PutCommand({
+      TableName: TABLES.SECURITY_EVENTS,
       Item: {
         eventId: uuid(),
         eventType: secEvent.eventType,

@@ -92,20 +92,24 @@ export function LoginScreen() {
           )}
         </TouchableOpacity>
 
-        <View style={s.dividerRow}>
-          <View style={s.dividerLine} />
-          <Text style={s.dividerText}>or</Text>
-          <View style={s.dividerLine} />
-        </View>
+        {__DEV__ && (
+          <>
+            <View style={s.dividerRow}>
+              <View style={s.dividerLine} />
+              <Text style={s.dividerText}>or</Text>
+              <View style={s.dividerLine} />
+            </View>
 
-        <TouchableOpacity
-          style={s.demoButton}
-          onPress={loginDemo}
-          activeOpacity={0.85}
-        >
-          <Ionicons name="play-circle-outline" size={18} color="#94a3b8" />
-          <Text style={s.demoText}>Enter Demo Mode</Text>
-        </TouchableOpacity>
+            <TouchableOpacity
+              style={s.demoButton}
+              onPress={loginDemo}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="play-circle-outline" size={18} color="#94a3b8" />
+              <Text style={s.demoText}>Enter Demo Mode</Text>
+            </TouchableOpacity>
+          </>
+        )}
       </View>
     </KeyboardAvoidingView>
   );

@@ -4,10 +4,12 @@ import { handler as getNotificationPrefsHandler } from "./getNotificationPrefs";
 import { handler as updateNotificationPrefsHandler } from "./updateNotificationPrefs";
 import { handler as sendNotificationHandler } from "./sendNotification";
 import { error } from "../utils/response";
+import { initTables } from "../utils/dynamo";
 
 export const handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
+  await initTables();
   const method = event.httpMethod;
   const resource = event.resource || "";
   const path = event.path || "";

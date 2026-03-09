@@ -6,12 +6,14 @@ import { handler as clockOutHandler } from "./kioskClockOut";
 import { handler as breakHandler } from "./kioskBreak";
 import { handler as activeHandler } from "./kioskActive";
 import { error } from "../utils/response";
+import { initTables } from "../utils/dynamo";
 
 // Single Lambda that routes to the appropriate kiosk sub-handler
 // This reduces CloudFormation resource count (1 Lambda instead of 6)
 export const handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
+  await initTables();
   const resource = event.resource || "";
   const path = event.path || "";
 

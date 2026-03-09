@@ -2,9 +2,11 @@ import * as cdk from "aws-cdk-lib";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as s3 from "aws-cdk-lib/aws-s3";
+import * as ssm from "aws-cdk-lib/aws-ssm";
 import { Construct } from "constructs";
 
 export class FoodwiseCoreStack extends cdk.NestedStack {
+  public readonly tableNamesParam: ssm.StringParameter;
   public readonly storesTable: dynamodb.Table;
   public readonly inventoryTable: dynamodb.Table;
   public readonly transactionsTable: dynamodb.Table;
@@ -31,6 +33,8 @@ export class FoodwiseCoreStack extends cdk.NestedStack {
   public readonly ingredientMappingsTable: dynamodb.Table;
   public readonly forecastAccuracyTable: dynamodb.Table;
   public readonly securityEventsTable: dynamodb.Table;
+  public readonly revenueSourcesTable: dynamodb.Table;
+  public readonly revenueEntriesTable: dynamodb.Table;
 
   public readonly userPool: cognito.UserPool;
   public readonly userPoolClient: cognito.UserPoolClient;
@@ -45,6 +49,12 @@ export class FoodwiseCoreStack extends cdk.NestedStack {
       partitionKey: { name: "storeId", type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    this.storesTable.addGlobalSecondaryIndex({
+      indexName: "ownerId-index",
+      partitionKey: { name: "ownerId", type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
     });
 
     this.inventoryTable = new dynamodb.Table(this, "InventoryTable", {
@@ -352,6 +362,65 @@ export class FoodwiseCoreStack extends cdk.NestedStack {
       partitionKey: { name: "storeId", type: dynamodb.AttributeType.STRING },
       sortKey: { name: "timestamp", type: dynamodb.AttributeType.STRING },
       projectionType: dynamodb.ProjectionType.ALL,
+    });
+
+    // --- Revenue Tracking Tables ---
+
+    this.revenueSourcesTable = new dynamodb.Table(this, "RevenueSourcesTable", {
+      partitionKey: { name: "storeId", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "sourceId", type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    this.revenueEntriesTable = new dynamodb.Table(this, "RevenueEntriesTable", {
+      partitionKey: { name: "storeId", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "entryId", type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    this.revenueEntriesTable.addGlobalSecondaryIndex({
+      indexName: "storeId-date-index",
+      partitionKey: { name: "storeId", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "date", type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
+    // --- SSM Parameter: All table names in one JSON blob ---
+    this.tableNamesParam = new ssm.StringParameter(this, "TableNamesParam", {
+      parameterName: "/foodwise/table-names",
+      stringValue: JSON.stringify({
+        STORES: this.storesTable.tableName,
+        INVENTORY: this.inventoryTable.tableName,
+        TRANSACTIONS: this.transactionsTable.tableName,
+        RECIPES: this.recipesTable.tableName,
+        FORECASTS: this.forecastsTable.tableName,
+        SUPPLIERS: this.suppliersTable.tableName,
+        PURCHASE_ORDERS: this.purchaseOrdersTable.tableName,
+        RECEIVING_LOGS: this.receivingLogsTable.tableName,
+        WASTE_LOGS: this.wasteLogsTable.tableName,
+        CAMERAS: this.camerasTable.tableName,
+        INCIDENTS: this.incidentsTable.tableName,
+        INVENTORY_COUNTS: this.inventoryCountsTable.tableName,
+        NOTIFICATIONS: this.notificationsTable.tableName,
+        STAFF: this.staffTable.tableName,
+        SCHEDULES: this.schedulesTable.tableName,
+        TIME_CLOCK: this.timeClockTable.tableName,
+        KIOSK_DEVICES: this.kioskDevicesTable.tableName,
+        TEMP_LOGS: this.tempLogsTable.tableName,
+        PRICE_HISTORY: this.priceHistoryTable.tableName,
+        PREP_LISTS: this.prepListsTable.tableName,
+        AUDIT_TRAIL: this.auditTrailTable.tableName,
+        POS_CONNECTIONS: this.posConnectionsTable.tableName,
+        POS_TRANSACTIONS_RAW: this.posTransactionsRawTable.tableName,
+        INGREDIENT_MAPPINGS: this.ingredientMappingsTable.tableName,
+        FORECAST_ACCURACY: this.forecastAccuracyTable.tableName,
+        SECURITY_EVENTS: this.securityEventsTable.tableName,
+        REVENUE_SOURCES: this.revenueSourcesTable.tableName,
+        REVENUE_ENTRIES: this.revenueEntriesTable.tableName,
+      }),
+      description: "LeanTable DynamoDB table names — managed by CDK",
     });
 
     // --- Cognito User Pool ---

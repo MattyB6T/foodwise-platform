@@ -5,10 +5,12 @@ import { handler as getRecipeHandler } from "./getRecipe";
 import { handler as upsertIngredientHandler } from "./upsertIngredient";
 import { handler as recipeScalingHandler } from "./recipeScaling";
 import { error } from "../utils/response";
+import { initTables } from "../utils/dynamo";
 
 export const handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
+  await initTables();
   const method = event.httpMethod;
   const resource = event.resource || "";
   const path = event.path || "";

@@ -79,21 +79,21 @@ async function seed() {
 
   console.log("=== Seeding Inventory ===");
   const invItems = [
-    { storeId: "store-001", itemId: "inv-001", name: "Chicken Breast", category: "Protein", quantity: 45, unit: "lb", unitCost: 4.50, parLevel: 30, reorderPoint: 15, expirationDate: daysAgo(-2) },
-    { storeId: "store-001", itemId: "inv-002", name: "Atlantic Salmon", category: "Protein", quantity: 22, unit: "lb", unitCost: 12.00, parLevel: 20, reorderPoint: 10, expirationDate: daysAgo(-3) },
-    { storeId: "store-001", itemId: "inv-003", name: "Roma Tomatoes", category: "Produce", quantity: 60, unit: "lb", unitCost: 2.25, parLevel: 40, reorderPoint: 20, expirationDate: daysAgo(-4) },
-    { storeId: "store-001", itemId: "inv-004", name: "Mixed Greens", category: "Produce", quantity: 18, unit: "lb", unitCost: 3.50, parLevel: 25, reorderPoint: 12, expirationDate: daysAgo(-1) },
-    { storeId: "store-001", itemId: "inv-005", name: "Olive Oil", category: "Pantry", quantity: 8, unit: "gal", unitCost: 18.00, parLevel: 5, reorderPoint: 3 },
-    { storeId: "store-001", itemId: "inv-006", name: "Mozzarella", category: "Dairy", quantity: 15, unit: "lb", unitCost: 6.00, parLevel: 12, reorderPoint: 6, expirationDate: daysAgo(-5) },
-    { storeId: "store-001", itemId: "inv-007", name: "Flour (AP)", category: "Pantry", quantity: 50, unit: "lb", unitCost: 0.80, parLevel: 40, reorderPoint: 20 },
-    { storeId: "store-001", itemId: "inv-008", name: "Heavy Cream", category: "Dairy", quantity: 6, unit: "qt", unitCost: 4.00, parLevel: 8, reorderPoint: 4, expirationDate: daysAgo(-2) },
-    { storeId: "store-002", itemId: "inv-101", name: "Espresso Beans", category: "Beverage", quantity: 30, unit: "lb", unitCost: 14.00, parLevel: 20, reorderPoint: 10 },
-    { storeId: "store-002", itemId: "inv-102", name: "Whole Milk", category: "Dairy", quantity: 12, unit: "gal", unitCost: 4.50, parLevel: 10, reorderPoint: 5, expirationDate: daysAgo(-3) },
-    { storeId: "store-002", itemId: "inv-103", name: "Croissants", category: "Bakery", quantity: 24, unit: "ea", unitCost: 1.75, parLevel: 30, reorderPoint: 15, expirationDate: daysAgo(-1) },
-    { storeId: "store-002", itemId: "inv-104", name: "Avocado", category: "Produce", quantity: 40, unit: "ea", unitCost: 1.50, parLevel: 30, reorderPoint: 15, expirationDate: daysAgo(-2) },
+    { storeId: "store-001", itemId: "inv-001", name: "Chicken Breast", category: "Protein", quantity: 45, unit: "lb", costPerUnit: 4.50, lowStockThreshold: 15, expirationDate: daysAgo(-2) },
+    { storeId: "store-001", itemId: "inv-002", name: "Atlantic Salmon", category: "Protein", quantity: 22, unit: "lb", costPerUnit: 12.00, lowStockThreshold: 10, expirationDate: daysAgo(-3) },
+    { storeId: "store-001", itemId: "inv-003", name: "Roma Tomatoes", category: "Produce", quantity: 60, unit: "lb", costPerUnit: 2.25, lowStockThreshold: 20, expirationDate: daysAgo(-4) },
+    { storeId: "store-001", itemId: "inv-004", name: "Mixed Greens", category: "Produce", quantity: 18, unit: "lb", costPerUnit: 3.50, lowStockThreshold: 12, expirationDate: daysAgo(-1) },
+    { storeId: "store-001", itemId: "inv-005", name: "Olive Oil", category: "Pantry", quantity: 8, unit: "gal", costPerUnit: 18.00, lowStockThreshold: 3 },
+    { storeId: "store-001", itemId: "inv-006", name: "Mozzarella", category: "Dairy", quantity: 15, unit: "lb", costPerUnit: 6.00, lowStockThreshold: 6, expirationDate: daysAgo(-5) },
+    { storeId: "store-001", itemId: "inv-007", name: "Flour (AP)", category: "Pantry", quantity: 50, unit: "lb", costPerUnit: 0.80, lowStockThreshold: 20 },
+    { storeId: "store-001", itemId: "inv-008", name: "Heavy Cream", category: "Dairy", quantity: 6, unit: "qt", costPerUnit: 4.00, lowStockThreshold: 4, expirationDate: daysAgo(-2) },
+    { storeId: "store-002", itemId: "inv-101", name: "Espresso Beans", category: "Beverage", quantity: 30, unit: "lb", costPerUnit: 14.00, lowStockThreshold: 10 },
+    { storeId: "store-002", itemId: "inv-102", name: "Whole Milk", category: "Dairy", quantity: 12, unit: "gal", costPerUnit: 4.50, lowStockThreshold: 5, expirationDate: daysAgo(-3) },
+    { storeId: "store-002", itemId: "inv-103", name: "Croissants", category: "Bakery", quantity: 24, unit: "ea", costPerUnit: 1.75, lowStockThreshold: 15, expirationDate: daysAgo(-1) },
+    { storeId: "store-002", itemId: "inv-104", name: "Avocado", category: "Produce", quantity: 40, unit: "ea", costPerUnit: 1.50, lowStockThreshold: 15, expirationDate: daysAgo(-2) },
   ];
   for (const item of invItems) {
-    await put(T.INVENTORY, { ...item, lastUpdated: NOW });
+    await put(T.INVENTORY, { ...item, updatedAt: NOW });
   }
 
   console.log("=== Seeding Recipes ===");
@@ -131,18 +131,38 @@ async function seed() {
 
   console.log("=== Seeding 30 days of Transactions ===");
   const menuItems = [
-    { name: "Grilled Chicken Caesar", price: 16.95 },
-    { name: "Margherita Pizza", price: 14.50 },
-    { name: "Salmon Bowl", price: 19.95 },
-    { name: "House Salad", price: 9.95 },
-    { name: "Bruschetta", price: 11.50 },
+    { recipeId: "recipe-001", recipeName: "Grilled Chicken Caesar", price: 16.95, foodCost: 4.00,
+      deductions: [{ itemId: "inv-001", itemName: "Chicken Breast", qty: 0.5, unit: "lb", costPerUnit: 4.50 },
+                   { itemId: "inv-004", itemName: "Mixed Greens", qty: 0.25, unit: "lb", costPerUnit: 3.50 },
+                   { itemId: "inv-006", itemName: "Mozzarella", qty: 0.125, unit: "lb", costPerUnit: 6.00 }] },
+    { recipeId: "recipe-002", recipeName: "Margherita Pizza", price: 14.50, foodCost: 3.35,
+      deductions: [{ itemId: "inv-007", itemName: "Flour (AP)", qty: 0.5, unit: "lb", costPerUnit: 0.80 },
+                   { itemId: "inv-003", itemName: "Roma Tomatoes", qty: 0.375, unit: "lb", costPerUnit: 2.25 },
+                   { itemId: "inv-006", itemName: "Mozzarella", qty: 0.25, unit: "lb", costPerUnit: 6.00 }] },
+    { recipeId: "recipe-003", recipeName: "Salmon Bowl", price: 19.95, foodCost: 5.50,
+      deductions: [{ itemId: "inv-002", itemName: "Atlantic Salmon", qty: 0.375, unit: "lb", costPerUnit: 12.00 },
+                   { itemId: "inv-004", itemName: "Mixed Greens", qty: 0.2, unit: "lb", costPerUnit: 3.50 }] },
+    { recipeId: "recipe-004", recipeName: "House Salad", price: 9.95, foodCost: 2.00,
+      deductions: [{ itemId: "inv-004", itemName: "Mixed Greens", qty: 0.3, unit: "lb", costPerUnit: 3.50 },
+                   { itemId: "inv-003", itemName: "Roma Tomatoes", qty: 0.2, unit: "lb", costPerUnit: 2.25 }] },
+    { recipeId: "recipe-005", recipeName: "Bruschetta", price: 11.50, foodCost: 2.80,
+      deductions: [{ itemId: "inv-007", itemName: "Flour (AP)", qty: 0.25, unit: "lb", costPerUnit: 0.80 },
+                   { itemId: "inv-003", itemName: "Roma Tomatoes", qty: 0.3, unit: "lb", costPerUnit: 2.25 }] },
   ];
   const cafeItems = [
-    { name: "Latte", price: 5.50 },
-    { name: "Cappuccino", price: 5.00 },
-    { name: "Avocado Toast", price: 12.00 },
-    { name: "Croissant", price: 3.50 },
-    { name: "Cold Brew", price: 4.50 },
+    { recipeId: "recipe-101", recipeName: "Latte", price: 5.50, foodCost: 1.20,
+      deductions: [{ itemId: "inv-101", itemName: "Espresso Beans", qty: 0.04, unit: "lb", costPerUnit: 14.00 },
+                   { itemId: "inv-102", itemName: "Whole Milk", qty: 0.06, unit: "gal", costPerUnit: 4.50 }] },
+    { recipeId: "recipe-102", recipeName: "Cappuccino", price: 5.00, foodCost: 1.10,
+      deductions: [{ itemId: "inv-101", itemName: "Espresso Beans", qty: 0.04, unit: "lb", costPerUnit: 14.00 },
+                   { itemId: "inv-102", itemName: "Whole Milk", qty: 0.04, unit: "gal", costPerUnit: 4.50 }] },
+    { recipeId: "recipe-103", recipeName: "Avocado Toast", price: 12.00, foodCost: 3.00,
+      deductions: [{ itemId: "inv-104", itemName: "Avocado", qty: 1, unit: "ea", costPerUnit: 1.50 },
+                   { itemId: "inv-103", itemName: "Croissants", qty: 1, unit: "ea", costPerUnit: 1.75 }] },
+    { recipeId: "recipe-104", recipeName: "Croissant", price: 3.50, foodCost: 1.75,
+      deductions: [{ itemId: "inv-103", itemName: "Croissants", qty: 1, unit: "ea", costPerUnit: 1.75 }] },
+    { recipeId: "recipe-105", recipeName: "Cold Brew", price: 4.50, foodCost: 0.80,
+      deductions: [{ itemId: "inv-101", itemName: "Espresso Beans", qty: 0.05, unit: "lb", costPerUnit: 14.00 }] },
   ];
   const payments = ["card", "cash", "card", "card", "mobile"];
 
@@ -157,15 +177,18 @@ async function seed() {
     for (let t = 0; t < store1Txns; t++) {
       const item = menuItems[rand(0, menuItems.length - 1)];
       const qty = rand(1, 3);
-      const subtotal = round2(item.price * qty);
-      const tax = round2(subtotal * 0.0825);
-      const total = round2(subtotal + tax);
+      const totalAmount = round2(item.price * qty);
+      const foodCost = round2(item.foodCost * qty);
+      const ts = `${date}T${String(rand(9, 21)).padStart(2, "0")}:${String(rand(0, 59)).padStart(2, "0")}:00Z`;
       txnBatch.push({
-        storeId: "store-001", transactionId: `txn-s1-d${day}-${t}`, type: "sale",
-        timestamp: `${date}T${String(rand(9, 21)).padStart(2, "0")}:${String(rand(0, 59)).padStart(2, "0")}:00Z`,
-        total, tax, subtotal,
-        lineItems: [{ name: item.name, quantity: qty, price: item.price }],
-        paymentMethod: payments[rand(0, payments.length - 1)], source: "pos",
+        storeId: "store-001", transactionId: `txn-s1-d${day}-${t}`,
+        timestamp: ts, createdAt: ts,
+        lineItems: [{ recipeId: item.recipeId, recipeName: item.recipeName, quantity: qty, price: item.price }],
+        totalAmount, foodCost, foodCostPercentage: round2((foodCost / totalAmount) * 100),
+        ingredientDeductions: item.deductions.map(d => ({
+          itemId: d.itemId, itemName: d.itemName, quantityDeducted: round2(d.qty * qty),
+          unit: d.unit, costPerUnit: d.costPerUnit, totalCost: round2(d.qty * qty * d.costPerUnit),
+        })),
       });
       txnCount++;
     }
@@ -173,15 +196,18 @@ async function seed() {
     for (let t = 0; t < store2Txns; t++) {
       const item = cafeItems[rand(0, cafeItems.length - 1)];
       const qty = rand(1, 4);
-      const subtotal = round2(item.price * qty);
-      const tax = round2(subtotal * 0.0825);
-      const total = round2(subtotal + tax);
+      const totalAmount = round2(item.price * qty);
+      const foodCost = round2(item.foodCost * qty);
+      const ts = `${date}T${String(rand(6, 18)).padStart(2, "0")}:${String(rand(0, 59)).padStart(2, "0")}:00Z`;
       txnBatch.push({
-        storeId: "store-002", transactionId: `txn-s2-d${day}-${t}`, type: "sale",
-        timestamp: `${date}T${String(rand(6, 18)).padStart(2, "0")}:${String(rand(0, 59)).padStart(2, "0")}:00Z`,
-        total, tax, subtotal,
-        lineItems: [{ name: item.name, quantity: qty, price: item.price }],
-        paymentMethod: payments[rand(0, payments.length - 1)], source: "pos",
+        storeId: "store-002", transactionId: `txn-s2-d${day}-${t}`,
+        timestamp: ts, createdAt: ts,
+        lineItems: [{ recipeId: item.recipeId, recipeName: item.recipeName, quantity: qty, price: item.price }],
+        totalAmount, foodCost, foodCostPercentage: round2((foodCost / totalAmount) * 100),
+        ingredientDeductions: item.deductions.map(d => ({
+          itemId: d.itemId, itemName: d.itemName, quantityDeducted: round2(d.qty * qty),
+          unit: d.unit, costPerUnit: d.costPerUnit, totalCost: round2(d.qty * qty * d.costPerUnit),
+        })),
       });
       txnCount++;
     }
@@ -192,12 +218,12 @@ async function seed() {
   console.log("=== Seeding 30 days of Waste Logs ===");
   const wasteReasons = ["expired", "spoiled", "overproduction", "damaged", "contaminated"];
   const wasteItems = [
-    { name: "Mixed Greens", unit: "lb", cost: 3.50 },
-    { name: "Heavy Cream", unit: "qt", cost: 4.00 },
-    { name: "Chicken Breast", unit: "lb", cost: 4.50 },
-    { name: "Roma Tomatoes", unit: "lb", cost: 2.25 },
-    { name: "Croissants", unit: "ea", cost: 1.75 },
-    { name: "Whole Milk", unit: "gal", cost: 4.50 },
+    { ingredientId: "inv-004", ingredientName: "Mixed Greens", unit: "lb", costPerUnit: 3.50 },
+    { ingredientId: "inv-008", ingredientName: "Heavy Cream", unit: "qt", costPerUnit: 4.00 },
+    { ingredientId: "inv-001", ingredientName: "Chicken Breast", unit: "lb", costPerUnit: 4.50 },
+    { ingredientId: "inv-003", ingredientName: "Roma Tomatoes", unit: "lb", costPerUnit: 2.25 },
+    { ingredientId: "inv-103", ingredientName: "Croissants", unit: "ea", costPerUnit: 1.75 },
+    { ingredientId: "inv-102", ingredientName: "Whole Milk", unit: "gal", costPerUnit: 4.50 },
   ];
   const wasteBatch = [];
   for (let day = 29; day >= 0; day--) {
@@ -207,11 +233,15 @@ async function seed() {
       const item = wasteItems[rand(0, wasteItems.length - 1)];
       const qty = rand(1, 5);
       const storeId = rand(0, 1) === 0 ? "store-001" : "store-002";
+      const ts = `${date}T${String(rand(10, 20)).padStart(2, "0")}:00:00Z`;
       wasteBatch.push({
-        storeId, wasteId: `waste-d${day}-${w}`, itemName: item.name,
-        quantity: qty, unit: item.unit, reason: wasteReasons[rand(0, wasteReasons.length - 1)],
-        cost: round2(item.cost * qty), loggedBy: "matt@foodwise.io",
-        timestamp: `${date}T${String(rand(10, 20)).padStart(2, "0")}:00:00Z`,
+        storeId, wasteId: `waste-d${day}-${w}`,
+        ingredientId: item.ingredientId, ingredientName: item.ingredientName,
+        quantity: qty, unit: item.unit, costPerUnit: item.costPerUnit,
+        totalCost: round2(item.costPerUnit * qty),
+        reason: wasteReasons[rand(0, wasteReasons.length - 1)],
+        notes: "", loggedBy: "matt@foodwise.io",
+        timestamp: ts, createdAt: ts,
       });
     }
   }
@@ -226,50 +256,53 @@ async function seed() {
   console.log("=== Seeding Purchase Orders ===");
   await put(T.PURCHASE_ORDERS, {
     orderId: "po-001", storeId: "store-001", supplierId: "sup-001", supplierName: "Sysco Foods", status: "delivered",
-    items: [
-      { name: "Chicken Breast", quantity: 50, unit: "lb", unitCost: 4.50, total: 225 },
-      { name: "Mozzarella", quantity: 20, unit: "lb", unitCost: 6.00, total: 120 },
+    lines: [
+      { itemName: "Chicken Breast", quantityOrdered: 50, quantityReceived: 50, unit: "lb", unitCost: 4.50 },
+      { itemName: "Mozzarella", quantityOrdered: 20, quantityReceived: 18, unit: "lb", unitCost: 6.00 },
     ],
-    total: 345, orderDate: daysAgo(2), deliveryDate: daysAgo(1), createdAt: NOW,
+    totalCost: 345, expectedDeliveryDate: daysAgo(1), createdAt: NOW, updatedAt: NOW,
   });
   await put(T.PURCHASE_ORDERS, {
     orderId: "po-002", storeId: "store-001", supplierId: "sup-002", supplierName: "Local Farms Co-op", status: "pending",
-    items: [
-      { name: "Roma Tomatoes", quantity: 40, unit: "lb", unitCost: 2.25, total: 90 },
-      { name: "Mixed Greens", quantity: 25, unit: "lb", unitCost: 3.50, total: 87.50 },
+    lines: [
+      { itemName: "Roma Tomatoes", quantityOrdered: 40, unit: "lb", unitCost: 2.25 },
+      { itemName: "Mixed Greens", quantityOrdered: 25, unit: "lb", unitCost: 3.50 },
     ],
-    total: 177.50, orderDate: TODAY, createdAt: NOW,
+    totalCost: 177.50, expectedDeliveryDate: daysAgo(-1), createdAt: NOW, updatedAt: NOW,
   });
   await put(T.PURCHASE_ORDERS, {
     orderId: "po-003", storeId: "store-002", supplierId: "sup-001", supplierName: "Sysco Foods", status: "delivered",
-    items: [
-      { name: "Whole Milk", quantity: 15, unit: "gal", unitCost: 4.50, total: 67.50 },
-      { name: "Espresso Beans", quantity: 20, unit: "lb", unitCost: 14.00, total: 280 },
+    lines: [
+      { itemName: "Whole Milk", quantityOrdered: 15, quantityReceived: 15, unit: "gal", unitCost: 4.50 },
+      { itemName: "Espresso Beans", quantityOrdered: 20, quantityReceived: 20, unit: "lb", unitCost: 14.00 },
     ],
-    total: 347.50, orderDate: daysAgo(5), deliveryDate: daysAgo(3), createdAt: NOW,
+    totalCost: 347.50, expectedDeliveryDate: daysAgo(3), createdAt: NOW, updatedAt: NOW,
   });
 
   console.log("=== Seeding Staff ===");
   const staffMembers = [
-    { storeId: "store-001", staffId: "staff-001", name: "Maria Garcia", email: "maria@foodwise.io", role: "manager", pin: "1234", hourlyRate: 22, status: "active" },
-    { storeId: "store-001", staffId: "staff-002", name: "James Wilson", email: "james@foodwise.io", role: "cook", pin: "5678", hourlyRate: 18, status: "active" },
-    { storeId: "store-001", staffId: "staff-003", name: "Sarah Kim", email: "sarah@foodwise.io", role: "server", pin: "9012", hourlyRate: 15, status: "active" },
-    { storeId: "store-002", staffId: "staff-004", name: "Alex Rivera", email: "alex@foodwise.io", role: "barista", pin: "3456", hourlyRate: 16, status: "active" },
-    { storeId: "store-002", staffId: "staff-005", name: "Emma Davis", email: "emma@foodwise.io", role: "manager", pin: "7890", hourlyRate: 21, status: "active" },
+    { storeId: "store-001", staffId: "staff-001", name: "Maria Garcia", email: "maria@foodwise.io", role: "manager", pin: "1234", hourlyRate: 22, active: true },
+    { storeId: "store-001", staffId: "staff-002", name: "James Wilson", email: "james@foodwise.io", role: "cook", pin: "5678", hourlyRate: 18, active: true },
+    { storeId: "store-001", staffId: "staff-003", name: "Sarah Kim", email: "sarah@foodwise.io", role: "server", pin: "9012", hourlyRate: 15, active: true },
+    { storeId: "store-002", staffId: "staff-004", name: "Alex Rivera", email: "alex@foodwise.io", role: "barista", pin: "3456", hourlyRate: 16, active: true },
+    { storeId: "store-002", staffId: "staff-005", name: "Emma Davis", email: "emma@foodwise.io", role: "manager", pin: "7890", hourlyRate: 21, active: true },
   ];
-  for (const s of staffMembers) await put(T.STAFF, { ...s, createdAt: NOW });
+  for (const s of staffMembers) await put(T.STAFF, { ...s, createdAt: NOW, updatedAt: NOW });
 
-  console.log("=== Seeding Schedules ===");
-  for (let day = 0; day < 7; day++) {
-    const date = daysAgo(-day); // upcoming 7 days
+  console.log("=== Seeding Schedules (30 days + 7 forward) ===");
+  const schedBatch = [];
+  for (let day = 29; day >= -7; day--) {
+    const date = daysAgo(day);
     for (const s of staffMembers) {
-      await put(T.SCHEDULES, {
+      if (rand(0, 6) === 0) continue; // ~14% days off
+      schedBatch.push({
         shiftId: `shift-${s.staffId}-d${day}`, storeId: s.storeId, staffId: s.staffId,
         staffName: s.name, date, startTime: s.role === "manager" ? "08:00" : "10:00",
-        endTime: s.role === "manager" ? "16:00" : "18:00", role: s.role,
+        endTime: s.role === "manager" ? "16:00" : "18:00", position: s.role,
       });
     }
   }
+  await batchWrite(T.SCHEDULES, schedBatch);
 
   console.log("=== Seeding Time Clock (30 days) ===");
   const clockBatch = [];
@@ -279,11 +312,12 @@ async function seed() {
       if (rand(0, 6) === 0) continue; // skip ~14% (days off)
       const clockInH = s.role === "manager" ? rand(7, 9) : rand(9, 11);
       const hours = round2(rand(6, 9) + Math.random());
+      const clockInTime = `${date}T${String(clockInH).padStart(2, "0")}:${String(rand(0, 15)).padStart(2, "0")}:00Z`;
+      const clockOutTime = `${date}T${String(clockInH + Math.floor(hours)).padStart(2, "0")}:${String(rand(0, 59)).padStart(2, "0")}:00Z`;
       clockBatch.push({
         storeId: s.storeId, entryId: `clock-${s.staffId}-d${day}`, staffId: s.staffId,
-        staffName: s.name, clockIn: `${date}T${String(clockInH).padStart(2, "0")}:${String(rand(0, 15)).padStart(2, "0")}:00Z`,
-        clockOut: `${date}T${String(clockInH + Math.floor(hours)).padStart(2, "0")}:${String(rand(0, 59)).padStart(2, "0")}:00Z`,
-        hoursWorked: hours, status: "completed", date, approved: day > 0,
+        staffName: s.name, clockInTime, clockOutTime,
+        totalHours: hours, status: "completed", date, approved: day > 0,
       });
     }
   }
@@ -291,10 +325,10 @@ async function seed() {
   console.log(`  → ${clockBatch.length} time entries seeded`);
 
   console.log("=== Seeding Cameras ===");
-  await put(T.CAMERAS, { storeId: "store-001", cameraId: "cam-001", name: "Kitchen Main", location: "kitchen", status: "online", streamUrl: "rtsp://10.0.1.10/stream1", createdAt: NOW });
-  await put(T.CAMERAS, { storeId: "store-001", cameraId: "cam-002", name: "Walk-in Cooler", location: "storage", status: "online", streamUrl: "rtsp://10.0.1.11/stream1", createdAt: NOW });
-  await put(T.CAMERAS, { storeId: "store-001", cameraId: "cam-003", name: "Back Door", location: "exterior", status: "online", streamUrl: "rtsp://10.0.1.12/stream1", createdAt: NOW });
-  await put(T.CAMERAS, { storeId: "store-002", cameraId: "cam-004", name: "Counter", location: "front", status: "online", streamUrl: "rtsp://10.0.2.10/stream1", createdAt: NOW });
+  await put(T.CAMERAS, { storeId: "store-001", cameraId: "cam-001", name: "Kitchen Main", location: "prep-area", wyzeDeviceId: "WD-S1-01", wyzeDeviceMac: "AA:BB:CC:01:01:01", streamUrl: "rtsp://10.0.1.10/stream1", isOnline: true, createdAt: NOW, updatedAt: NOW });
+  await put(T.CAMERAS, { storeId: "store-001", cameraId: "cam-002", name: "Walk-in Cooler", location: "storage", wyzeDeviceId: "WD-S1-02", wyzeDeviceMac: "AA:BB:CC:01:01:02", streamUrl: "rtsp://10.0.1.11/stream1", isOnline: true, createdAt: NOW, updatedAt: NOW });
+  await put(T.CAMERAS, { storeId: "store-001", cameraId: "cam-003", name: "Back Door", location: "entrance", wyzeDeviceId: "WD-S1-03", wyzeDeviceMac: "AA:BB:CC:01:01:03", streamUrl: "rtsp://10.0.1.12/stream1", isOnline: true, createdAt: NOW, updatedAt: NOW });
+  await put(T.CAMERAS, { storeId: "store-002", cameraId: "cam-004", name: "Counter", location: "register", wyzeDeviceId: "WD-S2-01", wyzeDeviceMac: "AA:BB:CC:02:01:01", streamUrl: "rtsp://10.0.2.10/stream1", isOnline: true, createdAt: NOW, updatedAt: NOW });
 
   console.log("=== Seeding Temp Logs (30 days) ===");
   const tempBatch = [];
@@ -309,11 +343,13 @@ async function seed() {
     for (const tl of tempLocations) {
       for (const hour of [8, 12, 16]) {
         const temp = rand(tl.min, tl.max);
-        const status = tl.loc.includes("Cooler") && temp > 40 ? "warning" : tl.loc === "Freezer" && temp > 0 ? "warning" : "normal";
+        const inRange = tl.loc.includes("Cooler") ? temp <= 40 : tl.loc === "Freezer" ? temp <= 0 : true;
+        const ts = `${date}T${String(hour).padStart(2, "0")}:00:00Z`;
         tempBatch.push({
           storeId: tl.store, logId: `temp-${tl.store}-${tl.loc.replace(/\s/g, "")}-d${day}-h${hour}`,
-          location: tl.loc, temperature: temp, unit: "F", status,
-          loggedBy: "System", timestamp: `${date}T${String(hour).padStart(2, "0")}:00:00Z`,
+          location: tl.loc, temperature: temp, unit: "F", inRange,
+          rangeNote: inRange ? "" : `Temperature ${temp}F out of range`,
+          recordedBy: "System", timestamp: ts, createdAt: ts,
         });
       }
     }
@@ -323,10 +359,12 @@ async function seed() {
 
   console.log("=== Seeding Forecasts ===");
   for (let day = 0; day < 7; day++) {
-    const date = daysAgo(-day);
+    const fDate = daysAgo(-day);
+    const predictedRevenue = round2(rand(800, 1500) + Math.random() * 100);
     await put(T.FORECASTS, {
-      forecastId: `fc-${date}`, storeRecipeKey: `store-001#${date}`, storeId: "store-001", date,
-      type: "demand", predictions: [
+      forecastId: `fc-${fDate}`, storeRecipeKey: `store-001#${fDate}`, storeId: "store-001", forecastDate: fDate,
+      type: "demand", predictedRevenue, predictedValue: predictedRevenue,
+      predictions: [
         { itemId: "inv-001", name: "Chicken Breast", predictedUsage: rand(8, 15), unit: "lb", confidence: round2(0.78 + Math.random() * 0.17) },
         { itemId: "inv-002", name: "Atlantic Salmon", predictedUsage: rand(5, 10), unit: "lb", confidence: round2(0.75 + Math.random() * 0.15) },
         { itemId: "inv-003", name: "Roma Tomatoes", predictedUsage: rand(10, 20), unit: "lb", confidence: round2(0.82 + Math.random() * 0.13) },
@@ -336,9 +374,34 @@ async function seed() {
   }
 
   console.log("=== Seeding Incidents ===");
-  await put(T.INCIDENTS, { storeId: "store-001", incidentId: "inc-001", cameraId: "cam-002", type: "temperature-alert", severity: "warning", description: "Walk-in cooler temperature rose above 40F for 15 minutes", status: "resolved", timestamp: `${daysAgo(1)}T22:15:00Z`, resolvedAt: `${daysAgo(1)}T22:45:00Z` });
-  await put(T.INCIDENTS, { storeId: "store-001", incidentId: "inc-002", cameraId: "cam-003", type: "unauthorized-access", severity: "high", description: "Back door opened outside business hours", status: "reviewed", timestamp: `${daysAgo(3)}T02:30:00Z` });
-  await put(T.INCIDENTS, { storeId: "store-002", incidentId: "inc-003", cameraId: "cam-004", type: "slip-fall", severity: "medium", description: "Potential slip detected near counter area", status: "resolved", timestamp: `${daysAgo(5)}T14:20:00Z`, resolvedAt: `${daysAgo(5)}T14:45:00Z` });
+  await put(T.INCIDENTS, {
+    storeId: "store-001", incidentId: "inc-001", cameraId: "cam-002",
+    type: "safety", status: "resolved",
+    title: "Walk-in cooler temperature rose above 40F",
+    notes: "Temperature spiked for 15 minutes. Door was left open during delivery. Resolved within 30 minutes.",
+    timestamp: `${daysAgo(1)}T22:15:00Z`,
+    footageStartTime: `${daysAgo(1)}T22:13:00Z`, footageEndTime: `${daysAgo(1)}T22:17:00Z`,
+    createdBy: "matt@foodwise.io", createdAt: `${daysAgo(1)}T22:20:00Z`, updatedAt: `${daysAgo(1)}T22:45:00Z`,
+  });
+  await put(T.INCIDENTS, {
+    storeId: "store-001", incidentId: "inc-002", cameraId: "cam-003",
+    type: "theft", status: "investigating",
+    title: "Back door opened outside business hours",
+    notes: "Motion detected at back door at 2:30 AM. Reviewing camera footage. No inventory loss confirmed yet.",
+    timestamp: `${daysAgo(3)}T02:30:00Z`,
+    footageStartTime: `${daysAgo(3)}T02:28:00Z`, footageEndTime: `${daysAgo(3)}T02:32:00Z`,
+    createdBy: "matt@foodwise.io", createdAt: `${daysAgo(3)}T08:00:00Z`, updatedAt: `${daysAgo(3)}T08:00:00Z`,
+  });
+  await put(T.INCIDENTS, {
+    storeId: "store-002", incidentId: "inc-003", cameraId: "cam-004",
+    wasteId: "waste-d5-0",
+    type: "waste-verification", status: "resolved",
+    title: "Unusual waste amount flagged at counter",
+    notes: "Large quantity of croissants discarded. Manager verified — past expiration date. Process normal.",
+    timestamp: `${daysAgo(5)}T14:20:00Z`,
+    footageStartTime: `${daysAgo(5)}T14:18:00Z`, footageEndTime: `${daysAgo(5)}T14:22:00Z`,
+    createdBy: "matt@foodwise.io", createdAt: `${daysAgo(5)}T14:25:00Z`, updatedAt: `${daysAgo(5)}T14:45:00Z`,
+  });
 
   console.log("=== Seeding Prep Lists ===");
   await put(T.PREP_LISTS, {
@@ -355,11 +418,16 @@ async function seed() {
   console.log("=== Seeding Receiving Logs ===");
   await put(T.RECEIVING_LOGS, {
     receivingId: "recv-001", storeId: "store-001", orderId: "po-001", supplierId: "sup-001", supplierName: "Sysco Foods",
-    items: [
-      { name: "Chicken Breast", orderedQty: 50, receivedQty: 50, unit: "lb", accepted: true },
-      { name: "Mozzarella", orderedQty: 20, receivedQty: 18, unit: "lb", accepted: true, note: "2 lb short" },
+    receivedBy: "Maria Garcia",
+    itemsScanned: [
+      { itemId: "inv-001", itemName: "Chicken Breast", quantity: 50, unit: "lb", unitCost: 4.50, barcode: "0001", timestamp: `${daysAgo(1)}T09:00:00Z` },
+      { itemId: "inv-006", itemName: "Mozzarella", quantity: 18, unit: "lb", unitCost: 6.00, barcode: "0006", timestamp: `${daysAgo(1)}T09:05:00Z` },
     ],
-    receivedBy: "Maria Garcia", timestamp: `${daysAgo(1)}T09:00:00Z`,
+    discrepancies: [
+      { itemId: "inv-006", itemName: "Mozzarella", expected: 20, received: 18, unit: "lb", note: "2 lb short" },
+    ],
+    totalItemsReceived: 68,
+    createdAt: `${daysAgo(1)}T09:00:00Z`,
   });
 
   console.log("=== Seeding Price History ===");
@@ -371,8 +439,8 @@ async function seed() {
   }
 
   console.log("=== Seeding Audit Trail ===");
-  await put(T.AUDIT_TRAIL, { auditId: "audit-001", storeId: "store-001", action: "inventory-received", resourceType: "purchase-order", resourceId: "po-001", timestamp: `${daysAgo(1)}T09:00:00Z`, userId: "matt@foodwise.io", details: { supplier: "Sysco Foods", total: 345 } });
-  await put(T.AUDIT_TRAIL, { auditId: "audit-002", storeId: "store-001", action: "waste-logged", resourceType: "waste-log", resourceId: "waste-d0-0", timestamp: `${TODAY}T14:00:00Z`, userId: "matt@foodwise.io", details: { item: "Mixed Greens", quantity: 3 } });
+  await put(T.AUDIT_TRAIL, { auditId: "audit-001", storeId: "store-001", action: "inventory-received", resourceType: "purchase-order", resourceId: "po-001", timestamp: `${daysAgo(1)}T09:00:00Z`, performedBy: "matt@foodwise.io", details: { supplier: "Sysco Foods", total: 345 } });
+  await put(T.AUDIT_TRAIL, { auditId: "audit-002", storeId: "store-001", action: "waste-logged", resourceType: "waste-log", resourceId: "waste-d0-0", timestamp: `${TODAY}T14:00:00Z`, performedBy: "matt@foodwise.io", details: { item: "Mixed Greens", quantity: 3 } });
 
   console.log("=== Seeding Notifications ===");
   await put(T.NOTIFICATIONS, { userId: "matt@foodwise.io", notificationId: "notif-001", type: "low-stock", title: "Low Stock Alert", message: "Heavy Cream at Downtown Bistro is below reorder point (6 qt remaining, par: 8)", storeId: "store-001", read: false, timestamp: NOW });
@@ -399,7 +467,7 @@ async function seed() {
   console.log(`Suppliers: 3`);
   console.log(`Purchase orders: 3`);
   console.log(`Staff: ${staffMembers.length}`);
-  console.log(`Schedules: ${staffMembers.length * 7} (7 days)`);
+  console.log(`Schedules: ${schedBatch.length} (30 days + 7 forward)`);
   console.log(`Time clock: ${clockBatch.length} (30 days)`);
   console.log(`Cameras: 4`);
   console.log(`Temp logs: ${tempBatch.length} (30 days)`);

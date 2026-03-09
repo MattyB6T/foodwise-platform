@@ -53,9 +53,9 @@ export function sanitizeForStorage(data: Record<string, unknown>): Record<string
 // Validate deep link URLs to prevent open redirect attacks
 export function isAllowedDeepLink(url: string): boolean {
   const allowedPrefixes = [
-    "foodwise://",
+    "leantable://",
     "exp://",
-    "https://foodwise.io/",
+    "https://leantable.app/",
     "http://localhost:",
   ];
 

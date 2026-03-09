@@ -1,9 +1,10 @@
 import { QueryCommand, PutCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
 import { v4 as uuidv4 } from "uuid";
-import { docClient, TABLES } from "../utils/dynamo";
+import { docClient, TABLES, initTables } from "../utils/dynamo";
 
 // Weekly accuracy Lambda — compares last week's forecasts against actual POS transactions
 export const handler = async (): Promise<void> => {
+  await initTables();
   console.log("Forecast accuracy check started");
 
   const now = new Date();

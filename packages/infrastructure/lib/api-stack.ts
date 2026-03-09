@@ -27,33 +27,9 @@ export class FoodwiseApiStack extends cdk.NestedStack {
 
     const core = props.core;
 
+    // Table names resolved from SSM at cold start — no more *_TABLE env vars
     const lambdaEnvironment: Record<string, string> = {
-      STORES_TABLE: core.storesTable.tableName,
-      INVENTORY_TABLE: core.inventoryTable.tableName,
-      TRANSACTIONS_TABLE: core.transactionsTable.tableName,
-      RECIPES_TABLE: core.recipesTable.tableName,
-      FORECASTS_TABLE: core.forecastsTable.tableName,
-      SUPPLIERS_TABLE: core.suppliersTable.tableName,
-      PURCHASE_ORDERS_TABLE: core.purchaseOrdersTable.tableName,
-      RECEIVING_LOGS_TABLE: core.receivingLogsTable.tableName,
-      WASTE_LOGS_TABLE: core.wasteLogsTable.tableName,
-      CAMERAS_TABLE: core.camerasTable.tableName,
-      INCIDENTS_TABLE: core.incidentsTable.tableName,
-      INVENTORY_COUNTS_TABLE: core.inventoryCountsTable.tableName,
-      NOTIFICATIONS_TABLE: core.notificationsTable.tableName,
-      STAFF_TABLE: core.staffTable.tableName,
-      SCHEDULES_TABLE: core.schedulesTable.tableName,
-      TIME_CLOCK_TABLE: core.timeClockTable.tableName,
-      KIOSK_DEVICES_TABLE: core.kioskDevicesTable.tableName,
-      TEMP_LOGS_TABLE: core.tempLogsTable.tableName,
-      PRICE_HISTORY_TABLE: core.priceHistoryTable.tableName,
-      PREP_LISTS_TABLE: core.prepListsTable.tableName,
-      AUDIT_TRAIL_TABLE: core.auditTrailTable.tableName,
-      POS_CONNECTIONS_TABLE: core.posConnectionsTable.tableName,
-      POS_TRANSACTIONS_RAW_TABLE: core.posTransactionsRawTable.tableName,
-      INGREDIENT_MAPPINGS_TABLE: core.ingredientMappingsTable.tableName,
-      FORECAST_ACCURACY_TABLE: core.forecastAccuracyTable.tableName,
-      SECURITY_EVENTS_TABLE: core.securityEventsTable.tableName,
+      SSM_TABLE_NAMES_PATH: "/foodwise/table-names",
     };
 
     const handlersPath = path.join(__dirname, "../../api/src/handlers");
@@ -68,11 +44,15 @@ export class FoodwiseApiStack extends cdk.NestedStack {
 
     // --- Lambda Functions ---
 
-    // Top-level store ops (POST/GET /stores only)
+    // Top-level store ops (POST/GET /stores, DELETE /account)
     const storeOpsRouterFn = new NodejsFunction(this, "StoreOpsRouterFn", {
       ...nodejsFnProps,
       entry: path.join(handlersPath, "storeOpsRouter.ts"),
       timeout: cdk.Duration.seconds(15),
+      environment: {
+        ...lambdaEnvironment,
+        USER_POOL_ID: core.userPool.userPoolId,
+      },
     });
 
     // Mega router for ALL /stores/{storeId}/* sub-routes via {proxy+}
@@ -85,8 +65,17 @@ export class FoodwiseApiStack extends cdk.NestedStack {
         ...lambdaEnvironment,
         REPORTS_BUCKET: core.reportsBucket.bucketName,
         USER_POOL_ID: core.userPool.userPoolId,
+        BEDROCK_MODEL_ID: "us.anthropic.claude-sonnet-4-20250514-v1:0",
       },
     });
+
+    // Cognito AdminDeleteUser for account deletion
+    storeOpsRouterFn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["cognito-idp:AdminDeleteUser"],
+        resources: [core.userPool.userPoolArn],
+      })
+    );
 
     // Cognito admin permissions for user invitations and role management
     storeSubRouterFn.addToRolePolicy(
@@ -130,8 +119,8 @@ export class FoodwiseApiStack extends cdk.NestedStack {
       memorySize: 512,
       environment: {
         ...lambdaEnvironment,
-        REPORT_EMAIL: "admin@foodwise.io",
-        FROM_EMAIL: "reports@foodwise.io",
+        REPORT_EMAIL: "admin@leantable.app",
+        FROM_EMAIL: "reports@leantable.app",
       },
     });
 
@@ -189,9 +178,16 @@ export class FoodwiseApiStack extends cdk.NestedStack {
     // Forecast Lambda (Python, Docker Image)
     const modelsCodePath = path.join(__dirname, "../../models");
 
+    // Python forecast Lambda uses env vars directly (not SSM)
     this.forecastFn = new lambda.DockerImageFunction(this, "ForecastFn", {
       code: lambda.DockerImageCode.fromImageAsset(modelsCodePath),
-      environment: lambdaEnvironment,
+      environment: {
+        STORES_TABLE: core.storesTable.tableName,
+        INVENTORY_TABLE: core.inventoryTable.tableName,
+        TRANSACTIONS_TABLE: core.transactionsTable.tableName,
+        RECIPES_TABLE: core.recipesTable.tableName,
+        FORECASTS_TABLE: core.forecastsTable.tableName,
+      },
       timeout: cdk.Duration.minutes(5),
       memorySize: 1024,
     });
@@ -228,12 +224,24 @@ export class FoodwiseApiStack extends cdk.NestedStack {
       })
     );
 
-    // Store operations router (top-level /stores only)
+    // SSM parameter read access — all Node.js Lambdas resolve table names from SSM
+    for (const fn of [
+      storeOpsRouterFn, storeSubRouterFn, recipeRouterFn, supplyChainRouterFn,
+      analyticsRouterFn, this.generateWeeklyReportFn, assistantFn,
+      notificationRouterFn, photoUploadFn, supplierPortalFn,
+      emailPurchaseOrderFn, vendorPriceHistoryFn, kioskRouterFn,
+    ]) {
+      core.tableNamesParam.grantRead(fn);
+    }
+
+    // Store operations router (top-level /stores + DELETE /account)
     core.storesTable.grantReadWriteData(storeOpsRouterFn);
     core.inventoryTable.grantReadWriteData(storeOpsRouterFn);
     core.transactionsTable.grantReadWriteData(storeOpsRouterFn);
     core.recipesTable.grantReadData(storeOpsRouterFn);
     core.wasteLogsTable.grantReadData(storeOpsRouterFn);
+    core.staffTable.grantReadWriteData(storeOpsRouterFn);
+    core.notificationsTable.grantReadWriteData(storeOpsRouterFn);
 
     // Store sub-router — needs access to all DynamoDB tables + S3
     // Use a single wildcard policy to stay within IAM policy size limits
@@ -262,6 +270,17 @@ export class FoodwiseApiStack extends cdk.NestedStack {
       })
     );
     core.reportsBucket.grantRead(storeSubRouterFn);
+
+    // Bedrock access for invoice scanning (Claude vision)
+    storeSubRouterFn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["bedrock:InvokeModel"],
+        resources: [
+          "arn:aws:bedrock:*::foundation-model/anthropic.*",
+          "arn:aws:bedrock:*:*:inference-profile/us.anthropic.*",
+        ],
+      })
+    );
 
     // Forecast
     core.storesTable.grantReadData(this.forecastFn);
@@ -343,6 +362,8 @@ export class FoodwiseApiStack extends cdk.NestedStack {
     core.wasteLogsTable.grantReadData(assistantFn);
     core.forecastsTable.grantReadData(assistantFn);
     core.purchaseOrdersTable.grantReadData(assistantFn);
+    core.revenueEntriesTable.grantReadData(assistantFn);
+    core.revenueSourcesTable.grantReadData(assistantFn);
 
     // --- API Gateway ---
 
@@ -368,7 +389,7 @@ export class FoodwiseApiStack extends cdk.NestedStack {
 
     this.api = new apigateway.RestApi(this, "FoodwiseApi", {
       restApiName: "foodwise-api",
-      description: "FoodWise Platform API",
+      description: "LeanTable Platform API",
       deployOptions: {
         stageName: "v1",
         accessLogDestination: new apigateway.LogGroupLogDestination(apiAccessLogGroup),
@@ -420,6 +441,10 @@ export class FoodwiseApiStack extends cdk.NestedStack {
         "X-Frame-Options": "'DENY'",
       },
     });
+
+    // DELETE /account
+    const accountResource = this.api.root.addResource("account");
+    accountResource.addMethod("DELETE", new apigateway.LambdaIntegration(storeOpsRouterFn), authMethodOptions);
 
     // POST /stores & GET /stores
     const storesResource = this.api.root.addResource("stores");
@@ -592,7 +617,7 @@ export class FoodwiseApiStack extends cdk.NestedStack {
 
     const securityAlarmTopic = new sns.Topic(this, "SecurityAlarmTopic", {
       topicName: "foodwise-security-alarms",
-      displayName: "FoodWise Security Alarms",
+      displayName: "LeanTable Security Alarms",
     });
 
     // High 4xx error rate (potential brute force / scanning)

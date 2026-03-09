@@ -1,16 +1,47 @@
+import { Platform } from "react-native";
 import { CONFIG } from "./config";
 
 let authToken: string | null = null;
 let lastActivityTime: number = Date.now();
 const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+const TOKEN_KEY = "leantable_auth_token";
+
+// Lazy-load SecureStore only on native (not available on web)
+let SecureStore: typeof import("expo-secure-store") | null = null;
+if (Platform.OS !== "web") {
+  SecureStore = require("expo-secure-store");
+}
 
 export function setAuthToken(token: string | null) {
   authToken = token;
   if (token) lastActivityTime = Date.now();
+  // Persist to SecureStore on native
+  if (SecureStore) {
+    if (token) {
+      SecureStore.setItemAsync(TOKEN_KEY, token).catch(() => {});
+    } else {
+      SecureStore.deleteItemAsync(TOKEN_KEY).catch(() => {});
+    }
+  }
 }
 
 export function getAuthToken(): string | null {
   return authToken;
+}
+
+/** Load persisted token from SecureStore (call once at app startup) */
+export async function loadPersistedToken(): Promise<string | null> {
+  if (!SecureStore) return null;
+  try {
+    const token = await SecureStore.getItemAsync(TOKEN_KEY);
+    if (token) {
+      authToken = token;
+      lastActivityTime = Date.now();
+    }
+    return token;
+  } catch {
+    return null;
+  }
 }
 
 export function isSessionExpired(): boolean {
@@ -115,6 +146,10 @@ export const api = {
   // Receiving
   receiveShipment: (storeId: string, body: { orderId?: string; scans: { barcode: string; quantity: number }[] }) =>
     request<any>("POST", `/stores/${storeId}/receive`, body),
+
+  // Invoice Scanning
+  scanInvoice: (storeId: string, imageBase64: string) =>
+    request<any>("POST", `/stores/${storeId}/scan-invoice`, { imageBase64 }),
 
   // Waste
   recordWaste: (storeId: string, body: { ingredientId: string; quantity: number; reason: string; notes?: string }) =>
@@ -327,6 +362,29 @@ export const api = {
     const query = qs.toString();
     return request<any>("GET", `/stores/${storeId}/weekly-plan${query ? `?${query}` : ""}`);
   },
+
+  // Revenue Tracking
+  listRevenueSources: (storeId: string) =>
+    request<any>("GET", `/stores/${storeId}/revenue-sources`),
+  createRevenueSource: (storeId: string, body: { name: string; type: string }) =>
+    request<any>("POST", `/stores/${storeId}/revenue-sources`, body),
+  updateRevenueSource: (storeId: string, sourceId: string, body: { name?: string; isActive?: boolean }) =>
+    request<any>("PATCH", `/stores/${storeId}/revenue-sources/${sourceId}`, body),
+  listRevenueEntries: (storeId: string, params?: { startDate?: string; endDate?: string; sourceId?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.startDate) qs.set("startDate", params.startDate);
+    if (params?.endDate) qs.set("endDate", params.endDate);
+    if (params?.sourceId) qs.set("sourceId", params.sourceId);
+    const query = qs.toString();
+    return request<any>("GET", `/stores/${storeId}/revenue-entries${query ? `?${query}` : ""}`);
+  },
+  createRevenueEntry: (storeId: string, body: { sourceId: string; amount: number; date: string; note?: string }) =>
+    request<any>("POST", `/stores/${storeId}/revenue-entries`, body),
+  deleteRevenueEntry: (storeId: string, entryId: string) =>
+    request<any>("DELETE", `/stores/${storeId}/revenue-entries/${entryId}`),
+
+  // Account
+  deleteAccount: () => request<any>("DELETE", "/account"),
 
   // Transactions (for timeline view)
   getTransactions: (storeId: string, startDate?: string, endDate?: string) => {

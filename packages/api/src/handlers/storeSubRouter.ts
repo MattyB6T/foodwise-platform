@@ -16,7 +16,10 @@ import { handler as getExpirationAlertsHandler } from "./getExpirationAlerts";
 import { handler as posIntegrationHandler } from "./posIntegrationRouter";
 import { handler as weeklyPlannerHandler } from "./weeklyPlanner";
 import { handler as userManagementHandler } from "./userManagement";
+import { handler as revenueHandler } from "./revenueRouter";
+import { handler as scanInvoiceHandler } from "./scanInvoice";
 import { error } from "../utils/response";
+import { initTables } from "../utils/dynamo";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -27,6 +30,7 @@ const CORS_HEADERS = {
 export const handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
+  await initTables();
   const path = event.path || "";
 
   // POS integration routes
@@ -68,11 +72,18 @@ export const handler = async (
   // Prep lists
   if (path.includes("/prep-lists")) return prepListsHandler(event);
 
+  // Revenue tracking
+  if (path.includes("/revenue-sources") || path.includes("/revenue-entries"))
+    return revenueHandler(event);
+
   // Audit trail
   if (path.includes("/audit-trail")) return auditTrailHandler(event);
 
   // Temperature logs
   if (path.includes("/temp-logs")) return temperatureLogsHandler(event);
+
+  // Invoice scanning (must come before supply chain /receive check)
+  if (path.includes("/scan-invoice")) return scanInvoiceHandler(event);
 
   // Supply chain routes under stores
   if (

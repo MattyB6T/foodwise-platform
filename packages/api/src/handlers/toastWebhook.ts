@@ -1,7 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { createHmac } from "crypto";
 import { QueryCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
-import { docClient, TABLES } from "../utils/dynamo";
+import { docClient, TABLES, initTables } from "../utils/dynamo";
 import { success, error } from "../utils/response";
 import { processTransaction } from "./posProcessor";
 
@@ -70,6 +70,7 @@ async function updateSyncStats(storeId: string, connectionId: string, count: num
 export const handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
+  await initTables();
   try {
     const storeId = event.pathParameters?.storeId || event.pathParameters?.proxy;
     if (!storeId) return error("Missing storeId", 400);

@@ -1,8 +1,8 @@
-# FoodWise Platform - Claude Code Context
+# LeanTable Platform - Claude Code Context
 
 ## What This Is
 
-FoodWise is a food service management platform for restaurant/store operators. It handles inventory tracking, waste logging, purchase orders, staff scheduling, time clock, AI assistant, POS integrations, security cameras, and more. The mobile app runs on iOS, Android, and web via Expo.
+LeanTable is a food service management platform for restaurant/store operators. It handles inventory tracking, waste logging, purchase orders, staff scheduling, time clock, AI assistant, POS integrations, security cameras, and more. The mobile app runs on iOS, Android, and web via Expo.
 
 ## Architecture
 
@@ -123,14 +123,14 @@ Processing pipeline:
 - **Cognito Client ID**: 585k9dd1v7gir4ul3g3k06a5k2
 - **API Gateway**: l0mnegjjp2 (https://l0mnegjjp2.execute-api.us-east-1.amazonaws.com/v1/)
 - **AI Model**: Bedrock inference profile us.anthropic.claude-sonnet-4-20250514-v1:0
-- **Test user**: matt@foodwise.io (owner sub: a4c8f448-1031-70dc-991e-a60bc878349d)
+- **Test user**: matt@leantable.app (owner sub: a4c8f448-1031-70dc-991e-a60bc878349d)
 
 ## Key Patterns and Conventions
 
 - All Lambda responses use `success()` / `error()` from `utils/response.ts` for consistent CORS + security headers
 - Auth via `getUserClaims()` (Cognito JWT) -- most endpoints require auth
 - All 25+ table env vars set via `lambdaEnvironment` object in api-stack.ts
-- Shared types exported from `@foodwise/shared`
+- Shared types exported from `@leantable/shared`
 - Mobile app uses `makeStyles(colors)` pattern for themed StyleSheet
 - Navigation types defined in `src/navigation/types.ts`
 

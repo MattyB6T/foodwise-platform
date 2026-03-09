@@ -1,6 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { QueryCommand, UpdateCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
-import { docClient, TABLES } from "../utils/dynamo";
+import { docClient, TABLES, initTables } from "../utils/dynamo";
 import { success, error } from "../utils/response";
 import { processTransaction } from "./posProcessor";
 
@@ -104,6 +104,7 @@ async function fetchSquareOrders(accessToken: string, locationId: string, beginT
 
 // EventBridge scheduled handler — polls all active Square connections
 export const handler = async (): Promise<void> => {
+  await initTables();
   console.log("Square polling started");
 
   let connections: any[];

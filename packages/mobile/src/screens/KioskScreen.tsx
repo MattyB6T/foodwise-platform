@@ -64,7 +64,7 @@ export function KioskScreen({ onExitKiosk }: KioskScreenProps) {
   const [activeCount, setActiveCount] = useState(0);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [storeId, setStoreId] = useState("");
-  const [storeName, setStoreName] = useState("FoodWise Kiosk");
+  const [storeName, setStoreName] = useState("LeanTable Kiosk");
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [locked, setLocked] = useState(false);
   const [logoTaps, setLogoTaps] = useState(0);
@@ -322,7 +322,7 @@ export function KioskScreen({ onExitKiosk }: KioskScreenProps) {
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity onPress={handleLogoTap} activeOpacity={1}>
-          <Text style={s.logo}>FoodWise</Text>
+          <Text style={s.logo}>LeanTable</Text>
         </TouchableOpacity>
         <Text style={s.storeName}>{storeName}</Text>
         <Text style={s.dateText}>{dateStr}</Text>

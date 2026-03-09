@@ -5,12 +5,14 @@ import { handler as getHealthScoreHandler } from "./getHealthScore";
 import { handler as generateReportHandler } from "./generateReport";
 import { handler as menuEngineeringHandler } from "./menuEngineering";
 import { error } from "../utils/response";
+import { initTables } from "../utils/dynamo";
 
 // Single Lambda that routes to the appropriate analytics sub-handler
 // This reduces CloudFormation resource count (1 Lambda instead of 5)
 export const handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
+  await initTables();
   const resource = event.resource || "";
   const path = event.path || "";
 

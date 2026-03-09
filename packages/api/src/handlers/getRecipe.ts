@@ -1,6 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { GetCommand, BatchGetCommand } from "@aws-sdk/lib-dynamodb";
-import { Recipe, RecipeIngredient, InventoryItem } from "@foodwise/shared";
+import { Recipe, RecipeIngredient, InventoryItem } from "@leantable/shared";
 import { docClient, TABLES } from "../utils/dynamo";
 import { success, error } from "../utils/response";
 import { getUserClaims } from "../utils/auth";
