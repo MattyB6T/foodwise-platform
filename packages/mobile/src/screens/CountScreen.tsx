@@ -268,17 +268,19 @@ export function CountScreen() {
           </TouchableOpacity>
         </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.categoryBar} contentContainerStyle={{ paddingHorizontal: spacing.md }}>
-          {categories.map((cat) => (
-            <TouchableOpacity
-              key={cat}
-              style={[s.categoryChip, { backgroundColor: selectedCountCategory === cat ? colors.primary : colors.surface, borderColor: colors.border }]}
-              onPress={() => setSelectedCountCategory(cat)}
-            >
-              <Text style={{ color: selectedCountCategory === cat ? "#fff" : colors.text, fontSize: fontSize.sm, fontWeight: "600" }}>{cat}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+        <View style={s.categoryBarWrap}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.md, paddingVertical: spacing.xs }}>
+            {categories.map((cat) => (
+              <TouchableOpacity
+                key={cat}
+                style={[s.categoryChip, { backgroundColor: selectedCountCategory === cat ? colors.primary : colors.surface, borderColor: colors.border }]}
+                onPress={() => setSelectedCountCategory(cat)}
+              >
+                <Text style={{ color: selectedCountCategory === cat ? "#fff" : colors.text, fontSize: fontSize.sm, fontWeight: "600" }}>{cat}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
 
         <FlatList
           data={filteredCountItems}
@@ -460,17 +462,19 @@ export function CountScreen() {
           </View>
 
           {/* Category Filter */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.categoryBar} contentContainerStyle={{ paddingHorizontal: spacing.md }}>
-            {invCategories.map((cat) => (
-              <TouchableOpacity
-                key={cat}
-                style={[s.categoryChip, { backgroundColor: filterCategory === cat ? colors.primary : colors.surface, borderColor: colors.border }]}
-                onPress={() => setFilterCategory(cat)}
-              >
-                <Text style={{ color: filterCategory === cat ? "#fff" : colors.text, fontSize: fontSize.sm, fontWeight: "600" }}>{cat}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+          <View style={s.categoryBarWrap}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.md, paddingVertical: spacing.xs }}>
+              {invCategories.map((cat) => (
+                <TouchableOpacity
+                  key={cat}
+                  style={[s.categoryChip, { backgroundColor: filterCategory === cat ? colors.primary : colors.surface, borderColor: colors.border }]}
+                  onPress={() => setFilterCategory(cat)}
+                >
+                  <Text style={{ color: filterCategory === cat ? "#fff" : colors.text, fontSize: fontSize.sm, fontWeight: "600" }}>{cat}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
 
           {/* Add Item Form */}
           {showAddForm && (
@@ -692,8 +696,8 @@ const makeStyles = (colors: ColorScheme) =>
     addBtn: { width: 40, height: 40, borderRadius: borderRadius.sm, alignItems: "center", justifyContent: "center" },
 
     // Category chips
-    categoryBar: { maxHeight: 44, marginTop: spacing.sm, marginBottom: spacing.xs },
-    categoryChip: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 2, borderRadius: borderRadius.full, marginRight: spacing.xs, borderWidth: 1 },
+    categoryBarWrap: { marginTop: spacing.sm, marginBottom: spacing.xs },
+    categoryChip: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: borderRadius.full, marginRight: spacing.xs, borderWidth: 1 },
     unitChip: { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs + 2, borderRadius: borderRadius.full, marginRight: spacing.xs, borderWidth: 1 },
 
     // Add Form

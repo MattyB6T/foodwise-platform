@@ -70,7 +70,7 @@ export function LogRevenueScreen({ navigation }: any) {
 
   if (loading) {
     return (
-      <View style={[s.container, { backgroundColor: colors.background }]}>
+      <View style={[s.container, { backgroundColor: colors.background, padding: spacing.md, alignItems: "stretch" }]}>
         <StorePicker />
         <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
       </View>
@@ -79,7 +79,7 @@ export function LogRevenueScreen({ navigation }: any) {
 
   if (sources.length === 0) {
     return (
-      <View style={[s.container, { backgroundColor: colors.background }]}>
+      <View style={[s.container, { backgroundColor: colors.background, padding: spacing.md }]}>
         <StorePicker />
         <View style={s.emptyContainer}>
           <Text style={[s.emptyIcon]}>{"$"}</Text>
@@ -99,37 +99,39 @@ export function LogRevenueScreen({ navigation }: any) {
   }
 
   return (
-    <ScrollView style={[s.container, { backgroundColor: colors.background }]}>
+    <ScrollView style={[s.container, { backgroundColor: colors.background }]} contentContainerStyle={s.contentContainer}>
       <StorePicker />
       <Text style={[s.heading, { color: colors.text }]}>Log Revenue</Text>
 
       {/* Source picker */}
       <Text style={[s.label, { color: colors.textSecondary }]}>Source</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.sourceScroll}>
-        {sources.map((src: any) => (
-          <TouchableOpacity
-            key={src.sourceId}
-            style={[
-              s.sourceChip,
-              {
-                backgroundColor: selectedSource?.sourceId === src.sourceId ? colors.primary : colors.surface,
-                borderColor: selectedSource?.sourceId === src.sourceId ? colors.primary : colors.border,
-              },
-            ]}
-            onPress={() => setSelectedSource(src)}
-          >
-            <Text
-              style={{
-                color: selectedSource?.sourceId === src.sourceId ? "#fff" : colors.text,
-                fontWeight: "600",
-                fontSize: fontSize.sm,
-              }}
+      <View style={s.sourceScrollWrap}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.xs }}>
+          {sources.map((src: any) => (
+            <TouchableOpacity
+              key={src.sourceId}
+              style={[
+                s.sourceChip,
+                {
+                  backgroundColor: selectedSource?.sourceId === src.sourceId ? colors.primary : colors.surface,
+                  borderColor: selectedSource?.sourceId === src.sourceId ? colors.primary : colors.border,
+                },
+              ]}
+              onPress={() => setSelectedSource(src)}
             >
-              {src.name}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+              <Text
+                style={{
+                  color: selectedSource?.sourceId === src.sourceId ? "#fff" : colors.text,
+                  fontWeight: "600",
+                  fontSize: fontSize.sm,
+                }}
+              >
+                {src.name}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
 
       {/* Amount */}
       <Text style={[s.label, { color: colors.textSecondary, marginTop: spacing.lg }]}>Amount ($)</Text>
@@ -183,10 +185,22 @@ export function LogRevenueScreen({ navigation }: any) {
 
 const makeStyles = (colors: ColorScheme) =>
   StyleSheet.create({
-    container: { flex: 1, padding: spacing.md },
+    container: {
+      flex: 1,
+      ...(Platform.OS === "web" ? { overflow: "hidden" as const } : {}),
+    },
+    contentContainer: {
+      padding: spacing.md,
+      flexGrow: 1,
+      ...(Platform.OS === "web" ? { maxWidth: "100%" as any } : {}),
+    },
+    sourceScrollWrap: {
+      marginBottom: spacing.sm,
+      overflow: "hidden" as const,
+      ...(Platform.OS === "web" ? { maxWidth: "100%" as any, alignSelf: "stretch" as const } : {}),
+    },
     heading: { fontSize: 22, fontWeight: "700", marginTop: spacing.md, marginBottom: spacing.md },
     label: { fontSize: fontSize.sm, fontWeight: "600", textTransform: "uppercase", marginBottom: spacing.sm },
-    sourceScroll: { maxHeight: 44 },
     sourceChip: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, borderWidth: 1, marginRight: 8 },
     amountRow: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderRadius: 12, paddingHorizontal: spacing.md },
     dollarSign: { fontSize: 28, fontWeight: "700", marginRight: 4 },

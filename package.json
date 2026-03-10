@@ -2,11 +2,12 @@
   "name": "leantable-platform",
   "version": "0.1.0",
   "private": true,
-  "description": "FoodWise Platform - Monorepo for API, ML models, and infrastructure",
+  "description": "LeanTable Platform - Monorepo for API, ML models, mobile app, web dashboard, and infrastructure",
   "workspaces": [
     "packages/api",
     "packages/shared",
-    "packages/infrastructure"
+    "packages/infrastructure",
+    "packages/web"
   ],
   "scripts": {
     "build": "npm run build --workspaces",

@@ -24,14 +24,14 @@ export function BrandLogo({ size = "lg", color = "light", showTagline = true }: 
         </View>
         <View style={styles.textWrap}>
           <Text style={[styles.title, { fontSize: titleSize }]}>
-            <Text style={[styles.titleFood, { color: isLight ? "#fff" : "#0f172a" }]}>Food</Text>
-            <Text style={styles.titleWise}>Wise</Text>
+            <Text style={[styles.titleFood, { color: isLight ? "#fff" : "#0f172a" }]}>Lean</Text>
+            <Text style={styles.titleWise}>Table</Text>
           </Text>
         </View>
       </View>
       {showTagline && (
         <Text style={[styles.tagline, { color: isLight ? "rgba(255,255,255,0.6)" : "#64748b" }]}>
-          Smart Food Service Management
+          Smarter Restaurant Operations
         </Text>
       )}
     </View>
