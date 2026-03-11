@@ -18,6 +18,7 @@ import { handler as weeklyPlannerHandler } from "./weeklyPlanner";
 import { handler as userManagementHandler } from "./userManagement";
 import { handler as revenueHandler } from "./revenueRouter";
 import { handler as scanInvoiceHandler } from "./scanInvoice";
+import { handler as bulkImportHandler } from "./bulkImport";
 import { error } from "../utils/response";
 import { initTables } from "../utils/dynamo";
 
@@ -32,6 +33,9 @@ export const handler = async (
 ): Promise<APIGatewayProxyResult> => {
   await initTables();
   const path = event.path || "";
+
+  // Bulk import routes
+  if (path.includes("/import")) return bulkImportHandler(event);
 
   // POS integration routes
   if (path.includes("/pos/")) return posIntegrationHandler(event);

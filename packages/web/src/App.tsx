@@ -23,6 +23,7 @@ import { ReportsPage } from "./pages/reports/ReportsPage";
 import { ForecastPage } from "./pages/forecast/ForecastPage";
 import { AssistantPage } from "./pages/assistant/AssistantPage";
 import { SettingsPage } from "./pages/settings/SettingsPage";
+import { ImportPage } from "./pages/import/ImportPage";
 import { ThemeProvider } from "./theme/ThemeProvider";
 import { PageLoader } from "./components/LoadingSpinner";
 import type { ReactNode } from "react";
@@ -86,6 +87,7 @@ export default function App() {
               <Route path="reports" element={<ReportsPage />} />
               <Route path="forecast" element={<ForecastPage />} />
               <Route path="assistant" element={<AssistantPage />} />
+              <Route path="import" element={<ImportPage />} />
               <Route path="settings" element={<SettingsPage />} />
             </Route>
           </Routes>

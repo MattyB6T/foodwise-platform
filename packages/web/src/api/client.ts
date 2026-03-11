@@ -232,6 +232,14 @@ export const api = {
   getPosSyncStatus: (storeId: string) =>
     request<any>("GET", `/stores/${storeId}/pos/sync-status`),
 
+  // Bulk Import
+  importPreview: (storeId: string, body: { dataType: string; csvContent: string }) =>
+    request<any>("POST", `/stores/${storeId}/import/preview`, body),
+  importData: (storeId: string, body: { dataType: string; csvContent: string; columnOverrides?: Record<string, number> }) =>
+    request<any>("POST", `/stores/${storeId}/import`, body),
+  getImportTemplate: (storeId: string, dataType: string) =>
+    `${CONFIG.API_URL}/stores/${storeId}/import/template?type=${dataType}`,
+
   // Suppliers
   getSuppliers: () => request<any>("GET", "/suppliers"),
 

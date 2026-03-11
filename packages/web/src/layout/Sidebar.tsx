@@ -19,6 +19,7 @@ const navItems = [
   { to: "/reports", icon: "bar-chart-2", label: "Reports" },
   { to: "/forecast", icon: "trending-up", label: "Forecast" },
   { to: "/assistant", icon: "message-circle", label: "Assistant" },
+  { to: "/import", icon: "upload", label: "Import Data" },
   { to: "/settings", icon: "settings", label: "Settings" },
 ];
 
@@ -42,6 +43,7 @@ function Icon({ name, className }: { name: string; className?: string }) {
     thermometer: "M14 14.76V3.5a2.5 2.5 0 00-5 0v11.26a4.5 4.5 0 105 0z",
     list: "M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01",
     link: "M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71",
+    upload: "M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12",
     settings: "M12 15a3 3 0 100-6 3 3 0 000 6z",
   };
 

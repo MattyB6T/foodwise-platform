@@ -68,11 +68,11 @@ function fuzzyMatch(
   let bestMatch: { itemId: string; itemName: string; confidence: number } | null = null;
 
   for (const item of inventory) {
-    const invName = (item.itemName || item.itemId).toLowerCase().trim();
+    const invName = (item.name || item.itemId).toLowerCase().trim();
 
     // Exact match
     if (invName === normalized) {
-      return { itemId: item.itemId, itemName: item.itemName || item.itemId, confidence: 1 };
+      return { itemId: item.itemId, itemName: item.name || item.itemId, confidence: 1 };
     }
 
     // Contains match
@@ -80,7 +80,7 @@ function fuzzyMatch(
       const confidence = Math.min(invName.length, normalized.length) /
         Math.max(invName.length, normalized.length);
       if (!bestMatch || confidence > bestMatch.confidence) {
-        bestMatch = { itemId: item.itemId, itemName: item.itemName || item.itemId, confidence: Math.max(0.7, confidence) };
+        bestMatch = { itemId: item.itemId, itemName: item.name || item.itemId, confidence: Math.max(0.7, confidence) };
       }
       continue;
     }
@@ -91,7 +91,7 @@ function fuzzyMatch(
     const confidence = maxLen > 0 ? 1 - dist / maxLen : 0;
 
     if (confidence > 0.5 && (!bestMatch || confidence > bestMatch.confidence)) {
-      bestMatch = { itemId: item.itemId, itemName: item.itemName || item.itemId, confidence };
+      bestMatch = { itemId: item.itemId, itemName: item.name || item.itemId, confidence };
     }
   }
 
