@@ -12,11 +12,14 @@ interface OrderDetailProps {
 export function OrderDetailPage({ order, onBack }: OrderDetailProps) {
   const queryClient = useQueryClient();
   const isDraft = order.status === "draft";
+  const canReceive = order.status === "submitted" || order.status === "partial";
 
   const [lines, setLines] = useState(
     (order.lines || []).map((l: any) => ({ ...l }))
   );
   const [editing, setEditing] = useState(false);
+  const [receiving, setReceiving] = useState(false);
+  const [receiveQtys, setReceiveQtys] = useState<Record<string, number>>({});
   const [expectedDeliveryDate, setExpectedDeliveryDate] = useState(
     order.expectedDeliveryDate || ""
   );
@@ -30,6 +33,17 @@ export function OrderDetailPage({ order, onBack }: OrderDetailProps) {
 
   const emailMutation = useMutation({
     mutationFn: () => api.emailPurchaseOrder(order.orderId),
+  });
+
+  const receiveMutation = useMutation({
+    mutationFn: (body: { lines: { itemId: string; itemName: string; quantityReceived: number; unit: string }[] }) =>
+      api.receivePurchaseOrder(order.orderId, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["purchaseOrders"] });
+      setReceiving(false);
+      setReceiveQtys({});
+      onBack();
+    },
   });
 
   const totalCost = lines.reduce(
@@ -75,11 +89,46 @@ export function OrderDetailPage({ order, onBack }: OrderDetailProps) {
     });
   };
 
+  const handleStartReceiving = () => {
+    const defaults: Record<string, number> = {};
+    for (const line of lines) {
+      const remaining = (line.quantityOrdered || 0) - (line.quantityReceived || 0);
+      defaults[line.itemId] = Math.max(0, remaining);
+    }
+    setReceiveQtys(defaults);
+    setReceiving(true);
+  };
+
+  const handleReceiveAll = () => {
+    const defaults: Record<string, number> = {};
+    for (const line of lines) {
+      const remaining = (line.quantityOrdered || 0) - (line.quantityReceived || 0);
+      defaults[line.itemId] = Math.max(0, remaining);
+    }
+    setReceiveQtys(defaults);
+  };
+
+  const handleSubmitReceiving = () => {
+    const receiveLines = lines
+      .filter((l: any) => (receiveQtys[l.itemId] || 0) > 0)
+      .map((l: any) => ({
+        itemId: l.itemId,
+        itemName: l.itemName,
+        quantityReceived: receiveQtys[l.itemId] || 0,
+        unit: l.unit,
+      }));
+
+    if (receiveLines.length === 0) return;
+    receiveMutation.mutate({ lines: receiveLines });
+  };
+
   const updateLine = (index: number, field: string, value: number) => {
     const updated = [...lines];
     updated[index] = { ...updated[index], [field]: value };
     setLines(updated);
   };
+
+  const showReceivedCol = receiving || order.status === "partial" || order.status === "received";
 
   return (
     <div>
@@ -140,7 +189,7 @@ export function OrderDetailPage({ order, onBack }: OrderDetailProps) {
               </button>
             </>
           )}
-          {order.status === "submitted" && (
+          {order.status === "submitted" && !receiving && (
             <button
               onClick={handleSendEmail}
               disabled={emailMutation.isPending}
@@ -152,8 +201,55 @@ export function OrderDetailPage({ order, onBack }: OrderDetailProps) {
               {emailMutation.isPending ? "Sending..." : "Email to Supplier"}
             </button>
           )}
+          {canReceive && !receiving && (
+            <button
+              onClick={handleStartReceiving}
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+              </svg>
+              Receive Shipment
+            </button>
+          )}
+          {receiving && (
+            <>
+              <button
+                onClick={() => { setReceiving(false); setReceiveQtys({}); }}
+                className="px-4 py-2 text-sm font-medium rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleReceiveAll}
+                className="px-4 py-2 text-sm font-medium rounded-lg border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 transition-colors"
+              >
+                Receive All
+              </button>
+              <button
+                onClick={handleSubmitReceiving}
+                disabled={receiveMutation.isPending || Object.values(receiveQtys).every((q) => q === 0)}
+                className="px-4 py-2 text-sm font-medium rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 transition-colors"
+              >
+                {receiveMutation.isPending ? "Saving..." : "Confirm Receipt"}
+              </button>
+            </>
+          )}
         </div>
       </div>
+
+      {/* Receiving mode banner */}
+      {receiving && (
+        <div className="mb-6 p-4 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-xl flex items-center gap-3">
+          <svg className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+          <div>
+            <p className="text-sm font-semibold text-green-800 dark:text-green-300">Receiving Mode</p>
+            <p className="text-xs text-green-700 dark:text-green-400">Enter the quantity received for each item. Inventory will be updated automatically.</p>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Order info + items */}
@@ -177,8 +273,10 @@ export function OrderDetailPage({ order, onBack }: OrderDetailProps) {
                   <tr className="border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-700/30">
                     <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Item</th>
                     <th className="text-center px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Ordered</th>
-                    {(order.status === "partial" || order.status === "received") && (
-                      <th className="text-center px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Received</th>
+                    {showReceivedCol && (
+                      <th className="text-center px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">
+                        {receiving ? "Receiving Now" : "Received"}
+                      </th>
                     )}
                     <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Unit</th>
                     <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Unit Cost</th>
@@ -186,63 +284,92 @@ export function OrderDetailPage({ order, onBack }: OrderDetailProps) {
                   </tr>
                 </thead>
                 <tbody>
-                  {lines.map((line: any, i: number) => (
-                    <tr key={line.itemId} className="border-b border-slate-50 dark:border-slate-700/50">
-                      <td className="px-4 py-3 text-sm font-medium text-slate-900 dark:text-slate-100">{line.itemName}</td>
-                      <td className="px-4 py-3 text-center">
-                        {editing ? (
-                          <input
-                            type="number"
-                            min="0.01"
-                            step="0.01"
-                            value={line.quantityOrdered}
-                            onChange={(e) => updateLine(i, "quantityOrdered", parseFloat(e.target.value) || 0)}
-                            className="w-20 text-center border border-slate-200 dark:border-slate-600 rounded px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-slate-100"
-                          />
-                        ) : (
-                          <span className="text-sm text-slate-700 dark:text-slate-300">{line.quantityOrdered}</span>
-                        )}
-                      </td>
-                      {(order.status === "partial" || order.status === "received") && (
-                        <td className="px-4 py-3 text-center">
-                          <span
-                            className={`text-sm font-medium ${
-                              line.quantityReceived >= line.quantityOrdered
-                                ? "text-green-600"
-                                : line.quantityReceived > 0
-                                ? "text-amber-600"
-                                : "text-slate-400 dark:text-slate-500"
-                            }`}
-                          >
-                            {line.quantityReceived || 0}
-                          </span>
+                  {lines.map((line: any, i: number) => {
+                    const alreadyReceived = line.quantityReceived || 0;
+                    const remaining = Math.max(0, (line.quantityOrdered || 0) - alreadyReceived);
+                    const isFullyReceived = alreadyReceived >= (line.quantityOrdered || 0);
+
+                    return (
+                      <tr key={line.itemId} className={`border-b border-slate-50 dark:border-slate-700/50 ${receiving && isFullyReceived ? "opacity-50" : ""}`}>
+                        <td className="px-4 py-3">
+                          <span className="text-sm font-medium text-slate-900 dark:text-slate-100">{line.itemName}</span>
+                          {receiving && alreadyReceived > 0 && (
+                            <span className="block text-xs text-slate-400 dark:text-slate-500">
+                              Previously received: {alreadyReceived}
+                            </span>
+                          )}
                         </td>
-                      )}
-                      <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{line.unit}</td>
-                      <td className="px-4 py-3 text-sm text-right">
-                        {editing ? (
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={line.unitCost}
-                            onChange={(e) => updateLine(i, "unitCost", parseFloat(e.target.value) || 0)}
-                            className="w-24 text-right border border-slate-200 dark:border-slate-600 rounded px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-slate-100"
-                          />
-                        ) : (
-                          <span className="text-slate-700 dark:text-slate-300">${line.unitCost?.toFixed(2)}</span>
+                        <td className="px-4 py-3 text-center">
+                          {editing ? (
+                            <input
+                              type="number"
+                              min="0.01"
+                              step="0.01"
+                              value={line.quantityOrdered}
+                              onChange={(e) => updateLine(i, "quantityOrdered", parseFloat(e.target.value) || 0)}
+                              className="w-20 text-center border border-slate-200 dark:border-slate-600 rounded px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-slate-100"
+                            />
+                          ) : (
+                            <span className="text-sm text-slate-700 dark:text-slate-300">{line.quantityOrdered}</span>
+                          )}
+                        </td>
+                        {showReceivedCol && (
+                          <td className="px-4 py-3 text-center">
+                            {receiving ? (
+                              isFullyReceived ? (
+                                <span className="text-sm text-green-600 dark:text-green-400 font-medium">Complete</span>
+                              ) : (
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max={remaining}
+                                  step="0.01"
+                                  value={receiveQtys[line.itemId] ?? 0}
+                                  onChange={(e) => setReceiveQtys({ ...receiveQtys, [line.itemId]: parseFloat(e.target.value) || 0 })}
+                                  className="w-20 text-center border border-green-300 dark:border-green-700 rounded px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-green-500 bg-green-50 dark:bg-green-900/20 dark:text-slate-100"
+                                />
+                              )
+                            ) : (
+                              <span
+                                className={`text-sm font-medium ${
+                                  isFullyReceived
+                                    ? "text-green-600"
+                                    : alreadyReceived > 0
+                                    ? "text-amber-600"
+                                    : "text-slate-400 dark:text-slate-500"
+                                }`}
+                              >
+                                {alreadyReceived}
+                              </span>
+                            )}
+                          </td>
                         )}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-right font-medium text-slate-900 dark:text-slate-100">
-                        ${((line.quantityOrdered || 0) * (line.unitCost || 0)).toFixed(2)}
-                      </td>
-                    </tr>
-                  ))}
+                        <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{line.unit}</td>
+                        <td className="px-4 py-3 text-sm text-right">
+                          {editing ? (
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={line.unitCost}
+                              onChange={(e) => updateLine(i, "unitCost", parseFloat(e.target.value) || 0)}
+                              className="w-24 text-right border border-slate-200 dark:border-slate-600 rounded px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-slate-100"
+                            />
+                          ) : (
+                            <span className="text-slate-700 dark:text-slate-300">${line.unitCost?.toFixed(2)}</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-right font-medium text-slate-900 dark:text-slate-100">
+                          ${((line.quantityOrdered || 0) * (line.unitCost || 0)).toFixed(2)}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
                 <tfoot>
                   <tr className="border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-700/30">
                     <td
-                      colSpan={order.status === "partial" || order.status === "received" ? 5 : 4}
+                      colSpan={showReceivedCol ? 5 : 4}
                       className="px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 text-right"
                     >
                       Total
@@ -329,6 +456,13 @@ export function OrderDetailPage({ order, onBack }: OrderDetailProps) {
           </div>
         </div>
       </div>
+
+      {/* Receive error */}
+      {receiveMutation.isError && (
+        <div className="mt-4 p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-xl">
+          <p className="text-sm text-red-700 dark:text-red-400">Failed to record receipt. Please try again.</p>
+        </div>
+      )}
     </div>
   );
 }

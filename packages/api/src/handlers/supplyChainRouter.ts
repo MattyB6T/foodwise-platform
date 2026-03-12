@@ -5,6 +5,7 @@ import { handler as createPurchaseOrderHandler } from "./createPurchaseOrder";
 import { handler as listPurchaseOrdersHandler } from "./listPurchaseOrders";
 import { handler as updatePurchaseOrderHandler } from "./updatePurchaseOrder";
 import { handler as emailPurchaseOrderHandler } from "./emailPurchaseOrder";
+import { handler as receivePurchaseOrderHandler } from "./receivePurchaseOrder";
 import { handler as receiveShipmentHandler } from "./receiveShipment";
 import { handler as listReceivingLogsHandler } from "./listReceivingLogs";
 import { handler as lookupBarcodeHandler } from "./lookupBarcode";
@@ -30,6 +31,10 @@ export const handler = async (
     }
   }
   if (resource.includes("/purchase-orders") || path.includes("/purchase-orders")) {
+    // POST /purchase-orders/{orderId}/receive
+    if (method === "POST" && path.includes("/receive")) {
+      return receivePurchaseOrderHandler(event);
+    }
     // POST /purchase-orders/{orderId}/email
     if (method === "POST" && path.includes("/email")) {
       return emailPurchaseOrderHandler(event);

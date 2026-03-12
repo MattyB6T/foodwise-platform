@@ -91,6 +91,32 @@ export function SchedulePage() {
     return map;
   }, [shifts]);
 
+  const parseHours = (startTime: string, endTime: string): number => {
+    const [sh, sm] = startTime.split(":").map(Number);
+    const [eh, em] = endTime.split(":").map(Number);
+    let diff = (eh * 60 + em) - (sh * 60 + sm);
+    if (diff < 0) diff += 24 * 60;
+    return diff / 60;
+  };
+
+  const laborCostData = useMemo(() => {
+    let totalHours = 0;
+    let totalCost = 0;
+    const perStaff: { name: string; hours: number; rate: number; cost: number }[] = [];
+    for (const member of staff) {
+      const rate = member.hourlyRate || 0;
+      let memberHours = 0;
+      for (const day of weekDays) {
+        const dayShifts = shiftsByStaffAndDay[member.staffId]?.[day.dateStr] || [];
+        for (const shift of dayShifts) memberHours += parseHours(shift.startTime, shift.endTime);
+      }
+      perStaff.push({ name: member.name, hours: memberHours, rate, cost: memberHours * rate });
+      totalHours += memberHours;
+      totalCost += memberHours * rate;
+    }
+    return { perStaff, totalHours, totalCost };
+  }, [staff, weekDays, shiftsByStaffAndDay]);
+
   const openAddModal = (staffId?: string, staffName?: string, date?: string) => {
     if (staffId && date) {
       setAddingForCell({ staffId, staffName: staffName || "", date });
@@ -299,6 +325,37 @@ export function SchedulePage() {
           </table>
         </div>
       </div>
+
+      {/* Labor Cost Footer */}
+      {staff.length > 0 && laborCostData.totalHours > 0 && (
+        <div className="mt-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm transition-colors">
+          <div className="px-6 py-4 flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-8">
+              <div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Total Hours</p>
+                <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{laborCostData.totalHours.toFixed(1)}h</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Est. Labor Cost</p>
+                <p className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                  {laborCostData.totalCost > 0 ? `$${laborCostData.totalCost.toFixed(2)}` : "--"}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Staff Scheduled</p>
+                <p className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                  {laborCostData.perStaff.filter((s) => s.hours > 0).length}
+                </p>
+              </div>
+            </div>
+            {laborCostData.perStaff.some((s) => s.hours > 0 && s.rate === 0) && (
+              <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 px-3 py-1.5 rounded-lg">
+                Some staff are missing hourly rates — update on the Team page for accurate cost estimates.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Add Shift Modal */}
       {showAddModal && (

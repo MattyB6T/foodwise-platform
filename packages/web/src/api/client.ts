@@ -119,6 +119,8 @@ export const api = {
     request<any>("PUT", `/purchase-orders/${orderId}`, body),
   emailPurchaseOrder: (orderId: string) =>
     request<any>("POST", `/purchase-orders/${orderId}/email`),
+  receivePurchaseOrder: (orderId: string, body: { lines: { itemId: string; itemName: string; quantityReceived: number; unit: string }[] }) =>
+    request<any>("POST", `/purchase-orders/${orderId}/receive`, body),
 
   // Assistant
   askAssistant: (storeId: string, question: string) =>
