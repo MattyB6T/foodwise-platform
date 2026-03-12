@@ -18,11 +18,16 @@ export const handler = async (
     if (!storeId) return error("storeId is required", 400);
 
     const method = event.httpMethod;
-    const entryId = event.pathParameters?.entryId;
-    const resource = event.resource || "";
+    const path = event.path || "";
+    // Parse path segments after /timeclock/  e.g. /stores/abc/timeclock/entry123/approve
+    const timeclockIdx = path.indexOf("/timeclock");
+    const subPath = timeclockIdx >= 0 ? path.slice(timeclockIdx + "/timeclock".length) : "";
+    const segments = subPath.split("/").filter(Boolean); // e.g. ["entry123", "approve"] or ["live"]
+    const entryId = segments.length >= 1 && segments[0] !== "live" && segments[0] !== "export" ? segments[0] : undefined;
+    const action = segments.length >= 2 ? segments[1] : segments[0]; // "approve", "photo", "live", "export"
 
     // GET /stores/{storeId}/timeclock/live
-    if (method === "GET" && resource.endsWith("/live")) {
+    if (method === "GET" && action === "live") {
       const auth = requireRole(event, "staff");
       if (isErrorResult(auth)) return auth;
 
@@ -57,7 +62,7 @@ export const handler = async (
     }
 
     // GET /stores/{storeId}/timeclock/{entryId}/photo
-    if (method === "GET" && resource.endsWith("/photo") && entryId) {
+    if (method === "GET" && action === "photo" && entryId) {
       const auth = requireRole(event, "manager");
       if (isErrorResult(auth)) return auth;
 
@@ -85,7 +90,7 @@ export const handler = async (
     }
 
     // POST /stores/{storeId}/timeclock/{entryId}/approve
-    if (method === "POST" && resource.endsWith("/approve") && entryId) {
+    if (method === "POST" && action === "approve" && entryId) {
       const auth = requireRole(event, "manager");
       if (isErrorResult(auth)) return auth;
 
@@ -162,7 +167,7 @@ export const handler = async (
     }
 
     // GET /stores/{storeId}/timeclock/export
-    if (method === "GET" && resource.endsWith("/export")) {
+    if (method === "GET" && action === "export") {
       const auth = requireRole(event, "manager");
       if (isErrorResult(auth)) return auth;
 
