@@ -19,6 +19,7 @@ import { handler as userManagementHandler } from "./userManagement";
 import { handler as revenueHandler } from "./revenueRouter";
 import { handler as scanInvoiceHandler } from "./scanInvoice";
 import { handler as bulkImportHandler } from "./bulkImport";
+import { handler as storeSettingsHandler } from "./storeSettings";
 import { error } from "../utils/response";
 import { initTables } from "../utils/dynamo";
 
@@ -82,6 +83,9 @@ export const handler = async (
 
   // Audit trail
   if (path.includes("/audit-trail")) return auditTrailHandler(event);
+
+  // Store settings (timeclock thresholds, etc.)
+  if (path.includes("/settings")) return storeSettingsHandler(event);
 
   // Temperature logs
   if (path.includes("/temp-logs")) return temperatureLogsHandler(event);

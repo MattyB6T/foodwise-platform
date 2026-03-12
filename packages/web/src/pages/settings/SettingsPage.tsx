@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../api/client";
 import { useStore } from "../../stores/StoreProvider";
 import { useAuth } from "../../auth/AuthProvider";
@@ -50,6 +50,106 @@ function ToggleSwitch({ defaultChecked, storageKey }: { defaultChecked: boolean;
         checked ? "translate-x-4" : ""
       }`} />
     </button>
+  );
+}
+
+function NumberInput({ label, value, onChange, min, max, unit, help }: {
+  label: string; value: number; onChange: (v: number) => void;
+  min: number; max: number; unit: string; help: string;
+}) {
+  return (
+    <div className="flex items-center justify-between py-2">
+      <div>
+        <span className="text-sm text-slate-700 dark:text-slate-300">{label}</span>
+        <p className="text-xs text-slate-400 dark:text-slate-500">{help}</p>
+      </div>
+      <div className="flex items-center gap-2">
+        <input
+          type="number"
+          value={value}
+          onChange={(e) => onChange(Math.min(max, Math.max(min, Number(e.target.value))))}
+          min={min}
+          max={max}
+          className="w-20 border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 rounded-lg px-3 py-1.5 text-sm text-right text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <span className="text-xs text-slate-400 dark:text-slate-500 w-12">{unit}</span>
+      </div>
+    </div>
+  );
+}
+
+function TimeclockSettingsCard({ storeId }: { storeId: string | null }) {
+  const queryClient = useQueryClient();
+  const { data, isLoading } = useQuery({
+    queryKey: ["store-settings", storeId],
+    queryFn: () => api.getStoreSettings(storeId!),
+    enabled: !!storeId,
+  });
+
+  const [maxShift, setMaxShift] = useState(12);
+  const [missedClockout, setMissedClockout] = useState(16);
+  const [minBreakShift, setMinBreakShift] = useState(6);
+  const [shortShift, setShortShift] = useState(6);
+  const [dirty, setDirty] = useState(false);
+
+  useEffect(() => {
+    if (data?.timeclock) {
+      setMaxShift(data.timeclock.maxShiftHours);
+      setMissedClockout(data.timeclock.missedClockoutHours);
+      setMinBreakShift(data.timeclock.minBreakShiftHours);
+      setShortShift(data.timeclock.flagShortShiftMinutes);
+      setDirty(false);
+    }
+  }, [data]);
+
+  const saveMutation = useMutation({
+    mutationFn: () => api.updateStoreSettings(storeId!, {
+      timeclock: {
+        maxShiftHours: maxShift,
+        missedClockoutHours: missedClockout,
+        minBreakShiftHours: minBreakShift,
+        flagShortShiftMinutes: shortShift,
+      },
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["store-settings", storeId] });
+      setDirty(false);
+    },
+  });
+
+  const update = <T,>(setter: (v: T) => void) => (v: T) => {
+    setter(v);
+    setDirty(true);
+  };
+
+  if (!storeId || isLoading) return null;
+
+  return (
+    <SectionCard title="Time Clock">
+      <div className="space-y-1">
+        <NumberInput label="Long shift flag" value={maxShift} onChange={update(setMaxShift)} min={1} max={24} unit="hours" help="Flag shifts longer than this" />
+        <NumberInput label="Missed clock-out" value={missedClockout} onChange={update(setMissedClockout)} min={1} max={48} unit="hours" help="Flag if still clocked in after this long" />
+        <NumberInput label="Break required after" value={minBreakShift} onChange={update(setMinBreakShift)} min={1} max={12} unit="hours" help="Flag if no break logged on shifts this long" />
+        <NumberInput label="Short shift flag" value={shortShift} onChange={update(setShortShift)} min={1} max={60} unit="min" help="Flag shifts shorter than this" />
+      </div>
+      {dirty && (
+        <div className="mt-4 flex items-center gap-3">
+          <button
+            onClick={() => saveMutation.mutate()}
+            disabled={saveMutation.isPending}
+            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+          >
+            {saveMutation.isPending ? "Saving..." : "Save Changes"}
+          </button>
+          {saveMutation.isSuccess && (
+            <span className="text-sm text-emerald-600 dark:text-emerald-400">Saved!</span>
+          )}
+          {saveMutation.isError && (
+            <span className="text-sm text-red-600 dark:text-red-400">Failed to save</span>
+          )}
+        </div>
+      )}
+    </SectionCard>
   );
 }
 
@@ -243,6 +343,9 @@ export function SettingsPage() {
             </div>
           </SectionCard>
         )}
+
+        {/* Time Clock Settings */}
+        <TimeclockSettingsCard storeId={selectedStoreId} />
 
         {/* Notifications */}
         <SectionCard title="Notifications">

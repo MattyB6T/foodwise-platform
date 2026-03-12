@@ -214,6 +214,12 @@ export const api = {
   deleteRevenueEntry: (storeId: string, entryId: string) =>
     request<any>("DELETE", `/stores/${storeId}/revenue-entries/${entryId}`),
 
+  // Store Settings
+  getStoreSettings: (storeId: string) =>
+    request<any>("GET", `/stores/${storeId}/settings`),
+  updateStoreSettings: (storeId: string, body: { timeclock?: { maxShiftHours?: number; missedClockoutHours?: number; minBreakShiftHours?: number; flagShortShiftMinutes?: number } }) =>
+    request<any>("PUT", `/stores/${storeId}/settings`, body),
+
   // POS
   listPosConnections: (storeId: string) =>
     request<any>("GET", `/stores/${storeId}/pos/connections`),

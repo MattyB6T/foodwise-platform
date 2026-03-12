@@ -1,5 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { QueryCommand, UpdateCommand, PutCommand, BatchGetCommand } from "@aws-sdk/lib-dynamodb";
+import { QueryCommand, UpdateCommand, PutCommand, BatchGetCommand, GetCommand } from "@aws-sdk/lib-dynamodb";
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { v4 as uuidv4 } from "uuid";
@@ -235,11 +235,22 @@ export const handler = async (
         })
       );
 
+      // Fetch store-level timeclock settings (with defaults)
+      const storeResult = await docClient.send(
+        new GetCommand({
+          TableName: TABLES.STORES,
+          Key: { storeId },
+          ProjectionExpression: "timeclockSettings",
+        })
+      );
+      const tcSettings = storeResult.Item?.timeclockSettings || {};
+
       // Auto-flag entries with anomalies
       const now = Date.now();
-      const MAX_SHIFT_HOURS = 12;
-      const MISSED_CLOCKOUT_HOURS = 16;
-      const MIN_BREAK_SHIFT_HOURS = 6;
+      const MAX_SHIFT_HOURS = tcSettings.maxShiftHours ?? 12;
+      const MISSED_CLOCKOUT_HOURS = tcSettings.missedClockoutHours ?? 16;
+      const MIN_BREAK_SHIFT_HOURS = tcSettings.minBreakShiftHours ?? 6;
+      const FLAG_SHORT_SHIFT_MINUTES = tcSettings.flagShortShiftMinutes ?? 6;
 
       const entries = (result.Items || []).map((e: any) => {
         const flags: string[] = [];
@@ -260,7 +271,7 @@ export const handler = async (
           if (shiftHours >= MAX_SHIFT_HOURS) {
             flags.push("Long shift (" + shiftHours.toFixed(1) + "h)");
           }
-          if (shiftHours < 0.1) {
+          if (shiftHours < FLAG_SHORT_SHIFT_MINUTES / 60) {
             flags.push("Very short shift (" + Math.round(shiftHours * 60) + "min)");
           }
           if (shiftHours >= MIN_BREAK_SHIFT_HOURS && !e.totalBreakMinutes) {
