@@ -168,14 +168,14 @@ const s = StyleSheet.create({
     padding: spacing.md,
   },
   button: {
-    backgroundColor: "#2c5282",
+    backgroundColor: "#2563eb",
     borderRadius: borderRadius.sm,
     padding: spacing.md,
     alignItems: "center",
     marginTop: spacing.lg,
     ...(Platform.OS === "web"
-      ? { boxShadow: "0px 4px 8px rgba(44, 82, 130, 0.3)" }
-      : { shadowColor: "#2c5282", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 }),
+      ? { boxShadow: "0px 4px 8px rgba(37, 99, 235, 0.3)" }
+      : { shadowColor: "#2563eb", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 }),
   } as any,
   buttonDisabled: { opacity: 0.6 },
   buttonText: {

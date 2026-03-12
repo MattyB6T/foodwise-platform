@@ -45,8 +45,8 @@ export function ManagementScreen() {
       title: "Purchase Orders",
       subtitle: "Create, review & send to suppliers",
       icon: "cart",
-      iconColor: "#2c5282",
-      bgColor: "#bee3f8",
+      iconColor: "#2563eb",
+      bgColor: "#dbeafe",
       screen: "OrderReview",
     },
     {

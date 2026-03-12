@@ -1,10 +1,10 @@
 export type ColorScheme = typeof lightColors;
 
 export const lightColors = {
-  // Brand — original blue
-  primary: "#2c5282",
-  primaryLight: "#4299e1",
-  primaryDark: "#1a365d",
+  // Brand — Tailwind blue to match web dashboard
+  primary: "#2563eb",
+  primaryLight: "#60a5fa",
+  primaryDark: "#1d4ed8",
   secondary: "#38a169",
   secondaryLight: "#68d391",
 
@@ -39,10 +39,10 @@ export const lightColors = {
 };
 
 export const darkColors: ColorScheme = {
-  // Brand
-  primary: "#4299e1",
-  primaryLight: "#63b3ed",
-  primaryDark: "#2c5282",
+  // Brand — Tailwind blue to match web dashboard
+  primary: "#60a5fa",
+  primaryLight: "#93c5fd",
+  primaryDark: "#2563eb",
   secondary: "#48bb78",
   secondaryLight: "#68d391",
 

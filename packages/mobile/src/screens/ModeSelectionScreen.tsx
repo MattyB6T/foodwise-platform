@@ -19,7 +19,7 @@ export function ModeSelectionScreen({ onManagerLogin, onKioskMode }: ModeSelecti
       <View style={s.buttonSection}>
         <TouchableOpacity style={s.managerBtn} onPress={onManagerLogin} activeOpacity={0.85}>
           <View style={s.btnIconWrap}>
-            <Ionicons name="briefcase" size={28} color="#4299e1" />
+            <Ionicons name="briefcase" size={28} color="#60a5fa" />
           </View>
           <View style={s.btnTextWrap}>
             <Text style={s.btnTitle}>Manager Login</Text>
