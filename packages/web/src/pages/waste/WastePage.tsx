@@ -7,6 +7,7 @@ import { PageLoader } from "../../components/LoadingSpinner";
 import { EmptyState } from "../../components/EmptyState";
 import { fullDate, currencyDollars } from "../../utils/format";
 import { Tooltip, HelpLabel } from "../../components/Tooltip";
+import { downloadCSV } from "../../utils/csvExport";
 
 export function WastePage() {
   const { selectedStoreId } = useStore();
@@ -48,16 +49,29 @@ export function WastePage() {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Waste Log</h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">{logs.length} entries in the last {days} days</p>
         </div>
-        <select
-          value={days}
-          onChange={(e) => setDays(Number(e.target.value))}
-          className="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2 text-sm dark:text-slate-100"
-        >
-          <option value={7}>Last 7 days</option>
-          <option value={14}>Last 14 days</option>
-          <option value={30}>Last 30 days</option>
-          <option value={90}>Last 90 days</option>
-        </select>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => downloadCSV(
+              "waste-log.csv",
+              ["Date", "Item", "Quantity", "Unit", "Reason", "Estimated Cost"],
+              logs.map((w: any) => [w.timestamp || w.createdAt, w.ingredientName || w.itemName || "", w.quantity, w.unit || "", w.reason, w.estimatedCost || w.cost || 0])
+            )}
+            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>
+            Export CSV
+          </button>
+          <select
+            value={days}
+            onChange={(e) => setDays(Number(e.target.value))}
+            className="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2 text-sm dark:text-slate-100"
+          >
+            <option value={7}>Last 7 days</option>
+            <option value={14}>Last 14 days</option>
+            <option value={30}>Last 30 days</option>
+            <option value={90}>Last 90 days</option>
+          </select>
+        </div>
       </div>
 
       {/* Metrics */}

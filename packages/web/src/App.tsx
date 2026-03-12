@@ -23,6 +23,7 @@ import { ReportsPage } from "./pages/reports/ReportsPage";
 import { ForecastPage } from "./pages/forecast/ForecastPage";
 import { AssistantPage } from "./pages/assistant/AssistantPage";
 import { SettingsPage } from "./pages/settings/SettingsPage";
+import { RecipesPage } from "./pages/recipes/RecipesPage";
 import { ImportPage } from "./pages/import/ImportPage";
 import { ThemeProvider } from "./theme/ThemeProvider";
 import { PageLoader } from "./components/LoadingSpinner";
@@ -76,6 +77,7 @@ export default function App() {
               <Route path="waste" element={<WastePage />} />
               <Route path="temp-logs" element={<TempLogsPage />} />
               <Route path="orders" element={<OrdersPage />} />
+              <Route path="recipes" element={<RecipesPage />} />
               <Route path="prep-lists" element={<PrepListsPage />} />
               <Route path="schedule" element={<SchedulePage />} />
               <Route path="timesheets" element={<TimesheetsPage />} />

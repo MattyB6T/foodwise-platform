@@ -1,12 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { api } from "../../api/client";
 import { useStore } from "../../stores/StoreProvider";
 import { MetricCard } from "../../components/MetricCard";
 import { StatusBadge } from "../../components/StatusBadge";
 import { PageLoader } from "../../components/LoadingSpinner";
 import { Tooltip, HelpLabel } from "../../components/Tooltip";
+import { GettingStarted } from "../../components/GettingStarted";
 
 export function DashboardPage() {
+  const navigate = useNavigate();
   const { selectedStoreId, selectedStoreName, stores } = useStore();
 
   const { data: ownerDash, isLoading: ownerLoading } = useQuery({
@@ -34,6 +37,8 @@ export function DashboardPage() {
 
   return (
     <div>
+      <GettingStarted />
+
       {/* Page header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Dashboard</h1>
@@ -148,12 +153,25 @@ export function DashboardPage() {
                       <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{item.name}</p>
                       <p className="text-xs text-slate-500 dark:text-slate-400">{item.category}</p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-red-600 dark:text-red-400">{item.quantity} {item.unit}</p>
-                      <p className="text-xs text-slate-400">min: {item.lowStockThreshold} <Tooltip content="The minimum quantity you've set for this item. When stock falls below this level, it triggers a low stock alert." /></p>
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <p className="text-sm font-bold text-red-600 dark:text-red-400">{item.quantity} {item.unit}</p>
+                        <p className="text-xs text-slate-400">min: {item.lowStockThreshold} <Tooltip content="The minimum quantity you've set for this item. When stock falls below this level, it triggers a low stock alert." /></p>
+                      </div>
+                      <button
+                        onClick={() => navigate("/orders")}
+                        className="px-2.5 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors whitespace-nowrap"
+                      >
+                        Order
+                      </button>
                     </div>
                   </div>
                 ))}
+                {lowStockItems.length > 8 && (
+                  <button onClick={() => navigate("/inventory")} className="w-full text-center text-sm text-blue-600 dark:text-blue-400 font-medium py-2 hover:underline">
+                    View all {lowStockItems.length} low stock items
+                  </button>
+                )}
               </div>
             )}
           </div>

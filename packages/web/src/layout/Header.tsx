@@ -1,5 +1,6 @@
 import { useStore } from "../stores/StoreProvider";
 import { useAuth } from "../auth/AuthProvider";
+import { NotificationBell } from "../components/NotificationBell";
 
 export function Header() {
   const { stores, selectedStoreId, selectedStoreName, setSelectedStoreId } = useStore();
@@ -22,6 +23,7 @@ export function Header() {
       </div>
 
       <div className="flex items-center gap-4">
+        <NotificationBell />
         <span className="text-sm text-slate-500 dark:text-slate-400">{user?.email}</span>
         <button
           onClick={logout}

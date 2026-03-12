@@ -240,6 +240,12 @@ export const api = {
   getImportTemplate: (storeId: string, dataType: string) =>
     `${CONFIG.API_URL}/stores/${storeId}/import/template?type=${dataType}`,
 
+  // Recipes
+  getRecipes: () => request<any>("GET", "/recipes"),
+  getRecipe: (recipeId: string) => request<any>("GET", `/recipes/${recipeId}`),
+  createRecipe: (body: { name: string; category: string; sellingPrice: number; ingredients: { itemId: string; quantity: number; unit: string }[] }) =>
+    request<any>("POST", "/recipes", body),
+
   // Suppliers
   getSuppliers: () => request<any>("GET", "/suppliers"),
 

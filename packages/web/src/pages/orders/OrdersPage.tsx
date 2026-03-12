@@ -7,6 +7,7 @@ import { PageLoader } from "../../components/LoadingSpinner";
 import { EmptyState } from "../../components/EmptyState";
 import { fullDate, currencyDollars } from "../../utils/format";
 import { Tooltip } from "../../components/Tooltip";
+import { downloadCSV } from "../../utils/csvExport";
 import { CreateOrderPage } from "./CreateOrderPage";
 import { OrderDetailPage } from "./OrderDetailPage";
 
@@ -47,15 +48,28 @@ export function OrdersPage() {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Purchase Orders</h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">{orders.length} orders <Tooltip content="Order workflow: Draft (building the order) → Submitted (sent to supplier) → Partial (some items received) → Received (fully delivered and checked in)." /></p>
         </div>
-        <button
-          onClick={() => setView({ type: "create" })}
-          className="px-4 py-2.5 bg-blue-600 text-white font-semibold text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          New Order
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => downloadCSV(
+              "purchase-orders.csv",
+              ["Order ID", "Supplier", "Date", "Delivery Date", "Items", "Total", "Status"],
+              orders.map((o: any) => [o.orderId?.slice(0, 8), o.supplierName || "", fullDate(o.createdAt), o.expectedDeliveryDate || "", o.lines?.length || 0, o.totalCost || 0, o.status || "draft"])
+            )}
+            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>
+            Export CSV
+          </button>
+          <button
+            onClick={() => setView({ type: "create" })}
+            className="px-4 py-2.5 bg-blue-600 text-white font-semibold text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            New Order
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
