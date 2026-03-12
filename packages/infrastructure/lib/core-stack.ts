@@ -35,6 +35,7 @@ export class FoodwiseCoreStack extends cdk.NestedStack {
   public readonly securityEventsTable: dynamodb.Table;
   public readonly revenueSourcesTable: dynamodb.Table;
   public readonly revenueEntriesTable: dynamodb.Table;
+  public readonly waitlistTable: dynamodb.Table;
 
   public readonly userPool: cognito.UserPool;
   public readonly userPoolClient: cognito.UserPoolClient;
@@ -387,6 +388,12 @@ export class FoodwiseCoreStack extends cdk.NestedStack {
       projectionType: dynamodb.ProjectionType.ALL,
     });
 
+    this.waitlistTable = new dynamodb.Table(this, "WaitlistTable", {
+      partitionKey: { name: "email", type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
     // --- SSM Parameter: All table names in one JSON blob ---
     this.tableNamesParam = new ssm.StringParameter(this, "TableNamesParam", {
       parameterName: "/foodwise/table-names",
@@ -419,6 +426,7 @@ export class FoodwiseCoreStack extends cdk.NestedStack {
         SECURITY_EVENTS: this.securityEventsTable.tableName,
         REVENUE_SOURCES: this.revenueSourcesTable.tableName,
         REVENUE_ENTRIES: this.revenueEntriesTable.tableName,
+        WAITLIST: this.waitlistTable.tableName,
       }),
       description: "LeanTable DynamoDB table names — managed by CDK",
     });

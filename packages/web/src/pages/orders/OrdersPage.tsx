@@ -6,6 +6,7 @@ import { StatusBadge } from "../../components/StatusBadge";
 import { PageLoader } from "../../components/LoadingSpinner";
 import { EmptyState } from "../../components/EmptyState";
 import { fullDate, currencyDollars } from "../../utils/format";
+import { Tooltip } from "../../components/Tooltip";
 import { CreateOrderPage } from "./CreateOrderPage";
 import { OrderDetailPage } from "./OrderDetailPage";
 
@@ -44,7 +45,7 @@ export function OrdersPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Purchase Orders</h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">{orders.length} orders</p>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">{orders.length} orders <Tooltip content="Order workflow: Draft (building the order) → Submitted (sent to supplier) → Partial (some items received) → Received (fully delivered and checked in)." /></p>
         </div>
         <button
           onClick={() => setView({ type: "create" })}

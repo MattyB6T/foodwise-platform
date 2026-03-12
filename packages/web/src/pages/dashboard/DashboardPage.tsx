@@ -4,6 +4,7 @@ import { useStore } from "../../stores/StoreProvider";
 import { MetricCard } from "../../components/MetricCard";
 import { StatusBadge } from "../../components/StatusBadge";
 import { PageLoader } from "../../components/LoadingSpinner";
+import { Tooltip, HelpLabel } from "../../components/Tooltip";
 
 export function DashboardPage() {
   const { selectedStoreId, selectedStoreName, stores } = useStore();
@@ -81,7 +82,7 @@ export function DashboardPage() {
       {healthScore && (
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm mb-6 transition-colors">
           <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
-            <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Health Score Breakdown</h2>
+            <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100"><HelpLabel label="Health Score Breakdown" tooltip="A composite score (0-100) measuring your restaurant's operational efficiency across five key areas. 75+ is healthy, 50-74 needs attention, below 50 is critical." /></h2>
             <div className="flex items-center gap-3">
               <span className="text-3xl font-black text-slate-900 dark:text-slate-100">{healthScore.overallScore}</span>
               <StatusBadge status={healthScore.status} />
@@ -89,15 +90,15 @@ export function DashboardPage() {
           </div>
           <div className="p-6 grid grid-cols-2 md:grid-cols-5 gap-6">
             {[
-              { label: "Food Cost", value: healthScore.components?.foodCostScore },
-              { label: "Waste", value: healthScore.components?.wasteScore },
-              { label: "Forecast Accuracy", value: healthScore.components?.forecastAccuracyScore },
-              { label: "Inventory Turnover", value: healthScore.components?.inventoryTurnoverScore },
-              { label: "Stockouts", value: healthScore.components?.stockoutScore },
+              { label: "Food Cost", value: healthScore.components?.foodCostScore, tip: "How well you're controlling ingredient costs vs. revenue. Target: under 30% for most restaurants." },
+              { label: "Waste", value: healthScore.components?.wasteScore, tip: "Measures food waste as a percentage of inventory value. Under 4% is excellent, over 7% needs attention." },
+              { label: "Forecast Accuracy", value: healthScore.components?.forecastAccuracyScore, tip: "How closely your AI demand forecasts match actual sales. Improves over time as the system learns your patterns." },
+              { label: "Inventory Turnover", value: healthScore.components?.inventoryTurnoverScore, tip: "How efficiently you're cycling through inventory. Higher turnover means fresher ingredients and less waste." },
+              { label: "Stockouts", value: healthScore.components?.stockoutScore, tip: "Tracks how often items hit zero stock. Fewer stockouts means fewer missed sales and menu disruptions." },
             ].map((item) => (
               <div key={item.label} className="text-center">
                 <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{item.value ?? "--"}</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{item.label}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1"><HelpLabel label={item.label} tooltip={item.tip} /></p>
               </div>
             ))}
           </div>
@@ -109,7 +110,7 @@ export function DashboardPage() {
         {healthScore?.recommendations?.length > 0 && (
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm transition-colors">
             <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700">
-              <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Recommendations</h2>
+              <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100"><HelpLabel label="Recommendations" tooltip="AI-generated suggestions based on your current health score. Focus on the top item first for the biggest impact." /></h2>
             </div>
             <div className="p-4 space-y-3">
               {healthScore.recommendations.map((rec: string, i: number) => (
@@ -129,7 +130,7 @@ export function DashboardPage() {
         {/* Low stock alerts */}
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm transition-colors">
           <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
-            <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Low Stock Alerts</h2>
+            <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100"><HelpLabel label="Low Stock Alerts" tooltip="Items that have fallen below their minimum stock threshold. Reorder soon to avoid running out during service." /></h2>
             {lowStockItems.length > 0 && (
               <span className="bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400 text-xs font-bold px-2 py-0.5 rounded-full">
                 {lowStockItems.length}
@@ -149,7 +150,7 @@ export function DashboardPage() {
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-bold text-red-600 dark:text-red-400">{item.quantity} {item.unit}</p>
-                      <p className="text-xs text-slate-400">min: {item.lowStockThreshold}</p>
+                      <p className="text-xs text-slate-400">min: {item.lowStockThreshold} <Tooltip content="The minimum quantity you've set for this item. When stock falls below this level, it triggers a low stock alert." /></p>
                     </div>
                   </div>
                 ))}

@@ -6,6 +6,7 @@ import { MetricCard } from "../../components/MetricCard";
 import { PageLoader } from "../../components/LoadingSpinner";
 import { EmptyState } from "../../components/EmptyState";
 import { fullDate, currencyDollars } from "../../utils/format";
+import { Tooltip, HelpLabel } from "../../components/Tooltip";
 
 export function WastePage() {
   const { selectedStoreId } = useStore();
@@ -78,7 +79,7 @@ export function WastePage() {
         {/* Waste by reason */}
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm transition-colors">
           <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700">
-            <h2 className="font-bold text-slate-900 dark:text-slate-100">By Reason</h2>
+            <h2 className="font-bold text-slate-900 dark:text-slate-100"><HelpLabel label="By Reason" tooltip="Breakdown by why food was wasted. 'Expired' and 'over-prepared' are avoidable — focus on reducing these first." /></h2>
           </div>
           <div className="p-4 space-y-2">
             {sortedReasons.map(([reason, count]) => (

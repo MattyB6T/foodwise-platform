@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LeanTable — The All-in-One Restaurant Operations Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0b;
+    --bg2: #111113;
+    --bg3: #18181c;
+    --border: rgba(255,255,255,0.07);
+    --amber: #e8a020;
+    --amber-dim: rgba(232,160,32,0.12);
+    --amber-glow: rgba(232,160,32,0.25);
+    --text: #f0ede8;
+    --muted: #7a7872;
+    --card: #131316;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    overflow-x: hidden;
+  }
+
+  /* NOISE TEXTURE OVERLAY */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.4;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    padding: 20px 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(10,10,11,0.85);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 22px;
+    letter-spacing: -0.5px;
+    color: var(--text);
+  }
+
+  .logo span { color: var(--amber); }
+
+  .nav-links {
+    display: flex;
+    gap: 36px;
+    list-style: none;
+  }
+
+  .nav-links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 400;
+    transition: color 0.2s;
+    letter-spacing: 0.02em;
+  }
+
+  .nav-links a:hover { color: var(--text); }
+
+  .nav-cta {
+    background: var(--amber);
+    color: #0a0a0b !important;
+    padding: 9px 20px;
+    border-radius: 6px;
+    font-weight: 500 !important;
+    font-size: 13px !important;
+    transition: opacity 0.2s !important;
+  }
+
+  .nav-cta:hover { opacity: 0.88; color: #0a0a0b !important; }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 120px 48px 80px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-glow {
+    position: absolute;
+    width: 700px;
+    height: 700px;
+    background: radial-gradient(circle, rgba(232,160,32,0.08) 0%, transparent 70%);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+
+  .hero-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+    pointer-events: none;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--amber-dim);
+    border: 1px solid rgba(232,160,32,0.2);
+    color: var(--amber);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 100px;
+    margin-bottom: 32px;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .badge-dot {
+    width: 6px; height: 6px;
+    background: var(--amber);
+    border-radius: 50%;
+    animation: pulse 2s ease infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: clamp(44px, 7vw, 88px);
+    line-height: 1.0;
+    letter-spacing: -0.03em;
+    max-width: 900px;
+    animation: fadeUp 0.6s 0.1s ease both;
+  }
+
+  h1 em {
+    font-style: normal;
+    color: var(--amber);
+  }
+
+  .hero-sub {
+    max-width: 520px;
+    color: var(--muted);
+    font-size: 17px;
+    line-height: 1.65;
+    margin-top: 24px;
+    font-weight: 300;
+    animation: fadeUp 0.6s 0.2s ease both;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 14px;
+    margin-top: 40px;
+    animation: fadeUp 0.6s 0.3s ease both;
+  }
+
+  .btn-primary {
+    background: var(--amber);
+    color: #0a0a0b;
+    border: none;
+    padding: 14px 28px;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 32px var(--amber-glow);
+  }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 14px 28px;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 400;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+  }
+
+  .btn-secondary:hover {
+    border-color: rgba(255,255,255,0.15);
+    color: var(--text);
+  }
+
+  /* STATS BAR */
+  .stats-bar {
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    margin-top: 72px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    max-width: 700px;
+    width: 100%;
+    animation: fadeUp 0.6s 0.4s ease both;
+  }
+
+  .stat {
+    flex: 1;
+    padding: 20px 24px;
+    text-align: center;
+    border-right: 1px solid var(--border);
+    background: var(--card);
+  }
+
+  .stat:last-child { border-right: none; }
+
+  .stat-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--amber);
+    letter-spacing: -0.02em;
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+    letter-spacing: 0.03em;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* SECTION SHARED */
+  section {
+    padding: 100px 48px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 16px;
+  }
+
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: clamp(32px, 4vw, 48px);
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    max-width: 600px;
+  }
+
+  .section-title em {
+    font-style: normal;
+    color: var(--amber);
+  }
+
+  /* DIVIDER */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border), transparent);
+    margin: 0 48px;
+  }
+
+  /* FEATURES */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-top: 56px;
+  }
+
+  .feature-card {
+    background: var(--card);
+    padding: 36px 32px;
+    position: relative;
+    transition: background 0.3s;
+    overflow: hidden;
+  }
+
+  .feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--amber-dim), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .feature-card:hover { background: #16161a; }
+  .feature-card:hover::before { opacity: 1; }
+
+  .feature-icon {
+    width: 44px; height: 44px;
+    background: var(--amber-dim);
+    border: 1px solid rgba(232,160,32,0.15);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    font-size: 20px;
+  }
+
+  .feature-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    font-size: 17px;
+    margin-bottom: 10px;
+    letter-spacing: -0.01em;
+  }
+
+  .feature-desc {
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.65;
+    font-weight: 300;
+  }
+
+  /* HEALTH SCORE SECTION */
+  .health-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: center;
+  }
+
+  .health-visual {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .score-ring {
+    position: relative;
+    width: 280px;
+    height: 280px;
+  }
+
+  .score-ring svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+  }
+
+  .score-ring-bg {
+    fill: none;
+    stroke: var(--bg3);
+    stroke-width: 8;
+  }
+
+  .score-ring-fill {
+    fill: none;
+    stroke: var(--amber);
+    stroke-width: 8;
+    stroke-linecap: round;
+    stroke-dasharray: 691;
+    stroke-dashoffset: 138;
+    filter: drop-shadow(0 0 8px rgba(232,160,32,0.5));
+    animation: ringFill 1.5s 0.5s ease both;
+  }
+
+  @keyframes ringFill {
+    from { stroke-dashoffset: 691; }
+    to { stroke-dashoffset: 138; }
+  }
+
+  .score-center {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+
+  .score-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 56px;
+    font-weight: 800;
+    color: var(--amber);
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+
+  .score-label {
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .score-metrics {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 40px;
+  }
+
+  .metric-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .metric-label {
+    font-size: 13px;
+    color: var(--muted);
+    width: 130px;
+    flex-shrink: 0;
+  }
+
+  .metric-bar-wrap {
+    flex: 1;
+    height: 4px;
+    background: var(--bg3);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .metric-bar {
+    height: 100%;
+    background: var(--amber);
+    border-radius: 2px;
+    transition: width 1.5s ease;
+  }
+
+  .metric-val {
+    font-size: 12px;
+    color: var(--text);
+    font-weight: 500;
+    width: 36px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  /* AI SECTION */
+  .ai-section {
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 100px 48px;
+  }
+
+  .ai-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 80px;
+    align-items: center;
+  }
+
+  .ai-chat {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .ai-chat-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--card);
+  }
+
+  .ai-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .ai-dot.green { background: #3dd68c; box-shadow: 0 0 6px #3dd68c; }
+
+  .ai-chat-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .ai-messages {
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .msg {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .msg-avatar {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .msg-avatar.user { background: var(--amber-dim); }
+  .msg-avatar.ai { background: rgba(61,214,140,0.12); }
+
+  .msg-bubble {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--text);
+    max-width: 300px;
+  }
+
+  .msg-bubble.ai-reply {
+    border-color: rgba(61,214,140,0.15);
+  }
+
+  .msg-bubble strong {
+    color: var(--amber);
+    font-weight: 500;
+  }
+
+  /* INTEGRATIONS */
+  .integrations {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 32px;
+  }
+
+  .integration-pill {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 13px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+  }
+
+  .integration-pill:hover {
+    border-color: rgba(232,160,32,0.2);
+    color: var(--text);
+  }
+
+  .integration-dot {
+    width: 6px; height: 6px;
+    background: var(--amber);
+    border-radius: 50%;
+  }
+
+  /* CTA SECTION */
+  .cta-section {
+    padding: 100px 48px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cta-glow {
+    position: absolute;
+    width: 600px;
+    height: 400px;
+    background: radial-gradient(ellipse, rgba(232,160,32,0.06) 0%, transparent 70%);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+
+  .cta-inner {
+    max-width: 600px;
+    margin: 0 auto;
+    position: relative;
+  }
+
+  .cta-inner h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(36px, 5vw, 56px);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    margin-bottom: 20px;
+  }
+
+  .cta-inner h2 em {
+    font-style: normal;
+    color: var(--amber);
+  }
+
+  .cta-inner p {
+    color: var(--muted);
+    font-size: 16px;
+    line-height: 1.6;
+    margin-bottom: 36px;
+  }
+
+  /* DEMO FORM */
+  .demo-form {
+    display: flex;
+    gap: 10px;
+    max-width: 440px;
+    margin: 0 auto;
+  }
+
+  .demo-input {
+    flex: 1;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 13px 16px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .demo-input:focus {
+    border-color: rgba(232,160,32,0.4);
+  }
+
+  .demo-input::placeholder { color: var(--muted); }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .footer-logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--muted);
+  }
+
+  .footer-logo span { color: var(--amber); }
+
+  .footer-copy {
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  /* SCROLL REVEAL */
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* MOBILE */
+  @media (max-width: 900px) {
+    nav { padding: 16px 24px; }
+    .nav-links { display: none; }
+    section { padding: 70px 24px; }
+    .features-grid { grid-template-columns: 1fr; }
+    .health-section { grid-template-columns: 1fr; }
+    .ai-inner { grid-template-columns: 1fr; }
+    .stats-bar { flex-direction: column; }
+    .stat { border-right: none; border-bottom: 1px solid var(--border); }
+    .stat:last-child { border-bottom: none; }
+    footer { flex-direction: column; gap: 12px; text-align: center; }
+    .demo-form { flex-direction: column; }
+    .divider { margin: 0 24px; }
+    .ai-section { padding: 70px 24px; }
+    .cta-section { padding: 70px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">Lean<span>Table</span></div>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#intelligence">Intelligence</a></li>
+    <li><a href="https://app.leantable.app" style="color: var(--amber); font-weight: 500;">Sign In</a></li>
+    <li><a href="#demo" class="nav-cta">Get Early Access</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-grid"></div>
+
+  <div class="badge">
+    <span class="badge-dot"></span>
+    Now onboarding early restaurant partners
+  </div>
+
+  <h1>Your next platform for <em>smarter</em> business operations</h1>
+
+  <p class="hero-sub">
+    Track inventory, reduce waste, manage staff, and control costs — all from one app built for food service operators.
+  </p>
+
+  <div class="hero-actions">
+    <a href="#demo" class="btn-primary">
+      Get Early Access
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 7h12M7 1l6 6-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+    <a href="#features" class="btn-secondary">See Features</a>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat">
+      <div class="stat-num">3</div>
+      <div class="stat-label">POS Integrations</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">iOS+</div>
+      <div class="stat-label">Android & Web</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">28</div>
+      <div class="stat-label">Operations Tracked</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">1</div>
+      <div class="stat-label">App for Everything</div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- PROBLEM -->
+<section>
+  <div class="reveal" style="text-align: center; max-width: 700px; margin: 0 auto;">
+    <div class="section-label">The Problem</div>
+    <h2 class="section-title" style="max-width: 700px; margin: 0 auto;">Most restaurants are managing operations with <em>spreadsheets, guesswork, and gut feel</em></h2>
+    <p style="color: var(--muted); font-size: 16px; line-height: 1.7; margin-top: 24px;">
+      Expired ingredients get thrown out. Orders are placed on gut feel. Staff schedules don't match demand. Food costs creep up and nobody notices until it's too late. Sound familiar?
+    </p>
+    <p style="color: var(--muted); font-size: 16px; line-height: 1.7; margin-top: 16px;">
+      LeanTable replaces the patchwork of tools and guesswork with one platform that connects your inventory, waste, staffing, and costs — so you can actually see what's happening across your operation.
+    </p>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="reveal">
+    <div class="section-label">Platform Features</div>
+    <h2 class="section-title">Everything your restaurant needs in <em>one place</em></h2>
+  </div>
+
+  <div class="features-grid reveal">
+
+    <div class="feature-card">
+      <div class="feature-icon">📦</div>
+      <div class="feature-title">Inventory Tracking</div>
+      <div class="feature-desc">Know exactly what's in your kitchen at all times. Barcode scanning, low-stock alerts, expiration tracking, and FIFO reminders — so nothing slips through the cracks.</div>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">🗑️</div>
+      <div class="feature-title">Waste Control</div>
+      <div class="feature-desc">See exactly how much food you're losing and why. Log waste by reason, track it against food cost, and get the visibility you need to stop profits walking out the door.</div>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">📊</div>
+      <div class="feature-title">Operations Health Score</div>
+      <div class="feature-desc">One number that tells you how your restaurant is performing. Tracks food cost, waste, labor, inventory turnover, and more — with clear recommendations on what to fix first.</div>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">👥</div>
+      <div class="feature-title">Staff & Labor</div>
+      <div class="feature-desc">Schedule shifts, track labor costs in real time, and manage timesheets — all in one place. Includes a dedicated kiosk mode so staff can clock in and out on a shared tablet.</div>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">🧾</div>
+      <div class="feature-title">Recipe & Menu Costing</div>
+      <div class="feature-desc">Know exactly which menu items make you money and which ones quietly kill your margins. Full recipe costing, margin analysis, and scaling built in.</div>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">🏪</div>
+      <div class="feature-title">Multi-Location Ready</div>
+      <div class="feature-desc">Manage one location or fifty from a single dashboard. Compare performance across stores, spot trends, and keep every location running the same playbook.</div>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">🛒</div>
+      <div class="feature-title">Ordering & Receiving</div>
+      <div class="feature-desc">Create purchase orders, email them to suppliers, receive shipments with variance tracking, and scan invoices to auto-populate receiving. Vendor price history catches cost creep early.</div>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">🌡️</div>
+      <div class="feature-title">Safety & Security</div>
+      <div class="feature-desc">Temperature logs for food safety compliance, security camera integration, incident tracking linked to transactions and footage, and a full audit trail across every location.</div>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">📈</div>
+      <div class="feature-title">Financial Reports</div>
+      <div class="feature-desc">Labor reports, P&L, food cost analysis, and count variance reporting. Four report types built around the KPIs operators already track.</div>
+    </div>
+
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- HEALTH SCORE VISUAL -->
+<section>
+  <div class="health-section">
+    <div class="reveal">
+      <div class="section-label">Operations Intelligence</div>
+      <h2 class="section-title">Your restaurant's <em>vital signs</em> at a glance</h2>
+      <p style="color: var(--muted); font-size: 15px; line-height: 1.7; margin-top: 20px; max-width: 420px;">
+        One number that tells you exactly how your restaurant is performing. LeanTable tracks food cost, waste, labor efficiency, and forecast accuracy — and tells you what to fix first.
+      </p>
+      <div class="score-metrics reveal" style="margin-top: 32px;">
+        <div class="metric-row">
+          <div class="metric-label">Food Cost %</div>
+          <div class="metric-bar-wrap"><div class="metric-bar" style="width: 78%"></div></div>
+          <div class="metric-val">78</div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-label">Waste Control</div>
+          <div class="metric-bar-wrap"><div class="metric-bar" style="width: 85%"></div></div>
+          <div class="metric-val">85</div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-label">Labor Efficiency</div>
+          <div class="metric-bar-wrap"><div class="metric-bar" style="width: 91%"></div></div>
+          <div class="metric-val">91</div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-label">Forecast Accuracy</div>
+          <div class="metric-bar-wrap"><div class="metric-bar" style="width: 82%"></div></div>
+          <div class="metric-val">82</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="health-visual reveal">
+      <div>
+        <div class="score-ring">
+          <svg viewBox="0 0 220 220">
+            <circle class="score-ring-bg" cx="110" cy="110" r="110"/>
+            <circle class="score-ring-fill" cx="110" cy="110" r="110"/>
+          </svg>
+          <div class="score-center">
+            <div class="score-num">84</div>
+            <div class="score-label">Health Score</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- AI SECTION -->
+<div class="ai-section" id="intelligence">
+  <div class="ai-inner">
+    <div class="reveal">
+      <div class="section-label">Built-In Intelligence</div>
+      <h2 class="section-title">An assistant that knows <em>your restaurant</em></h2>
+      <p style="color: var(--muted); font-size: 15px; line-height: 1.7; margin-top: 20px; max-width: 420px;">
+        Ask questions about your inventory, costs, or staffing and get answers based on your store's actual data — not generic advice. LeanTable gets smarter the more you use it.
+      </p>
+      <p style="color: var(--muted); font-size: 14px; line-height: 1.65; margin-top: 16px; max-width: 420px;">
+        Weekly planning tools help you prepare staffing and ordering recommendations before your week starts — so you're never caught short or overstaffed.
+      </p>
+
+      <div class="integrations" style="margin-top: 32px;">
+        <div class="integration-pill"><span class="integration-dot"></span> Toast POS</div>
+        <div class="integration-pill"><span class="integration-dot"></span> Square</div>
+        <div class="integration-pill"><span class="integration-dot"></span> CSV Import</div>
+        <div class="integration-pill"><span class="integration-dot"></span> AWS Bedrock</div>
+      </div>
+    </div>
+
+    <div class="ai-chat reveal">
+      <div class="ai-chat-header">
+        <div class="ai-dot green"></div>
+        <div class="ai-chat-title">LeanTable AI Assistant</div>
+      </div>
+      <div class="ai-messages">
+        <div class="msg">
+          <div class="msg-avatar user">👤</div>
+          <div class="msg-bubble">Why is my food cost up 4% this week compared to last?</div>
+        </div>
+        <div class="msg">
+          <div class="msg-avatar ai">🤖</div>
+          <div class="msg-bubble ai-reply">Your chicken breast cost increased <strong>$0.34/lb</strong> from Sysco on Tuesday's delivery. Combined with <strong>$180 in logged waste</strong> (overproduction on wings Friday), that accounts for ~3.8% of the variance. I'd suggest adjusting your prep list for wings by 15% this weekend.</div>
+        </div>
+        <div class="msg">
+          <div class="msg-avatar user">👤</div>
+          <div class="msg-bubble">How many staff do I need Saturday night?</div>
+        </div>
+        <div class="msg">
+          <div class="msg-avatar ai">🤖</div>
+          <div class="msg-bubble ai-reply">Based on the last <strong>8 comparable Saturdays</strong> and a local event nearby, I'm forecasting <strong>23% above average volume</strong>. Recommend scheduling <strong>6 FOH, 4 BOH</strong> vs your usual 5/3. Labor cost impact: +$180 but protects ~$640 in projected sales.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CTA -->
+<div class="cta-section" id="demo">
+  <div class="cta-glow"></div>
+  <div class="cta-inner reveal">
+    <h2>Ready to take control of your <em>operations</em>?</h2>
+    <p>We're onboarding early restaurant partners for free during launch. We'll help you get set up and walk through your first week together.</p>
+
+    <form class="demo-form" onsubmit="handleSubmit(event)">
+      <input type="email" class="demo-input" placeholder="your@restaurant.com" required id="emailInput">
+      <button type="submit" class="btn-primary">Get Early Access</button>
+    </form>
+
+    <p style="margin-top: 16px; font-size: 12px; color: var(--muted);">No commitment. Free during early access. We'll reach out within 24 hours.</p>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">Lean<span>Table</span></div>
+  <div class="footer-copy">&copy; 2026 LeanTable. Built for operators, by operators. &nbsp;·&nbsp; <a href="privacy.html" style="color: var(--muted); text-decoration: none;">Privacy</a> &nbsp;·&nbsp; <a href="terms.html" style="color: var(--muted); text-decoration: none;">Terms</a></div>
+</footer>
+
+<script>
+  // Scroll reveal
+  const reveals = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry, i) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => entry.target.classList.add('visible'), i * 80);
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1 });
+  reveals.forEach(el => observer.observe(el));
+
+  // Form submit
+  async function handleSubmit(e) {
+    e.preventDefault();
+    const email = document.getElementById('emailInput').value;
+    const btn = e.target.querySelector('button');
+    btn.textContent = 'Submitting...';
+    btn.disabled = true;
+
+    try {
+      const res = await fetch('https://l0mnegjjp2.execute-api.us-east-1.amazonaws.com/v1/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+
+      if (res.ok) {
+        btn.textContent = '\u2713 You\'re on the list!';
+        btn.style.background = '#3dd68c';
+      } else {
+        btn.textContent = 'Try again';
+        btn.style.background = '#e84040';
+        btn.disabled = false;
+      }
+    } catch {
+      btn.textContent = '\u2713 You\'re on the list!';
+      btn.style.background = '#3dd68c';
+    }
+  }
+
+  // Animate metric bars on scroll
+  const metricBars = document.querySelectorAll('.metric-bar');
+  const barObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.style.width = entry.target.style.width;
+        barObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.5 });
+  metricBars.forEach(bar => {
+    const targetWidth = bar.style.width;
+    bar.style.width = '0%';
+    setTimeout(() => { bar.style.width = targetWidth; }, 300);
+    barObserver.observe(bar);
+  });
+</script>
+</body>
+</html>

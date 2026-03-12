@@ -6,6 +6,7 @@ import { StatusBadge } from "../../components/StatusBadge";
 import { PageLoader } from "../../components/LoadingSpinner";
 import { EmptyState } from "../../components/EmptyState";
 import { currencyDollars } from "../../utils/format";
+import { Tooltip } from "../../components/Tooltip";
 
 type SortField = "name" | "category" | "quantity" | "costPerUnit" | "totalValue";
 type SortDir = "asc" | "desc";
@@ -88,8 +89,8 @@ export function InventoryPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Inventory</h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
-            {items.length} items &middot; {currencyDollars(totalValue)} total value
-            {lowStockCount > 0 && <span className="text-red-600 font-semibold"> &middot; {lowStockCount} low stock</span>}
+            {items.length} items &middot; {currencyDollars(totalValue)} total value <Tooltip content="Sum of (quantity x unit cost) for all items. Track this weekly to spot cost creep early." />
+            {lowStockCount > 0 && <span className="text-red-600 font-semibold"> &middot; {lowStockCount} low stock <Tooltip content="Items below their minimum threshold. Set thresholds per item based on how fast you go through them." /></span>}
           </p>
         </div>
       </div>
@@ -152,7 +153,7 @@ export function InventoryPage() {
                         <span className={`text-sm font-semibold ${isLow ? "text-red-600" : "text-slate-900 dark:text-slate-100"}`}>
                           {item.quantity}
                         </span>
-                        {isLow && <span className="text-xs text-slate-400 dark:text-slate-500 ml-1">(min: {item.lowStockThreshold})</span>}
+                        {isLow && <span className="text-xs text-slate-400 dark:text-slate-500 ml-1">(min: {item.lowStockThreshold}) <Tooltip content="Minimum stock level you've set. When quantity drops to or below this, you'll see a low stock alert." /></span>}
                       </td>
                       <td className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">{item.unit}</td>
                       <td className="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">{currencyDollars(item.costPerUnit || 0)}</td>

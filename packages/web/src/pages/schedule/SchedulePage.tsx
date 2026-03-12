@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "../../api/client";
 import { useStore } from "../../stores/StoreProvider";
 import { PageLoader } from "../../components/LoadingSpinner";
+import { Tooltip } from "../../components/Tooltip";
 
 function getWeekStart(date: Date): string {
   const d = new Date(date);
@@ -64,7 +65,7 @@ export function SchedulePage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Schedule</h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Week of {new Date(weekStart).toLocaleDateString("en-US", { month: "long", day: "numeric" })}</p>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Week of {new Date(weekStart).toLocaleDateString("en-US", { month: "long", day: "numeric" })} <Tooltip content="Weekly shift schedule for your team. Add staff on the Team page, then create shifts here. Shifts created on mobile sync automatically." /></p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -125,7 +126,7 @@ export function SchedulePage() {
               ))}
               {staff.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="text-center py-8 text-sm text-slate-400 dark:text-slate-500">No staff members found</td>
+                  <td colSpan={8} className="text-center py-8 text-sm text-slate-400 dark:text-slate-500">No staff members found. Add team members on the Team page to start scheduling shifts.</td>
                 </tr>
               )}
             </tbody>

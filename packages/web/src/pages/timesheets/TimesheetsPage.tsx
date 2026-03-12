@@ -4,6 +4,7 @@ import { api } from "../../api/client";
 import { useStore } from "../../stores/StoreProvider";
 import { PageLoader } from "../../components/LoadingSpinner";
 import { StatusBadge } from "../../components/StatusBadge";
+import { Tooltip, HelpLabel } from "../../components/Tooltip";
 
 function getWeekStart(date: Date): string {
   const d = new Date(date);
@@ -141,7 +142,7 @@ export function TimesheetsPage() {
               <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${liveEntries.length > 0 ? "bg-emerald-500" : "bg-slate-300 dark:bg-slate-600"}`} />
             </span>
             <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-              On the Clock
+              On the Clock <Tooltip content="Staff currently clocked in via the kiosk or mobile app. Updates every 30 seconds." />
             </h2>
             <span className="text-xs text-slate-500 dark:text-slate-400">
               ({liveEntries.length})
@@ -206,9 +207,9 @@ export function TimesheetsPage() {
                 <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Date</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Clock In</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Clock Out</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Break</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Hours</th>
-                <th className="text-center px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Status</th>
+                <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Break <Tooltip content="Total break time in minutes. Breaks are logged by staff via the kiosk. Break time is deducted from total hours." /></th>
+                <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Hours <Tooltip content="Total work hours (clock-in to clock-out minus breaks). Active shifts show elapsed time so far." /></th>
+                <th className="text-center px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Status <Tooltip content="Pending entries need manager approval before they count toward payroll. Approve after verifying hours are accurate." /></th>
                 <th className="text-center px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Action</th>
               </tr>
             </thead>

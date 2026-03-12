@@ -5,6 +5,7 @@ import { useStore } from "../../stores/StoreProvider";
 import { PageLoader } from "../../components/LoadingSpinner";
 import { StatusBadge } from "../../components/StatusBadge";
 import { EmptyState } from "../../components/EmptyState";
+import { Tooltip, HelpLabel } from "../../components/Tooltip";
 
 const LOCATIONS = ["Freezer", "Walk-in Cooler", "Prep Fridge", "Display Case"] as const;
 
@@ -148,7 +149,7 @@ export function TempLogsPage() {
           </svg>
           <p className="text-sm font-medium text-red-800 dark:text-red-300">
             {alertCount} out-of-range temperature reading{alertCount !== 1 ? "s" : ""} detected.
-            Review immediately to ensure food safety compliance.
+            Review immediately to ensure food safety compliance. Safe ranges: Walk-in Cooler 35-38°F, Freezer 0°F or below, Prep Fridge 33-40°F.
           </p>
         </div>
       )}
@@ -163,7 +164,7 @@ export function TempLogsPage() {
             {/* Location */}
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Location *
+                Location * <Tooltip content="Where the temperature was taken. Each location has different safe ranges for food safety compliance." />
               </label>
               <select
                 value={location}
@@ -295,11 +296,11 @@ export function TempLogsPage() {
           <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 mt-1">{totalLogs}</p>
         </div>
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5">
-          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Out of Range</p>
+          <p className="text-sm font-medium text-slate-500 dark:text-slate-400"><HelpLabel label="Out of Range" tooltip="Readings outside safe food storage temperatures. Walk-in Cooler: 35-38°F, Freezer: 0°F or below, Prep Fridge: 33-40°F, Display Case: 33-41°F." /></p>
           <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">{alertCount}</p>
         </div>
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5">
-          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">In Range</p>
+          <p className="text-sm font-medium text-slate-500 dark:text-slate-400"><HelpLabel label="In Range" tooltip="Readings within safe FDA food storage temperature guidelines." /></p>
           <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">
             {inRangeCount}
           </p>

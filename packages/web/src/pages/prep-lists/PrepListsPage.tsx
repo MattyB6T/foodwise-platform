@@ -5,6 +5,7 @@ import { useStore } from "../../stores/StoreProvider";
 import { PageLoader } from "../../components/LoadingSpinner";
 import { StatusBadge } from "../../components/StatusBadge";
 import { EmptyState } from "../../components/EmptyState";
+import { Tooltip } from "../../components/Tooltip";
 
 function formatDate(date: Date): string {
   return date.toISOString().split("T")[0];
@@ -222,7 +223,7 @@ export function PrepListsPage() {
                 Generating...
               </>
             ) : (
-              "Generate Prep List"
+              <><span>Generate Prep List</span> <Tooltip content="Creates a prep list based on your sales forecast for the selected date. Uses transaction history to predict what you'll need to prepare." /></>
             )}
           </button>
         </div>
@@ -241,7 +242,7 @@ export function PrepListsPage() {
       {prepLists.length === 0 ? (
         <EmptyState
           title="No prep lists for this date"
-          description="Generate a prep list based on your forecast data."
+          description="Generate a prep list based on your sales forecast. The system uses your transaction history to predict quantities needed for each item."
           action={{
             label: "Generate Prep List",
             onClick: () => generateMutation.mutate(),

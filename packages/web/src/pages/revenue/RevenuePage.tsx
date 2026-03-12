@@ -4,6 +4,7 @@ import { api } from "../../api/client";
 import { useStore } from "../../stores/StoreProvider";
 import { PageLoader } from "../../components/LoadingSpinner";
 import { EmptyState } from "../../components/EmptyState";
+import { Tooltip } from "../../components/Tooltip";
 
 type Tab = "history" | "sources" | "log";
 type DateRange = 7 | 14 | 30 | 90;
@@ -189,7 +190,7 @@ export function RevenuePage() {
             Ancillary Revenue
           </h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
-            Track non-food-sale revenue streams
+            Track non-food-sale revenue streams <Tooltip content="Revenue from sources other than food/drink sales — like pool tables, cover charges, trivia nights, catering, or merchandise. Tracked separately so your food cost % stays accurate." />
           </p>
         </div>
         {activeTab === "sources" && (

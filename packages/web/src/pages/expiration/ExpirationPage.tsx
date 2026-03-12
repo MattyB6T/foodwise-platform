@@ -5,6 +5,7 @@ import { useStore } from "../../stores/StoreProvider";
 import { PageLoader } from "../../components/LoadingSpinner";
 import { StatusBadge } from "../../components/StatusBadge";
 import { EmptyState } from "../../components/EmptyState";
+import { Tooltip } from "../../components/Tooltip";
 
 const DAYS_OPTIONS = [3, 7, 14, 30] as const;
 
@@ -110,7 +111,7 @@ export function ExpirationPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800 rounded-xl border shadow-sm p-4">
           <p className="text-sm font-medium text-red-600 dark:text-red-400">
-            Expired
+            Expired <Tooltip content="Items past their expiration date. These should be discarded immediately for food safety." />
           </p>
           <p className="text-2xl font-bold text-red-700 dark:text-red-300 mt-1">
             {summary?.expired ?? 0}
@@ -118,7 +119,7 @@ export function ExpirationPage() {
         </div>
         <div className="bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 rounded-xl border shadow-sm p-4">
           <p className="text-sm font-medium text-amber-600 dark:text-amber-400">
-            Critical
+            Critical <Tooltip content="Expiring within 2 days. Use these first (FIFO) or consider discounting/repurposing." />
           </p>
           <p className="text-2xl font-bold text-amber-700 dark:text-amber-300 mt-1">
             {summary?.critical ?? 0}
@@ -126,7 +127,7 @@ export function ExpirationPage() {
         </div>
         <div className="bg-yellow-50 dark:bg-yellow-950/30 border-yellow-200 dark:border-yellow-800 rounded-xl border shadow-sm p-4">
           <p className="text-sm font-medium text-yellow-600 dark:text-yellow-400">
-            Warning
+            Warning <Tooltip content="Expiring within 3-7 days. Plan to use these in upcoming prep or specials." />
           </p>
           <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-300 mt-1">
             {summary?.warning ?? 0}

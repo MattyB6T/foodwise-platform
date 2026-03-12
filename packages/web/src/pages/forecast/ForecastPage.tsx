@@ -3,6 +3,7 @@ import { api } from "../../api/client";
 import { useStore } from "../../stores/StoreProvider";
 import { PageLoader } from "../../components/LoadingSpinner";
 import { EmptyState } from "../../components/EmptyState";
+import { Tooltip, HelpLabel } from "../../components/Tooltip";
 
 export function ForecastPage() {
   const { selectedStoreId } = useStore();
@@ -21,11 +22,11 @@ export function ForecastPage() {
     <div>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Forecast & Prep</h1>
-        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">AI-powered demand forecasting and prep lists</p>
+        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">AI-powered demand forecasting and prep lists <Tooltip content="Forecasts are generated from your sales history using machine learning. The more transaction data you have, the more accurate predictions become. Typically needs 2-4 weeks of data." /></p>
       </div>
 
       {prepLists.length === 0 ? (
-        <EmptyState title="No prep lists yet" description="Forecasts generate prep lists automatically. Make sure you have transaction history." />
+        <EmptyState title="No prep lists yet" description="Forecasts generate prep lists based on your sales history. You'll need at least 2 weeks of transaction data for accurate predictions." />
       ) : (
         <div className="space-y-4">
           {prepLists.map((list: any, i: number) => (

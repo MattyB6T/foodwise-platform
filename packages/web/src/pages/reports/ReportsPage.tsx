@@ -2,14 +2,15 @@ import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { api } from "../../api/client";
 import { useStore } from "../../stores/StoreProvider";
+import { Tooltip } from "../../components/Tooltip";
 
 const REPORT_TYPES = [
-  { value: "food-cost", label: "Food Cost Report" },
-  { value: "waste", label: "Waste Report" },
-  { value: "inventory-valuation", label: "Inventory Valuation" },
-  { value: "labor-cost", label: "Labor Cost Report" },
-  { value: "daily-summary", label: "Daily Summary" },
-  { value: "weekly-summary", label: "Weekly Summary" },
+  { value: "food-cost", label: "Food Cost Report", desc: "Ingredient costs vs. revenue — your most important profitability metric" },
+  { value: "waste", label: "Waste Report", desc: "All logged waste with costs, reasons, and trends over the period" },
+  { value: "inventory-valuation", label: "Inventory Valuation", desc: "Current value of all stock on hand by category" },
+  { value: "labor-cost", label: "Labor Cost Report", desc: "Staff hours, wages, and labor cost as % of revenue" },
+  { value: "daily-summary", label: "Daily Summary", desc: "Day-by-day breakdown of sales, costs, and key metrics" },
+  { value: "weekly-summary", label: "Weekly Summary", desc: "Week-over-week performance with trends and highlights" },
 ];
 
 export function ReportsPage() {
@@ -42,7 +43,7 @@ export function ReportsPage() {
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 mb-6 transition-colors">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Report Type</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Report Type <Tooltip content={REPORT_TYPES.find(r => r.value === reportType)?.desc || ''} /></label>
             <select
               value={reportType}
               onChange={(e) => setReportType(e.target.value)}

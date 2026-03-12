@@ -5,6 +5,7 @@ import { useStore } from "../../stores/StoreProvider";
 import { PageLoader } from "../../components/LoadingSpinner";
 import { StatusBadge } from "../../components/StatusBadge";
 import { EmptyState } from "../../components/EmptyState";
+import { Tooltip, HelpLabel } from "../../components/Tooltip";
 
 export function CountsPage() {
   const { selectedStoreId } = useStore();
@@ -74,7 +75,7 @@ export function CountsPage() {
       {showNewCountForm && (
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
-            New Count Session
+            New Count Session <Tooltip content="A count session snapshots your current system inventory, then lets you enter actual quantities. Compare the two to find discrepancies." />
           </h2>
           <form onSubmit={handleCreateCount} className="space-y-4">
             <div>
@@ -148,7 +149,7 @@ export function CountsPage() {
                   Items Counted
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Discrepancies
+                  Discrepancies <Tooltip content="Items where your physical count doesn't match the system quantity. This can indicate theft, spoilage, or receiving errors." />
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   Created By

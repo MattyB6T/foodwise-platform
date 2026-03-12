@@ -175,6 +175,18 @@ export class FoodwiseApiStack extends cdk.NestedStack {
       timeout: cdk.Duration.seconds(15),
     });
 
+    // Waitlist signup (public, no auth)
+    const waitlistFn = new NodejsFunction(this, "WaitlistFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "waitlist.ts"),
+      timeout: cdk.Duration.seconds(10),
+      environment: {
+        WAITLIST_TABLE: core.waitlistTable.tableName,
+        NOTIFY_EMAIL: "", // Will be set once workspace email is verified
+        FROM_EMAIL: "noreply@leantable.app",
+      },
+    });
+
     // Forecast Lambda (Python, Docker Image)
     const modelsCodePath = path.join(__dirname, "../../models");
 
@@ -567,6 +579,10 @@ export class FoodwiseApiStack extends cdk.NestedStack {
     const assistantResource = this.api.root.addResource("assistant");
     assistantResource.addMethod("POST", new apigateway.LambdaIntegration(assistantFn), authMethodOptions);
 
+    // POST /waitlist (public, no auth — landing page signup)
+    const waitlistResource = this.api.root.addResource("waitlist");
+    waitlistResource.addMethod("POST", new apigateway.LambdaIntegration(waitlistFn));
+
     // --- POS Webhook endpoints (public, no Cognito auth) ---
 
     // POST /webhooks/toast/{storeId}
@@ -606,6 +622,15 @@ export class FoodwiseApiStack extends cdk.NestedStack {
 
     webhookUsagePlan.addApiKey(webhookApiKey);
     webhookUsagePlan.addApiStage({ stage: this.api.deploymentStage });
+
+    // Waitlist
+    core.waitlistTable.grantReadWriteData(waitlistFn);
+    waitlistFn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["ses:SendEmail"],
+        resources: ["*"],
+      })
+    );
 
     // --- Security Events Table Grants ---
     core.securityEventsTable.grantWriteData(kioskRouterFn);
