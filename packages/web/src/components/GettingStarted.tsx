@@ -44,7 +44,9 @@ export function GettingStarted() {
     enabled: !!selectedStoreId,
   });
 
-  if (dismissed) return null;
+  const allLoaded = storesData !== undefined && inventoryData !== undefined && recipesData !== undefined && staffData !== undefined && scheduleData !== undefined;
+
+  if (dismissed || !allLoaded) return null;
 
   const dataMap: Record<string, any> = {
     stores: storesData,
