@@ -235,8 +235,43 @@ export const handler = async (
         })
       );
 
+      // Auto-flag entries with anomalies
+      const now = Date.now();
+      const MAX_SHIFT_HOURS = 12;
+      const MISSED_CLOCKOUT_HOURS = 16;
+      const MIN_BREAK_SHIFT_HOURS = 6;
+
+      const entries = (result.Items || []).map((e: any) => {
+        const flags: string[] = [];
+        const clockIn = e.clockInTime ? new Date(e.clockInTime).getTime() : 0;
+        const clockOut = e.clockOutTime ? new Date(e.clockOutTime).getTime() : 0;
+
+        if (!e.clockOutTime) {
+          // Still clocked in
+          const hoursActive = (now - clockIn) / 3600000;
+          if (hoursActive >= MISSED_CLOCKOUT_HOURS) {
+            flags.push("Missed clock-out (active " + Math.round(hoursActive) + "h)");
+          } else if (hoursActive >= MAX_SHIFT_HOURS) {
+            flags.push("Long shift (" + Math.round(hoursActive) + "h and counting)");
+          }
+        } else {
+          // Completed shift
+          const shiftHours = (clockOut - clockIn) / 3600000;
+          if (shiftHours >= MAX_SHIFT_HOURS) {
+            flags.push("Long shift (" + shiftHours.toFixed(1) + "h)");
+          }
+          if (shiftHours < 0.1) {
+            flags.push("Very short shift (" + Math.round(shiftHours * 60) + "min)");
+          }
+          if (shiftHours >= MIN_BREAK_SHIFT_HOURS && !e.totalBreakMinutes) {
+            flags.push("No break logged on " + shiftHours.toFixed(1) + "h shift");
+          }
+        }
+
+        return { ...e, autoFlags: flags.length > 0 ? flags : undefined };
+      });
+
       // Group by employee
-      const entries = result.Items || [];
       const byEmployee: Record<string, any> = {};
       for (const e of entries) {
         if (!byEmployee[e.staffId]) {

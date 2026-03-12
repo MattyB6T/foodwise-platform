@@ -238,6 +238,19 @@ export function TimesheetsPage() {
         )}
       </div>
 
+      {/* Flags Summary */}
+      {entries.some((e: any) => e.autoFlags?.length > 0) && (
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl px-4 py-3 mb-6 flex items-center gap-3">
+          <svg className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+          </svg>
+          <p className="text-sm text-amber-800 dark:text-amber-300">
+            <span className="font-semibold">{entries.filter((e: any) => e.autoFlags?.length > 0).length} entries flagged</span>
+            {" — "}review long shifts, missed clock-outs, or missing breaks below.
+          </p>
+        </div>
+      )}
+
       {/* Timesheet Table */}
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden transition-colors">
         <div className="overflow-x-auto">
@@ -266,16 +279,29 @@ export function TimesheetsPage() {
                   {entries.map((entry: any) => {
                     const isClockedIn = !entry.clockOut;
                     const hours = entry.totalHours ?? calcDurationMinutes(entry.clockIn, entry.clockOut) / 60;
+                    const flags: string[] = entry.autoFlags || [];
+                    const hasFlagIssue = flags.length > 0;
 
                     return (
                       <tr
                         key={entry.entryId}
                         className={`border-b border-slate-50 dark:border-slate-700/50 hover:bg-slate-50/50 dark:hover:bg-slate-700/30 ${
-                          isClockedIn ? "bg-blue-50/40 dark:bg-blue-900/10" : ""
+                          hasFlagIssue ? "bg-amber-50/50 dark:bg-amber-900/10" : isClockedIn ? "bg-blue-50/40 dark:bg-blue-900/10" : ""
                         }`}
                       >
                         <td className="px-4 py-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                          {entry.staffName}
+                          <div className="flex items-center gap-2">
+                            {entry.staffName}
+                            {hasFlagIssue && (
+                              <Tooltip content={flags.join(" • ")}>
+                                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-900/40 flex-shrink-0">
+                                  <svg className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                                  </svg>
+                                </span>
+                              </Tooltip>
+                            )}
+                          </div>
                         </td>
                         <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
                           {formatDate(entry.clockIn)}
