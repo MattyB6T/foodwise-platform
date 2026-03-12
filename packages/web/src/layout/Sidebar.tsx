@@ -96,8 +96,17 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       {/* Logo */}
       <div className="flex items-center gap-2 px-4 h-16 border-b border-slate-700/50">
         <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
-          <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66.95-2.3c.48.17.98.3 1.34.3C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75" />
+          <svg className="w-6 h-6" viewBox="0 0 32 32" fill="none">
+            {/* Table top */}
+            <rect x="3" y="7" width="26" height="3.5" rx="1.2" fill="white" />
+            {/* Left leg */}
+            <rect x="5.5" y="10.5" width="3" height="13" rx="0.8" fill="white" opacity="0.8" />
+            {/* Right leg */}
+            <rect x="23.5" y="10.5" width="3" height="13" rx="0.8" fill="white" opacity="0.8" />
+            {/* L letter */}
+            <path d="M11 14h2v6.5h3v2h-5V14z" fill="white" />
+            {/* T letter */}
+            <path d="M17 14h6v2h-2v6.5h-2V16h-2v-2z" fill="white" />
           </svg>
         </div>
         {!collapsed && (

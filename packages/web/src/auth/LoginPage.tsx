@@ -23,8 +23,12 @@ export function LoginPage() {
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 mb-2">
             <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/30">
-              <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66.95-2.3c.48.17.98.3 1.34.3C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75" />
+              <svg className="w-7 h-7" viewBox="0 0 32 32" fill="none">
+                <rect x="3" y="7" width="26" height="3.5" rx="1.2" fill="white" />
+                <rect x="5.5" y="10.5" width="3" height="13" rx="0.8" fill="white" opacity="0.8" />
+                <rect x="23.5" y="10.5" width="3" height="13" rx="0.8" fill="white" opacity="0.8" />
+                <path d="M11 14h2v6.5h3v2h-5V14z" fill="white" />
+                <path d="M17 14h6v2h-2v6.5h-2V16h-2v-2z" fill="white" />
               </svg>
             </div>
             <span className="text-3xl font-black tracking-tight text-white">
