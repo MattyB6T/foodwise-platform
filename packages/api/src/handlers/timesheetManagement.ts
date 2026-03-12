@@ -203,16 +203,28 @@ export const handler = async (
 
       const week = event.queryStringParameters?.week;
 
+      // If week param is a full date (YYYY-MM-DD), query the 7-day range
+      let keyExpr = "storeId = :sid";
+      const exprValues: Record<string, any> = { ":sid": storeId };
+
+      if (week && /^\d{4}-\d{2}-\d{2}$/.test(week)) {
+        const weekEnd = new Date(week);
+        weekEnd.setDate(weekEnd.getDate() + 7);
+        const weekEndStr = weekEnd.toISOString().split("T")[0];
+        keyExpr = "storeId = :sid AND clockInTime BETWEEN :start AND :end";
+        exprValues[":start"] = week + "T00:00:00.000Z";
+        exprValues[":end"] = weekEndStr + "T00:00:00.000Z";
+      } else if (week) {
+        keyExpr = "storeId = :sid AND begins_with(clockInTime, :week)";
+        exprValues[":week"] = week;
+      }
+
       const result = await docClient.send(
         new QueryCommand({
           TableName: TABLES.TIME_CLOCK,
           IndexName: "storeId-clockInTime-index",
-          KeyConditionExpression: week
-            ? "storeId = :sid AND begins_with(clockInTime, :week)"
-            : "storeId = :sid",
-          ExpressionAttributeValues: week
-            ? { ":sid": storeId, ":week": week }
-            : { ":sid": storeId },
+          KeyConditionExpression: keyExpr,
+          ExpressionAttributeValues: exprValues,
           ScanIndexForward: false,
           Limit: 200,
         })

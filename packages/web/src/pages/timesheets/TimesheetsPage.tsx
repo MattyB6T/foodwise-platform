@@ -74,8 +74,34 @@ export function TimesheetsPage() {
     },
   });
 
-  const entries: any[] = timesheetData?.entries || [];
-  const liveEntries: any[] = liveData?.entries || [];
+  // API returns { employees: [{ staffId, staffName, entries: [...] }] } — flatten to row-per-entry
+  const entries: any[] = useMemo(() => {
+    const employees: any[] = timesheetData?.employees || [];
+    const flat: any[] = [];
+    for (const emp of employees) {
+      for (const e of emp.entries || []) {
+        flat.push({
+          ...e,
+          staffName: emp.staffName || e.staffName,
+          clockIn: e.clockInTime || e.clockIn,
+          clockOut: e.clockOutTime || e.clockOut,
+          approved: e.managerApproved ?? e.approved,
+          breakMinutes: e.totalBreakMinutes ?? e.breakMinutes,
+        });
+      }
+    }
+    // Sort by clockIn descending
+    flat.sort((a: any, b: any) => new Date(b.clockIn).getTime() - new Date(a.clockIn).getTime());
+    return flat;
+  }, [timesheetData]);
+
+  // Live API returns { live: [...] } with clockInTime field
+  const liveEntries: any[] = useMemo(() => {
+    return (liveData?.live || []).map((e: any) => ({
+      ...e,
+      clockIn: e.clockInTime || e.clockIn,
+    }));
+  }, [liveData]);
 
   const totalHours = useMemo(() => {
     return entries.reduce((sum: number, e: any) => {
