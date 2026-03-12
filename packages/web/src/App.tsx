@@ -5,17 +5,13 @@ import { StoreProvider } from "./stores/StoreProvider";
 import { AppLayout } from "./layout/AppLayout";
 import { LoginPage } from "./auth/LoginPage";
 import { DashboardPage } from "./pages/dashboard/DashboardPage";
-import { InventoryPage } from "./pages/inventory/InventoryPage";
-import { CountsPage } from "./pages/counts/CountsPage";
-import { ExpirationPage } from "./pages/expiration/ExpirationPage";
+import { InventoryHub } from "./pages/inventory/InventoryHub";
 import { WastePage } from "./pages/waste/WastePage";
-import { TempLogsPage } from "./pages/temp-logs/TempLogsPage";
 import { OrdersPage } from "./pages/orders/OrdersPage";
-import { PrepListsPage } from "./pages/prep-lists/PrepListsPage";
-import { SchedulePage } from "./pages/schedule/SchedulePage";
+import { RecipesHub } from "./pages/recipes/RecipesHub";
+import { ScheduleHub } from "./pages/schedule/ScheduleHub";
 import { StaffPage } from "./pages/staff/StaffPage";
 import { TeamPage } from "./pages/team/TeamPage";
-import { TimesheetsPage } from "./pages/timesheets/TimesheetsPage";
 import { RevenuePage } from "./pages/revenue/RevenuePage";
 import { IntegrationsPage } from "./pages/integrations/IntegrationsPage";
 import { SecurityPage } from "./pages/security/SecurityPage";
@@ -23,7 +19,6 @@ import { ReportsPage } from "./pages/reports/ReportsPage";
 import { ForecastPage } from "./pages/forecast/ForecastPage";
 import { AssistantPage } from "./pages/assistant/AssistantPage";
 import { SettingsPage } from "./pages/settings/SettingsPage";
-import { RecipesPage } from "./pages/recipes/RecipesPage";
 import { ImportPage } from "./pages/import/ImportPage";
 import { ThemeProvider } from "./theme/ThemeProvider";
 import { PageLoader } from "./components/LoadingSpinner";
@@ -71,16 +66,11 @@ export default function App() {
               }
             >
               <Route index element={<DashboardPage />} />
-              <Route path="inventory" element={<InventoryPage />} />
-              <Route path="counts" element={<CountsPage />} />
-              <Route path="expiration" element={<ExpirationPage />} />
+              <Route path="inventory" element={<InventoryHub />} />
               <Route path="waste" element={<WastePage />} />
-              <Route path="temp-logs" element={<TempLogsPage />} />
               <Route path="orders" element={<OrdersPage />} />
-              <Route path="recipes" element={<RecipesPage />} />
-              <Route path="prep-lists" element={<PrepListsPage />} />
-              <Route path="schedule" element={<SchedulePage />} />
-              <Route path="timesheets" element={<TimesheetsPage />} />
+              <Route path="recipes" element={<RecipesHub />} />
+              <Route path="schedule" element={<ScheduleHub />} />
               <Route path="team" element={<TeamPage />} />
               <Route path="staff" element={<StaffPage />} />
               <Route path="revenue" element={<RevenuePage />} />
@@ -91,6 +81,12 @@ export default function App() {
               <Route path="assistant" element={<AssistantPage />} />
               <Route path="import" element={<ImportPage />} />
               <Route path="settings" element={<SettingsPage />} />
+              {/* Redirects for old standalone routes */}
+              <Route path="counts" element={<Navigate to="/inventory?tab=counts" replace />} />
+              <Route path="expiration" element={<Navigate to="/inventory?tab=expiration" replace />} />
+              <Route path="temp-logs" element={<Navigate to="/inventory?tab=temp-logs" replace />} />
+              <Route path="prep-lists" element={<Navigate to="/recipes?tab=prep-lists" replace />} />
+              <Route path="timesheets" element={<Navigate to="/schedule?tab=timesheets" replace />} />
             </Route>
           </Routes>
         </AuthProvider>

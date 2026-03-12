@@ -43,7 +43,7 @@ export function NotificationBell() {
     }
     const expiringItems = expiration?.alerts || [];
     if (expiringItems.length > 0) {
-      notifs.push({ id: `expiring-${expiringItems.length}`, type: "expiring", message: `${expiringItems.length} item${expiringItems.length > 1 ? "s" : ""} expiring within 3 days`, path: "/expiration" });
+      notifs.push({ id: `expiring-${expiringItems.length}`, type: "expiring", message: `${expiringItems.length} item${expiringItems.length > 1 ? "s" : ""} expiring within 3 days`, path: "/inventory?tab=expiration" });
     }
     return notifs;
   }, [inventory, expiration]);

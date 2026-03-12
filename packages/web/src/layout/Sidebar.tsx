@@ -1,27 +1,57 @@
 import { NavLink } from "react-router-dom";
 import { cn } from "../utils/cn";
 
-const navItems = [
-  { to: "/", icon: "grid", label: "Dashboard" },
-  { to: "/inventory", icon: "package", label: "Inventory" },
-  { to: "/counts", icon: "clipboard", label: "Counts" },
-  { to: "/expiration", icon: "alert-triangle", label: "Expiration" },
-  { to: "/waste", icon: "trash-2", label: "Waste" },
-  { to: "/temp-logs", icon: "thermometer", label: "Temp Logs" },
-  { to: "/orders", icon: "shopping-cart", label: "Orders" },
-  { to: "/recipes", icon: "book-open", label: "Recipes" },
-  { to: "/prep-lists", icon: "list", label: "Prep Lists" },
-  { to: "/schedule", icon: "calendar", label: "Schedule" },
-  { to: "/timesheets", icon: "clock", label: "Timesheets" },
-  { to: "/team", icon: "users", label: "Team" },
-  { to: "/revenue", icon: "dollar-sign", label: "Revenue" },
-  { to: "/integrations", icon: "link", label: "Integrations" },
-  { to: "/security", icon: "shield", label: "Security" },
-  { to: "/reports", icon: "bar-chart-2", label: "Reports" },
-  { to: "/forecast", icon: "trending-up", label: "Forecast" },
-  { to: "/assistant", icon: "message-circle", label: "Assistant" },
-  { to: "/import", icon: "upload", label: "Import Data" },
-  { to: "/settings", icon: "settings", label: "Settings" },
+interface NavItem {
+  to: string;
+  icon: string;
+  label: string;
+}
+
+interface NavGroup {
+  title: string;
+  items: NavItem[];
+}
+
+const navGroups: NavGroup[] = [
+  {
+    title: "",
+    items: [
+      { to: "/", icon: "grid", label: "Dashboard" },
+    ],
+  },
+  {
+    title: "Operations",
+    items: [
+      { to: "/inventory", icon: "package", label: "Inventory" },
+      { to: "/waste", icon: "trash-2", label: "Waste" },
+      { to: "/orders", icon: "shopping-cart", label: "Orders" },
+      { to: "/recipes", icon: "book-open", label: "Recipes" },
+    ],
+  },
+  {
+    title: "Team",
+    items: [
+      { to: "/schedule", icon: "calendar", label: "Schedule" },
+      { to: "/team", icon: "users", label: "Team" },
+    ],
+  },
+  {
+    title: "Analytics",
+    items: [
+      { to: "/revenue", icon: "dollar-sign", label: "Revenue" },
+      { to: "/reports", icon: "bar-chart-2", label: "Reports" },
+      { to: "/forecast", icon: "trending-up", label: "Forecast" },
+    ],
+  },
+  {
+    title: "Admin",
+    items: [
+      { to: "/integrations", icon: "link", label: "Integrations" },
+      { to: "/security", icon: "shield", label: "Security" },
+      { to: "/import", icon: "upload", label: "Import Data" },
+      { to: "/settings", icon: "settings", label: "Settings" },
+    ],
+  },
 ];
 
 // Simple SVG icons to avoid extra deps
@@ -39,11 +69,7 @@ function Icon({ name, className }: { name: string; className?: string }) {
     "dollar-sign": "M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6",
     shield: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z",
     "message-circle": "M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z",
-    clipboard: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2",
-    "alert-triangle": "M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0zM12 9v4M12 17h.01",
-    thermometer: "M14 14.76V3.5a2.5 2.5 0 00-5 0v11.26a4.5 4.5 0 105 0z",
     "book-open": "M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2zM22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z",
-    list: "M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01",
     link: "M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71",
     upload: "M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12",
     settings: "M12 15a3 3 0 100-6 3 3 0 000 6z",
@@ -82,22 +108,34 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 py-4 overflow-y-auto">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.to === "/"}
-            className={({ isActive }) => cn(
-              "flex items-center gap-3 px-4 py-2.5 mx-2 rounded-lg transition-colors text-sm font-medium",
-              isActive
-                ? "bg-blue-600/20 text-blue-400"
-                : "text-slate-400 hover:text-white hover:bg-slate-800"
+      <nav className="flex-1 py-2 overflow-y-auto">
+        {navGroups.map((group, gi) => (
+          <div key={gi} className={group.title ? "mt-4" : ""}>
+            {group.title && !collapsed && (
+              <p className="px-5 mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                {group.title}
+              </p>
             )}
-          >
-            <Icon name={item.icon} className="flex-shrink-0" />
-            {!collapsed && <span>{item.label}</span>}
-          </NavLink>
+            {group.title && collapsed && (
+              <div className="mx-4 my-2 border-t border-slate-700/50" />
+            )}
+            {group.items.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.to === "/"}
+                className={({ isActive }) => cn(
+                  "flex items-center gap-3 px-4 py-2 mx-2 rounded-lg transition-colors text-sm font-medium",
+                  isActive
+                    ? "bg-blue-600/20 text-blue-400"
+                    : "text-slate-400 hover:text-white hover:bg-slate-800"
+                )}
+              >
+                <Icon name={item.icon} className="flex-shrink-0" />
+                {!collapsed && <span>{item.label}</span>}
+              </NavLink>
+            ))}
+          </div>
         ))}
       </nav>
 
