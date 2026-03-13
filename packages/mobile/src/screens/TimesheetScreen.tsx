@@ -147,6 +147,16 @@ export function TimesheetScreen() {
         </View>
       )}
 
+      {tab === "weekly" && !loading && (() => {
+        const totalFlags = employees.reduce((sum, emp) => sum + (emp.entries || []).filter((e: any) => e.autoFlags && e.autoFlags.length > 0).length, 0);
+        if (totalFlags === 0) return null;
+        return (
+          <View style={{ marginHorizontal: spacing.md, marginBottom: spacing.sm, backgroundColor: colors.warning + "20", borderRadius: 8, padding: spacing.sm, flexDirection: "row", alignItems: "center" }}>
+            <Text style={{ fontSize: fontSize.sm, color: colors.warning, fontWeight: "600" }}>⚠ {totalFlags} flagged {totalFlags === 1 ? "entry" : "entries"} this week</Text>
+          </View>
+        );
+      })()}
+
       {loading ? (
         <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: spacing.xl }} />
       ) : tab === "weekly" ? (
@@ -155,23 +165,31 @@ export function TimesheetScreen() {
           keyExtractor={(item) => item.staffId}
           contentContainerStyle={{ padding: spacing.md }}
           renderItem={({ item }) => (
-            <TouchableOpacity
-              style={[s.empCard, { backgroundColor: colors.surface }]}
-              onPress={() => navigation.navigate("TimeEntryDetail" as any, { staffId: item.staffId, staffName: item.staffName, storeId: selectedStoreId, week: weekLabel })}
-            >
-              <View style={s.empRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={[s.empName, { color: colors.text }]}>{item.staffName}</Text>
-                  <Text style={[s.empEntries, { color: colors.textSecondary }]}>{item.entries?.length || 0} entries</Text>
-                </View>
-                <View style={s.empRight}>
-                  <Text style={[s.empHours, { color: colors.primary }]}>{Math.round((item.totalHours || 0) * 10) / 10}h</Text>
-                  {item.entries?.some((e: any) => e.flagged) && (
-                    <Text style={s.flagIcon}>⚠️</Text>
-                  )}
-                </View>
-              </View>
-            </TouchableOpacity>
+            (() => {
+              const flagCount = (item.entries || []).filter((e: any) => e.flagged || (e.autoFlags && e.autoFlags.length > 0)).length;
+              return (
+                <TouchableOpacity
+                  style={[s.empCard, { backgroundColor: colors.surface, borderLeftWidth: flagCount > 0 ? 3 : 0, borderLeftColor: colors.warning }]}
+                  onPress={() => navigation.navigate("TimeEntryDetail" as any, { staffId: item.staffId, staffName: item.staffName, storeId: selectedStoreId, week: weekLabel })}
+                >
+                  <View style={s.empRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[s.empName, { color: colors.text }]}>{item.staffName}</Text>
+                      <Text style={[s.empEntries, { color: colors.textSecondary }]}>{item.entries?.length || 0} entries</Text>
+                      {flagCount > 0 && (
+                        <Text style={{ color: colors.warning, fontSize: fontSize.xs, marginTop: 2 }}>⚠ {flagCount} flagged {flagCount === 1 ? "entry" : "entries"}</Text>
+                      )}
+                    </View>
+                    <View style={s.empRight}>
+                      <Text style={[s.empHours, { color: colors.primary }]}>{Math.round((item.totalHours || 0) * 10) / 10}h</Text>
+                      {flagCount > 0 && (
+                        <Text style={s.flagIcon}>⚠️</Text>
+                      )}
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              );
+            })()
           )}
           ListEmptyComponent={<Text style={[s.empty, { color: colors.textSecondary }]}>No entries this week</Text>}
         />

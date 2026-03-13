@@ -182,7 +182,7 @@ export class FoodwiseApiStack extends cdk.NestedStack {
       timeout: cdk.Duration.seconds(10),
       environment: {
         WAITLIST_TABLE: core.waitlistTable.tableName,
-        NOTIFY_EMAIL: "", // Will be set once workspace email is verified
+        NOTIFY_EMAIL: "support@leantable.app",
         FROM_EMAIL: "noreply@leantable.app",
       },
     });

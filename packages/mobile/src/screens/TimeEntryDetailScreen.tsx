@@ -110,13 +110,13 @@ export function TimeEntryDetailScreen() {
       )}
 
       {entries.map((entry: any) => (
-        <View key={entry.entryId} style={[s.entryCard, { backgroundColor: colors.surface, borderLeftColor: entry.flagged ? colors.danger : colors.secondary, borderLeftWidth: 3 }]}>
+        <View key={entry.entryId} style={[s.entryCard, { backgroundColor: colors.surface, borderLeftColor: (entry.flagged || (entry.autoFlags && entry.autoFlags.length > 0)) ? colors.danger : colors.secondary, borderLeftWidth: 3 }]}>
           <View style={s.entryHeader}>
             <Text style={[s.entryDate, { color: colors.text }]}>
               {entry.clockInTime?.split("T")[0]}
             </Text>
             <View style={s.badges}>
-              {entry.flagged && <Text style={s.badge}>⚠️ Flagged</Text>}
+              {(entry.flagged || (entry.autoFlags && entry.autoFlags.length > 0)) && <Text style={s.badge}>⚠️ Flagged</Text>}
               {entry.managerApproved && <Text style={[s.badge, { color: colors.secondary }]}>✓ Approved</Text>}
             </View>
           </View>
@@ -146,6 +146,13 @@ export function TimeEntryDetailScreen() {
 
           {entry.flagReason && (
             <Text style={[s.flagReason, { color: colors.danger }]}>Flag: {entry.flagReason}</Text>
+          )}
+          {entry.autoFlags && entry.autoFlags.length > 0 && (
+            <View style={{ marginTop: spacing.xs }}>
+              {entry.autoFlags.map((flag: string, idx: number) => (
+                <Text key={idx} style={[s.flagReason, { color: colors.warning }]}>⚠ {flag}</Text>
+              ))}
+            </View>
           )}
 
           {entry.notes && (
