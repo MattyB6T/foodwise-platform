@@ -614,6 +614,23 @@ export function SettingsScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Help & Support */}
+      <View style={[s.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Text style={[s.sectionTitle, { color: colors.text }]}>Help & Support</Text>
+        <TouchableOpacity style={s.row} onPress={() => Linking.openURL("mailto:support@leantable.app")}>
+          <View style={s.rowLeft}>
+            <Text style={s.rowIcon}>✉️</Text>
+            <Text style={[s.rowLabel, { color: colors.primary }]}>support@leantable.app</Text>
+          </View>
+          <Text style={[s.rowArrow, { color: colors.textSecondary }]}>→</Text>
+        </TouchableOpacity>
+        <View style={{ paddingHorizontal: spacing.md, paddingBottom: spacing.sm }}>
+          <Text style={{ fontSize: fontSize.xs, color: colors.textSecondary }}>
+            Have a question, bug report, or feature request? We'll get back to you as soon as possible.
+          </Text>
+        </View>
+      </View>
+
       {/* About */}
       <View style={[s.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <Text style={[s.sectionTitle, { color: colors.text }]}>About</Text>

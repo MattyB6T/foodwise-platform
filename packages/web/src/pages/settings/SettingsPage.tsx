@@ -399,6 +399,20 @@ export function SettingsPage() {
           </div>
         </SectionCard>
 
+        {/* Help & Support */}
+        <SectionCard title="Help & Support">
+          <div className="space-y-3">
+            <SettingRow label="Email Support">
+              <a href="mailto:support@leantable.app" className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline">
+                support@leantable.app
+              </a>
+            </SettingRow>
+            <p className="text-xs text-slate-400 dark:text-slate-500">
+              Have a question, bug report, or feature request? Reach out and we'll get back to you as soon as possible.
+            </p>
+          </div>
+        </SectionCard>
+
         {/* About */}
         <SectionCard title="About">
           <div className="space-y-3">
