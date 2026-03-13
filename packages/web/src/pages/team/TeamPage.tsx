@@ -16,6 +16,10 @@ export function TeamPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", email: "", role: "cook", phone: "" });
   const [editForm, setEditForm] = useState({ name: "", role: "", phone: "" });
+  const [pinStaffId, setPinStaffId] = useState<string | null>(null);
+  const [pinValue, setPinValue] = useState("");
+  const [pinError, setPinError] = useState("");
+  const [pinSuccess, setPinSuccess] = useState("");
 
   const { data, isLoading } = useQuery({
     queryKey: ["staff", selectedStoreId],
@@ -48,6 +52,30 @@ export function TeamPage() {
       queryClient.invalidateQueries({ queryKey: ["staff", selectedStoreId] });
     },
   });
+
+  const pinMutation = useMutation({
+    mutationFn: ({ staffId, pin }: { staffId: string; pin: string }) =>
+      api.setStaffPin(selectedStoreId!, staffId, pin),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["staff", selectedStoreId] });
+      setPinSuccess("PIN set successfully");
+      setPinValue("");
+      setTimeout(() => { setPinStaffId(null); setPinSuccess(""); }, 1500);
+    },
+    onError: (err: Error) => {
+      setPinError(err.message || "Failed to set PIN");
+    },
+  });
+
+  const handleSetPin = (staffId: string) => {
+    setPinError("");
+    setPinSuccess("");
+    if (!/^\d{4,6}$/.test(pinValue)) {
+      setPinError("PIN must be 4-6 digits");
+      return;
+    }
+    pinMutation.mutate({ staffId, pin: pinValue });
+  };
 
   if (isLoading) return <PageLoader />;
 
@@ -171,6 +199,7 @@ export function TeamPage() {
                 <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Email</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Phone</th>
                 <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Rate</th>
+                <th className="text-center px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Kiosk PIN</th>
                 <th className="text-center px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Status</th>
                 <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Actions</th>
               </tr>
@@ -210,6 +239,16 @@ export function TeamPage() {
                         {member.hourlyRate ? `$${member.hourlyRate}/hr` : "--"}
                       </td>
                       <td className="px-4 py-3 text-center">
+                        {member.pinSet ? (
+                          <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 6L9 17l-5-5"/></svg>
+                            Set
+                          </span>
+                        ) : (
+                          <span className="text-xs text-slate-400 dark:text-slate-500">Not set</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-center">
                         <StatusBadge status="active" />
                       </td>
                       <td className="px-4 py-2 text-right">
@@ -238,6 +277,56 @@ export function TeamPage() {
                       <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{member.phone || "--"}</td>
                       <td className="px-4 py-3 text-sm text-right font-medium text-slate-900 dark:text-slate-100">
                         {member.hourlyRate ? `$${member.hourlyRate}/hr` : "--"}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        {pinStaffId === member.staffId ? (
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              maxLength={6}
+                              value={pinValue}
+                              onChange={(e) => { setPinValue(e.target.value.replace(/\D/g, "")); setPinError(""); }}
+                              placeholder="4-6 digits"
+                              autoFocus
+                              className="w-20 border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 rounded px-2 py-1 text-sm text-center text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <button
+                              onClick={() => handleSetPin(member.staffId)}
+                              disabled={pinMutation.isPending}
+                              className="px-2 py-1 text-xs font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                            >
+                              {pinMutation.isPending ? "..." : "Save"}
+                            </button>
+                            <button
+                              onClick={() => { setPinStaffId(null); setPinValue(""); setPinError(""); }}
+                              className="px-2 py-1 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                            >
+                              X
+                            </button>
+                          </div>
+                        ) : member.pinSet ? (
+                          <button
+                            onClick={() => { setPinStaffId(member.staffId); setPinValue(""); setPinError(""); setPinSuccess(""); }}
+                            className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:underline"
+                          >
+                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 6L9 17l-5-5"/></svg>
+                            Set (Reset)
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => { setPinStaffId(member.staffId); setPinValue(""); setPinError(""); setPinSuccess(""); }}
+                            className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                          >
+                            Set PIN
+                          </button>
+                        )}
+                        {pinStaffId === member.staffId && pinError && (
+                          <p className="text-xs text-red-500 mt-1">{pinError}</p>
+                        )}
+                        {pinStaffId === member.staffId && pinSuccess && (
+                          <p className="text-xs text-emerald-500 mt-1">{pinSuccess}</p>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-center">
                         <StatusBadge status="active" />

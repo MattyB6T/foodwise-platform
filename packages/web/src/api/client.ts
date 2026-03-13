@@ -138,6 +138,8 @@ export const api = {
     request<any>("PUT", `/stores/${storeId}/staff/${staffId}`, body),
   removeStaff: (storeId: string, staffId: string) =>
     request<any>("DELETE", `/stores/${storeId}/staff/${staffId}`),
+  setStaffPin: (storeId: string, staffId: string, pin: string) =>
+    request<any>("POST", `/stores/${storeId}/staff/${staffId}/pin`, { pin }),
 
   // Schedule
   getSchedule: (storeId: string, weekStart?: string) =>

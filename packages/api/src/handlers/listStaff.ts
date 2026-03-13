@@ -23,7 +23,8 @@ export const handler = async (
       })
     );
 
-    return success({ staff: result.Items || [] });
+    const staff = (result.Items || []).map(({ pinHash, ...rest }: any) => rest);
+    return success({ staff });
   } catch (err) {
     console.error("ListStaff error:", err);
     return error("Internal server error", 500, "INTERNAL_ERROR");

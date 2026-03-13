@@ -296,6 +296,7 @@ async function handleListTeam(
       role: s.role,
       phone: s.phone,
       hourlyRate: auth.role === "owner" || auth.role === "manager" ? s.hourlyRate : undefined,
+      pinSet: !!s.pinSet,
       active: s.active,
       createdAt: s.createdAt,
     })),

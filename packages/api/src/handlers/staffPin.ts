@@ -14,8 +14,13 @@ export const handler = async (
 ): Promise<APIGatewayProxyResult> => {
   try {
     const storeId = event.pathParameters?.storeId;
-    const staffId = event.pathParameters?.staffId;
-    if (!storeId || !staffId) return error("storeId and staffId are required", 400);
+    if (!storeId) return error("storeId is required", 400);
+
+    // Parse staffId from path: /stores/{storeId}/staff/{staffId}/pin
+    const p = event.path || "";
+    const staffMatch = p.match(/\/staff\/([^/]+)\/pin/);
+    const staffId = staffMatch?.[1];
+    if (!staffId) return error("staffId is required", 400);
 
     const auth = requireRole(event, "manager");
     if (isErrorResult(auth)) return auth;

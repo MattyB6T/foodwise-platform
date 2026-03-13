@@ -143,9 +143,52 @@ export function TeamScreen() {
                 )}
               </View>
 
+              {/* PIN status */}
+              {member.active && (
+                <View style={{ marginTop: spacing.xs, marginLeft: 54 }}>
+                  <Text style={{ fontSize: fontSize.xs, color: (member as any).pinSet ? colors.secondary : colors.textMuted }}>
+                    Kiosk PIN: {(member as any).pinSet ? "Set" : "Not set"}
+                  </Text>
+                </View>
+              )}
+
               {/* Actions for managers/owners */}
               {(userRole === "owner" || userRole === "manager") && member.email !== user?.email && member.active && (
                 <View style={s.memberActions}>
+                  <TouchableOpacity
+                    style={[s.actionBtn, { borderColor: colors.borderLight }]}
+                    onPress={() => {
+                      Alert.prompt(
+                        "Set Kiosk PIN",
+                        `Enter a 4-6 digit PIN for ${member.name} to use on the time clock kiosk.`,
+                        [
+                          { text: "Cancel", style: "cancel" },
+                          {
+                            text: "Set PIN",
+                            onPress: async (pin?: string) => {
+                              if (!pin || !/^\d{4,6}$/.test(pin)) {
+                                Alert.alert("Invalid PIN", "PIN must be 4-6 digits");
+                                return;
+                              }
+                              try {
+                                await api.setStaffPin(selectedStoreId, member.staffId, pin);
+                                Alert.alert("Success", `Kiosk PIN set for ${member.name}`);
+                                loadTeam();
+                              } catch (err: any) {
+                                Alert.alert("Error", err.message || "Failed to set PIN");
+                              }
+                            },
+                          },
+                        ],
+                        "plain-text",
+                        "",
+                        "number-pad"
+                      );
+                    }}
+                  >
+                    <Ionicons name="keypad" size={14} color={colors.primary} />
+                    <Text style={[s.actionBtnText, { color: colors.primary }]}>{(member as any).pinSet ? "Reset PIN" : "Set PIN"}</Text>
+                  </TouchableOpacity>
                   <TouchableOpacity
                     style={[s.actionBtn, { borderColor: colors.borderLight }]}
                     onPress={() => setRoleModal(member)}
