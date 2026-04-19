@@ -23,6 +23,13 @@ export const handler = async (
     if (!storeId) return error("storeId is required", 400);
     const method = event.httpMethod;
 
+    // Parse shiftId from path since {proxy+} doesn't give us named params
+    const path = event.path || "";
+    const scheduleIdx = path.indexOf("/schedule");
+    const subPath = scheduleIdx >= 0 ? path.slice(scheduleIdx + "/schedule".length) : "";
+    const segments = subPath.split("/").filter(Boolean);
+    const shiftIdFromPath = segments.length >= 1 ? segments[0] : undefined;
+
     if (method === "GET") {
       const auth = requireRole(event, "staff");
       if (isErrorResult(auth)) return auth;
@@ -86,7 +93,7 @@ export const handler = async (
       const auth = requireRole(event, "manager");
       if (isErrorResult(auth)) return auth;
 
-      const shiftId = event.pathParameters?.shiftId;
+      const shiftId = shiftIdFromPath;
       if (!shiftId) return error("shiftId is required", 400);
 
       await docClient.send(

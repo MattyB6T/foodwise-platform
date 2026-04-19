@@ -8,6 +8,7 @@ interface MetricCardProps {
   trendValue?: string;
   status?: "green" | "yellow" | "red";
   className?: string;
+  onClick?: () => void;
 }
 
 const statusColors = {
@@ -22,13 +23,16 @@ const trendIcons = {
   neutral: "M5 12h14",
 };
 
-export function MetricCard({ title, value, subtitle, trend, trendValue, status, className }: MetricCardProps) {
+export function MetricCard({ title, value, subtitle, trend, trendValue, status, className, onClick }: MetricCardProps) {
   return (
-    <div className={cn(
-      "bg-white dark:bg-slate-800 rounded-xl border p-5 shadow-sm transition-colors",
-      status ? statusColors[status] : "border-slate-200 dark:border-slate-700",
-      className
-    )}>
+    <div
+      onClick={onClick}
+      className={cn(
+        "bg-white dark:bg-slate-800 rounded-xl border p-5 shadow-sm transition-colors",
+        status ? statusColors[status] : "border-slate-200 dark:border-slate-700",
+        onClick && "cursor-pointer hover:shadow-md hover:scale-[1.02] transition-all",
+        className
+      )}>
       <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">{title}</p>
       <div className="flex items-end gap-2">
         <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{value}</p>

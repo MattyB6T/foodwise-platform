@@ -9,14 +9,14 @@ import { currencyDollars } from "../../utils/format";
 import { Tooltip } from "../../components/Tooltip";
 import { downloadCSV } from "../../utils/csvExport";
 
-type SortField = "name" | "category" | "quantity" | "costPerUnit" | "totalValue";
+type SortField = "name" | "category" | "quantity" | "costPerUnit" | "totalValue" | "stockStatus";
 type SortDir = "asc" | "desc";
 
 export function InventoryPage() {
   const { selectedStoreId } = useStore();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
-  const [sortField, setSortField] = useState<SortField>("name");
+  const [sortField, setSortField] = useState<SortField>("stockStatus");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
   const { data, isLoading } = useQuery({
@@ -45,6 +45,11 @@ export function InventoryPage() {
       if (sortField === "totalValue") {
         aVal = (a.quantity || 0) * (a.costPerUnit || 0);
         bVal = (b.quantity || 0) * (b.costPerUnit || 0);
+      }
+      if (sortField === "stockStatus") {
+        const aLow = a.lowStockThreshold > 0 && a.quantity <= a.lowStockThreshold ? 0 : 1;
+        const bLow = b.lowStockThreshold > 0 && b.quantity <= b.lowStockThreshold ? 0 : 1;
+        return sortDir === "asc" ? aLow - bLow : bLow - aLow;
       }
       if (typeof aVal === "string") {
         return sortDir === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
@@ -148,7 +153,7 @@ export function InventoryPage() {
                   <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Unit</th>
                   <SortHeader field="costPerUnit" label="Unit Cost" />
                   <SortHeader field="totalValue" label="Total Value" />
-                  <th className="text-center px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Status</th>
+                  <SortHeader field="stockStatus" label="Status" />
                 </tr>
               </thead>
               <tbody>

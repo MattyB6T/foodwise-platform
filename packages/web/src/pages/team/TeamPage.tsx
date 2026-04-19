@@ -6,7 +6,8 @@ import { StatusBadge } from "../../components/StatusBadge";
 import { PageLoader } from "../../components/LoadingSpinner";
 import { EmptyState } from "../../components/EmptyState";
 
-const ROLES = ["manager", "cook", "cashier", "server", "prep", "driver", "host"];
+const POSITIONS = ["cook", "cashier", "server", "prep", "driver", "host", "shift-lead", "bartender", "dishwasher"];
+const ACCESS_ROLES = ["staff", "manager", "readonly"];
 
 export function TeamPage() {
   const { selectedStoreId } = useStore();
@@ -14,8 +15,8 @@ export function TeamPage() {
 
   const [showAdd, setShowAdd] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: "", email: "", role: "cook", phone: "" });
-  const [editForm, setEditForm] = useState({ name: "", role: "", phone: "" });
+  const [form, setForm] = useState({ name: "", email: "", position: "cook", role: "staff", phone: "" });
+  const [editForm, setEditForm] = useState({ name: "", position: "", role: "", phone: "" });
   const [pinStaffId, setPinStaffId] = useState<string | null>(null);
   const [pinValue, setPinValue] = useState("");
   const [pinError, setPinError] = useState("");
@@ -28,12 +29,12 @@ export function TeamPage() {
   });
 
   const addMutation = useMutation({
-    mutationFn: (body: { name: string; email: string; role: string; phone?: string }) =>
+    mutationFn: (body: { name: string; email: string; role: string; position?: string; phone?: string }) =>
       api.addStaff(selectedStoreId!, body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["staff", selectedStoreId] });
       setShowAdd(false);
-      setForm({ name: "", email: "", role: "cook", phone: "" });
+      setForm({ name: "", email: "", position: "cook", role: "staff", phone: "" });
     },
   });
 
@@ -89,17 +90,18 @@ export function TeamPage() {
       name: form.name.trim(),
       email: form.email.trim(),
       role: form.role,
+      position: form.position,
       phone: form.phone.trim() || undefined,
     });
   };
 
   const startEdit = (member: any) => {
     setEditingId(member.staffId);
-    setEditForm({ name: member.name, role: member.role, phone: member.phone || "" });
+    setEditForm({ name: member.name, position: member.position || "", role: member.role || "staff", phone: member.phone || "" });
   };
 
   const handleUpdate = (staffId: string) => {
-    updateMutation.mutate({ staffId, body: editForm });
+    updateMutation.mutate({ staffId, body: { name: editForm.name, role: editForm.role, position: editForm.position, phone: editForm.phone } });
   };
 
   return (
@@ -123,7 +125,7 @@ export function TeamPage() {
       {showAdd && (
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 mb-6 transition-colors">
           <h2 className="font-bold text-slate-900 dark:text-slate-100 mb-4">New Team Member</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 items-end">
             <div>
               <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Name *</label>
               <input
@@ -144,35 +146,45 @@ export function TeamPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Role</label>
+              <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Position</label>
+              <select
+                value={form.position}
+                onChange={(e) => setForm({ ...form, position: e.target.value })}
+                className="w-full border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {POSITIONS.map((p) => (
+                  <option key={p} value={p}>{p.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Access Level</label>
               <select
                 value={form.role}
                 onChange={(e) => setForm({ ...form, role: e.target.value })}
                 className="w-full border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {ROLES.map((r) => (
+                {ACCESS_ROLES.map((r) => (
                   <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>
                 ))}
               </select>
             </div>
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Phone</label>
-                <input
-                  value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                  placeholder="Optional"
-                  className="w-full border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <button
-                onClick={handleAdd}
-                disabled={!form.name.trim() || !form.email.trim() || addMutation.isPending}
-                className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors self-end"
-              >
-                {addMutation.isPending ? "Adding..." : "Add"}
-              </button>
+            <div>
+              <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Phone</label>
+              <input
+                value={form.phone}
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                placeholder="Optional"
+                className="w-full border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-blue-500"
+              />
             </div>
+            <button
+              onClick={handleAdd}
+              disabled={!form.name.trim() || !form.email.trim() || addMutation.isPending}
+              className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors self-end"
+            >
+              {addMutation.isPending ? "Adding..." : "Add"}
+            </button>
           </div>
           {addMutation.isError && (
             <p className="text-sm text-red-600 dark:text-red-400 mt-3">
@@ -195,7 +207,8 @@ export function TeamPage() {
             <thead>
               <tr className="border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-700/30">
                 <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Name</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Role</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Position</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Access</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Email</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Phone</th>
                 <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Rate</th>
@@ -218,11 +231,22 @@ export function TeamPage() {
                       </td>
                       <td className="px-4 py-2">
                         <select
+                          value={editForm.position}
+                          onChange={(e) => setEditForm({ ...editForm, position: e.target.value })}
+                          className="border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 rounded px-2 py-1 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          {POSITIONS.map((p) => (
+                            <option key={p} value={p}>{p.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="px-4 py-2">
+                        <select
                           value={editForm.role}
                           onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
                           className="border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 rounded px-2 py-1 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-blue-500"
                         >
-                          {ROLES.map((r) => (
+                          {ACCESS_ROLES.map((r) => (
                             <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>
                           ))}
                         </select>
@@ -272,7 +296,8 @@ export function TeamPage() {
                   ) : (
                     <>
                       <td className="px-4 py-3 text-sm font-semibold text-slate-900 dark:text-slate-100">{member.name}</td>
-                      <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300 capitalize">{member.role}</td>
+                      <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300 capitalize">{(member.position || member.role || "").replace(/-/g, " ")}</td>
+                      <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300 capitalize">{member.role || "staff"}</td>
                       <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{member.email || "--"}</td>
                       <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{member.phone || "--"}</td>
                       <td className="px-4 py-3 text-sm text-right font-medium text-slate-900 dark:text-slate-100">

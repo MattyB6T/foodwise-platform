@@ -5,17 +5,19 @@ import { useStore } from "../../stores/StoreProvider";
 import { Tooltip } from "../../components/Tooltip";
 
 const REPORT_TYPES = [
-  { value: "food-cost", label: "Food Cost Report", desc: "Ingredient costs vs. revenue — your most important profitability metric" },
+  { value: "food_cost", label: "Food Cost Report", desc: "Ingredient costs vs. revenue — your most important profitability metric" },
   { value: "waste", label: "Waste Report", desc: "All logged waste with costs, reasons, and trends over the period" },
-  { value: "inventory-valuation", label: "Inventory Valuation", desc: "Current value of all stock on hand by category" },
-  { value: "labor-cost", label: "Labor Cost Report", desc: "Staff hours, wages, and labor cost as % of revenue" },
-  { value: "daily-summary", label: "Daily Summary", desc: "Day-by-day breakdown of sales, costs, and key metrics" },
-  { value: "weekly-summary", label: "Weekly Summary", desc: "Week-over-week performance with trends and highlights" },
+  { value: "inventory", label: "Inventory Valuation", desc: "Current value of all stock on hand by category" },
+  { value: "labor", label: "Labor Cost Report", desc: "Staff hours, wages, and labor cost as % of revenue" },
+  { value: "sales", label: "Sales Report", desc: "Transaction revenue, food cost, and averages over the period" },
+  { value: "profit_loss", label: "Profit & Loss", desc: "Complete P&L — revenue, food cost, labor, waste, and net profit" },
+  { value: "count_variance", label: "Count Variance", desc: "Inventory count discrepancies over 2% threshold" },
+  { value: "purchase_orders", label: "Purchase Orders", desc: "Supplier orders and spend over the period" },
 ];
 
 export function ReportsPage() {
   const { selectedStoreId } = useStore();
-  const [reportType, setReportType] = useState("food-cost");
+  const [reportType, setReportType] = useState("food_cost");
   const [startDate, setStartDate] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() - 30);

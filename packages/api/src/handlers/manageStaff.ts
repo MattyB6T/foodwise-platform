@@ -9,6 +9,7 @@ interface StaffBody {
   email: string;
   name: string;
   role: Role;
+  position?: string;
   phone?: string;
   hourlyRate?: number;
 }
@@ -18,10 +19,17 @@ export const handler = async (
 ): Promise<APIGatewayProxyResult> => {
   try {
     const storeId = event.pathParameters?.storeId;
-    const staffId = event.pathParameters?.staffId;
     if (!storeId) return error("storeId is required", 400);
 
     const method = event.httpMethod;
+
+    // Parse staffId from path since {proxy+} doesn't give us named params
+    const path = event.path || "";
+    const staffIdx = path.indexOf("/staff");
+    const subPath = staffIdx >= 0 ? path.slice(staffIdx + "/staff".length) : "";
+    const segments = subPath.split("/").filter(Boolean);
+    // Skip "pin" segment — that's handled by staffPin handler
+    const staffId = segments.length >= 1 && segments[0] !== "pin" ? segments[0] : undefined;
 
     if (method === "POST") {
       const auth = requireRole(event, "manager");
@@ -53,6 +61,7 @@ export const handler = async (
         email: body.email,
         name: body.name,
         role: body.role,
+        position: body.position || null,
         phone: body.phone || null,
         hourlyRate: body.hourlyRate ?? null,
         active: true,
@@ -99,6 +108,7 @@ export const handler = async (
 
       if (body.name) { updates.push("#name = :name"); values[":name"] = body.name; }
       if (body.role) { updates.push("#role = :role"); values[":role"] = body.role; }
+      if (body.position !== undefined) { updates.push("position = :position"); values[":position"] = body.position; }
       if (body.phone !== undefined) { updates.push("phone = :phone"); values[":phone"] = body.phone; }
       if (body.active !== undefined) { updates.push("active = :active"); values[":active"] = body.active; }
       if (body.hourlyRate !== undefined) { updates.push("hourlyRate = :rate"); values[":rate"] = body.hourlyRate; }

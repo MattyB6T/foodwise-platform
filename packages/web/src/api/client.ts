@@ -132,9 +132,9 @@ export const api = {
   // Staff
   listStaff: (storeId: string) =>
     request<any>("GET", `/stores/${storeId}/staff`),
-  addStaff: (storeId: string, body: { email: string; name: string; role: string; phone?: string }) =>
+  addStaff: (storeId: string, body: { email: string; name: string; role: string; position?: string; phone?: string }) =>
     request<any>("POST", `/stores/${storeId}/staff`, body),
-  updateStaff: (storeId: string, staffId: string, body: { name?: string; role?: string; active?: boolean; phone?: string }) =>
+  updateStaff: (storeId: string, staffId: string, body: { name?: string; role?: string; position?: string; active?: boolean; phone?: string }) =>
     request<any>("PUT", `/stores/${storeId}/staff/${staffId}`, body),
   removeStaff: (storeId: string, staffId: string) =>
     request<any>("DELETE", `/stores/${storeId}/staff/${staffId}`),

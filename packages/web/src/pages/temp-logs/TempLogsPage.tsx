@@ -324,13 +324,13 @@ export function TempLogsPage() {
                     Timestamp
                   </th>
                   <th className="text-left px-4 py-3 font-medium text-slate-600 dark:text-slate-400">
-                    Location
+                    Storage Area
                   </th>
                   <th className="text-left px-4 py-3 font-medium text-slate-600 dark:text-slate-400">
                     Temperature
                   </th>
                   <th className="text-left px-4 py-3 font-medium text-slate-600 dark:text-slate-400">
-                    Equipment
+                    Device
                   </th>
                   <th className="text-left px-4 py-3 font-medium text-slate-600 dark:text-slate-400">
                     Recorded By

@@ -54,6 +54,7 @@ export function DashboardPage() {
             title="Total Stores"
             value={ownerDash.storeCount || stores.length}
             subtitle="Active locations"
+            onClick={() => navigate("/settings")}
           />
           <MetricCard
             title="Avg Health Score"
@@ -63,6 +64,7 @@ export function DashboardPage() {
                 ? "green" : (ownerDash.totals?.avgHealthScore || healthScore?.overallScore || 0) >= 50
                 ? "yellow" : "red"
             }
+            onClick={() => navigate("/reports")}
           />
           <MetricCard
             title="Food Cost"
@@ -71,6 +73,7 @@ export function DashboardPage() {
               (healthScore?.details?.foodCostPercentage || 0) > 35 ? "red"
               : (healthScore?.details?.foodCostPercentage || 0) > 30 ? "yellow" : "green"
             }
+            onClick={() => navigate("/inventory")}
           />
           <MetricCard
             title="Waste Rate"
@@ -79,6 +82,7 @@ export function DashboardPage() {
               (healthScore?.details?.wastePercentage || 0) > 7 ? "red"
               : (healthScore?.details?.wastePercentage || 0) > 4 ? "yellow" : "green"
             }
+            onClick={() => navigate("/waste")}
           />
         </div>
       )}

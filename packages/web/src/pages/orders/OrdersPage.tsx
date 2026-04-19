@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../../api/client";
 import { useStore } from "../../stores/StoreProvider";
@@ -6,17 +6,20 @@ import { StatusBadge } from "../../components/StatusBadge";
 import { PageLoader } from "../../components/LoadingSpinner";
 import { EmptyState } from "../../components/EmptyState";
 import { fullDate, currencyDollars } from "../../utils/format";
-import { Tooltip } from "../../components/Tooltip";
 import { downloadCSV } from "../../utils/csvExport";
 import { CreateOrderPage } from "./CreateOrderPage";
 import { OrderDetailPage } from "./OrderDetailPage";
 
 type View = { type: "list" } | { type: "create" } | { type: "detail"; order: any };
+type SortField = "supplier" | "date" | "delivery" | "items" | "total" | "status";
+type SortDir = "asc" | "desc";
 
 export function OrdersPage() {
   const { selectedStoreId } = useStore();
   const [statusFilter, setStatusFilter] = useState("");
   const [view, setView] = useState<View>({ type: "list" });
+  const [sortField, setSortField] = useState<SortField>("date");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
 
   const { data, isLoading } = useQuery({
     queryKey: ["purchaseOrders", selectedStoreId, statusFilter],
@@ -41,12 +44,59 @@ export function OrdersPage() {
 
   const orders: any[] = data?.orders || [];
 
+  const toggleSort = (field: SortField) => {
+    if (sortField === field) setSortDir(sortDir === "asc" ? "desc" : "asc");
+    else { setSortField(field); setSortDir(field === "date" ? "desc" : "asc"); }
+  };
+
+  const sorted = useMemo(() => {
+    return [...orders].sort((a: any, b: any) => {
+      let aVal: any, bVal: any;
+      switch (sortField) {
+        case "supplier": aVal = a.supplierName || ""; bVal = b.supplierName || ""; break;
+        case "date": aVal = a.createdAt || ""; bVal = b.createdAt || ""; break;
+        case "delivery": aVal = a.expectedDeliveryDate || ""; bVal = b.expectedDeliveryDate || ""; break;
+        case "items": aVal = a.lines?.length || 0; bVal = b.lines?.length || 0; break;
+        case "total": aVal = a.totalCost || 0; bVal = b.totalCost || 0; break;
+        case "status": aVal = a.status || ""; bVal = b.status || ""; break;
+      }
+      if (typeof aVal === "string") return sortDir === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+      return sortDir === "asc" ? aVal - bVal : bVal - aVal;
+    });
+  }, [orders, sortField, sortDir]);
+
+  const SortHeader = ({ field, label, align }: { field: SortField; label: string; align?: string }) => (
+    <th
+      className={`${align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left"} px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase cursor-pointer hover:text-slate-700 dark:hover:text-slate-200 select-none`}
+      onClick={() => toggleSort(field)}
+    >
+      <div className={`flex items-center gap-1 ${align === "right" ? "justify-end" : align === "center" ? "justify-center" : ""}`}>
+        {label}
+        {sortField === field && (
+          <svg className={`w-3 h-3 ${sortDir === "desc" ? "rotate-180" : ""}`} viewBox="0 0 24 24" fill="currentColor">
+            <path d="M7 14l5-5 5 5z" />
+          </svg>
+        )}
+      </div>
+    </th>
+  );
+
   return (
     <div>
+      {/* Workflow guide banner */}
+      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-6 flex items-start gap-3">
+        <svg className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <p className="text-sm text-blue-800 dark:text-blue-300">
+          <span className="font-semibold">Order workflow:</span> Draft (building the order) → Submitted (sent to supplier) → Partial (some items received) → Received (fully delivered and checked in).
+        </p>
+      </div>
+
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Purchase Orders</h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">{orders.length} orders <Tooltip content="Order workflow: Draft (building the order) → Submitted (sent to supplier) → Partial (some items received) → Received (fully delivered and checked in)." /></p>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">{orders.length} orders</p>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -89,7 +139,7 @@ export function OrdersPage() {
         ))}
       </div>
 
-      {orders.length === 0 ? (
+      {sorted.length === 0 ? (
         <EmptyState
           title="No purchase orders"
           description="Create a purchase order to start ordering from your suppliers."
@@ -100,16 +150,16 @@ export function OrdersPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-700/30">
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Supplier</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Date</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Delivery</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Items</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Total</th>
-                  <th className="text-center px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Status</th>
+                  <SortHeader field="supplier" label="Supplier" />
+                  <SortHeader field="date" label="Date" />
+                  <SortHeader field="delivery" label="Delivery" />
+                  <SortHeader field="items" label="Items" align="right" />
+                  <SortHeader field="total" label="Total" align="right" />
+                  <SortHeader field="status" label="Status" align="center" />
                 </tr>
               </thead>
               <tbody>
-                {orders.map((order: any) => (
+                {sorted.map((order: any) => (
                   <tr
                     key={order.orderId}
                     onClick={() => setView({ type: "detail", order })}
