@@ -1,10 +1,27 @@
 import { NavLink } from "react-router-dom";
 import { cn } from "../utils/cn";
+import { useAuth } from "../auth/AuthProvider";
+
+type Role = "owner" | "manager" | "staff" | "readonly";
+
+const ROLE_HIERARCHY: Role[] = ["readonly", "staff", "manager", "owner"];
+
+function getUserRole(groups: string[]): Role {
+  if (groups.includes("owner") || groups.length === 0) return "owner"; // no groups = owner (backwards compat)
+  if (groups.includes("manager")) return "manager";
+  if (groups.includes("staff")) return "staff";
+  return "readonly";
+}
+
+function hasMinRole(userRole: Role, minRole: Role): boolean {
+  return ROLE_HIERARCHY.indexOf(userRole) >= ROLE_HIERARCHY.indexOf(minRole);
+}
 
 interface NavItem {
   to: string;
   icon: string;
   label: string;
+  minRole?: Role;
 }
 
 interface NavGroup {
@@ -23,33 +40,33 @@ const navGroups: NavGroup[] = [
     title: "Operations",
     items: [
       { to: "/inventory", icon: "package", label: "Inventory" },
-      { to: "/waste", icon: "trash-2", label: "Waste" },
-      { to: "/orders", icon: "shopping-cart", label: "Orders" },
+      { to: "/waste", icon: "trash-2", label: "Waste", minRole: "staff" },
+      { to: "/orders", icon: "shopping-cart", label: "Orders", minRole: "manager" },
       { to: "/recipes", icon: "book-open", label: "Recipes" },
     ],
   },
   {
     title: "Team",
     items: [
-      { to: "/schedule", icon: "calendar", label: "Schedule" },
-      { to: "/team", icon: "users", label: "Team" },
+      { to: "/schedule", icon: "calendar", label: "Schedule", minRole: "staff" },
+      { to: "/team", icon: "users", label: "Team", minRole: "manager" },
     ],
   },
   {
     title: "Analytics",
     items: [
-      { to: "/revenue", icon: "dollar-sign", label: "Revenue" },
-      { to: "/reports", icon: "bar-chart-2", label: "Reports" },
-      { to: "/forecast", icon: "trending-up", label: "Forecast" },
+      { to: "/revenue", icon: "dollar-sign", label: "Revenue", minRole: "manager" },
+      { to: "/reports", icon: "bar-chart-2", label: "Reports", minRole: "manager" },
+      { to: "/forecast", icon: "trending-up", label: "Forecast", minRole: "manager" },
     ],
   },
   {
     title: "Admin",
     items: [
-      { to: "/integrations", icon: "link", label: "Integrations" },
-      { to: "/security", icon: "shield", label: "Security" },
-      { to: "/import", icon: "upload", label: "Import Data" },
-      { to: "/settings", icon: "settings", label: "Settings" },
+      { to: "/integrations", icon: "link", label: "Integrations", minRole: "owner" },
+      { to: "/security", icon: "shield", label: "Security", minRole: "owner" },
+      { to: "/import", icon: "upload", label: "Import Data", minRole: "owner" },
+      { to: "/settings", icon: "settings", label: "Settings", minRole: "manager" },
     ],
   },
 ];
@@ -88,6 +105,17 @@ interface SidebarProps {
 }
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
+  const { user } = useAuth();
+  const role = getUserRole(user?.groups || []);
+
+  // Filter nav groups to only show items the user has access to
+  const visibleGroups = navGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => hasMinRole(role, item.minRole || "readonly")),
+    }))
+    .filter((group) => group.items.length > 0);
+
   return (
     <aside className={cn(
       "fixed left-0 top-0 h-screen bg-slate-900 text-white flex flex-col transition-all duration-200 z-40",
@@ -118,7 +146,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
       {/* Nav */}
       <nav className="flex-1 py-2 overflow-y-auto">
-        {navGroups.map((group, gi) => (
+        {visibleGroups.map((group, gi) => (
           <div key={gi} className={group.title ? "mt-4" : ""}>
             {group.title && !collapsed && (
               <p className="px-5 mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">

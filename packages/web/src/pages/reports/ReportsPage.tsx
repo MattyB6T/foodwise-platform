@@ -3,6 +3,8 @@ import { useMutation } from "@tanstack/react-query";
 import { api } from "../../api/client";
 import { useStore } from "../../stores/StoreProvider";
 import { Tooltip } from "../../components/Tooltip";
+import { Pagination, usePagination } from "../../components/Pagination";
+import { ExportMenu } from "../../components/ExportMenu";
 
 const REPORT_TYPES = [
   { value: "food_cost", label: "Food Cost Report", desc: "Ingredient costs vs. revenue — your most important profitability metric" },
@@ -24,6 +26,7 @@ export function ReportsPage() {
     return d.toISOString().split("T")[0];
   });
   const [endDate, setEndDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const { page, pageSize, setPage, setPageSize, paginate } = usePagination(0);
 
   const { mutate: generate, data: report, isPending } = useMutation({
     mutationFn: () => api.generateReport({
@@ -89,16 +92,12 @@ export function ReportsPage() {
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden transition-colors">
           <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
             <h2 className="font-bold text-slate-900 dark:text-slate-100">{report.title || "Report Results"}</h2>
-            {report.data && (
-              <button
-                onClick={() => {
-                  const csv = convertToCSV(report.data);
-                  downloadCSV(csv, `${reportType}-${startDate}-${endDate}.csv`);
-                }}
-                className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
-              >
-                Export CSV
-              </button>
+            {report.data && Array.isArray(report.data) && report.data.length > 0 && (
+              <ExportMenu
+                filename={`${reportType}-${startDate}-${endDate}`}
+                headers={Object.keys(report.data[0])}
+                rows={report.data.map((row: any) => Object.values(row).map((v: any) => v ?? ""))}
+              />
             )}
           </div>
           <div className="p-6">
@@ -128,7 +127,7 @@ export function ReportsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {report.data.map((row: any, i: number) => (
+                    {paginate(report.data).map((row: any, i: number) => (
                       <tr key={i} className="border-b border-slate-50 dark:border-slate-700/50">
                         {Object.values(row).map((val: any, j: number) => (
                           <td key={j} className="px-4 py-2 text-sm text-slate-700 dark:text-slate-300">{String(val ?? "--")}</td>
@@ -137,6 +136,7 @@ export function ReportsPage() {
                     ))}
                   </tbody>
                 </table>
+                <Pagination currentPage={page} totalItems={report.data.length} pageSize={pageSize} onPageChange={setPage} onPageSizeChange={setPageSize} />
               </div>
             )}
 
@@ -151,19 +151,3 @@ export function ReportsPage() {
   );
 }
 
-function convertToCSV(data: any[]): string {
-  if (!data.length) return "";
-  const headers = Object.keys(data[0]);
-  const rows = data.map((row) => headers.map((h) => `"${String(row[h] ?? "").replace(/"/g, '""')}"`).join(","));
-  return [headers.join(","), ...rows].join("\n");
-}
-
-function downloadCSV(csv: string, filename: string) {
-  const blob = new Blob([csv], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}

@@ -1,9 +1,25 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { PutCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
+import { PutCommand, QueryCommand, GetCommand } from "@aws-sdk/lib-dynamodb";
 import { v4 as uuidv4 } from "uuid";
 import { docClient, TABLES } from "../utils/dynamo";
 import { success, error } from "../utils/response";
 import { getUserClaims } from "../utils/auth";
+
+const DEFAULT_RANGES: Record<string, { min: number; max: number }> = {
+  freezer: { min: -25, max: 0 },
+  cooler: { min: 33, max: 41 },
+  fridge: { min: 33, max: 41 },
+  "display case": { min: 33, max: 41 },
+};
+
+function findRange(location: string, customRanges?: Record<string, { min: number; max: number }>): { min: number; max: number } | null {
+  const loc = location.toLowerCase();
+  const ranges = customRanges || DEFAULT_RANGES;
+  for (const [key, range] of Object.entries(ranges)) {
+    if (loc.includes(key.toLowerCase())) return range;
+  }
+  return null;
+}
 
 interface TempLogBody {
   location: string;
@@ -40,18 +56,20 @@ export const handler = async (
         params.ExpressionAttributeValues[":start"] = startDate;
       }
 
+      // Load custom temp ranges from store settings
+      const storeResult = await docClient.send(
+        new GetCommand({ TableName: TABLES.STORES, Key: { storeId }, ProjectionExpression: "tempRanges" })
+      );
+      const customRanges = storeResult.Item?.tempRanges;
+
       const result = await docClient.send(new QueryCommand(params));
       const logs = result.Items || [];
 
-      // Check for out-of-range temps
+      // Check for out-of-range temps using custom or default ranges
       const alerts = logs.filter((log: any) => {
-        if (log.location?.toLowerCase().includes("freezer")) {
-          return log.temperature > 0 || log.temperature < -25;
-        }
-        if (log.location?.toLowerCase().includes("cooler") || log.location?.toLowerCase().includes("fridge")) {
-          return log.temperature > 41 || log.temperature < 33;
-        }
-        return false;
+        const range = findRange(log.location || "", customRanges);
+        if (!range) return false;
+        return log.temperature < range.min || log.temperature > range.max;
       });
 
       return success({ logs, alerts, totalLogs: logs.length, alertCount: alerts.length });
@@ -68,18 +86,21 @@ export const handler = async (
       const now = new Date().toISOString();
       const logId = uuidv4();
 
+      // Load custom temp ranges from store settings
+      const storeResult = await docClient.send(
+        new GetCommand({ TableName: TABLES.STORES, Key: { storeId }, ProjectionExpression: "tempRanges" })
+      );
+      const customRanges = storeResult.Item?.tempRanges;
+
       // Determine if out of range
       let inRange = true;
       let rangeNote = "";
       const temp = body.temperature;
-      const loc = body.location.toLowerCase();
+      const range = findRange(body.location, customRanges);
 
-      if (loc.includes("freezer")) {
-        inRange = temp >= -25 && temp <= 0;
-        rangeNote = inRange ? "" : `Freezer temp ${temp}°${body.unit || "F"} is out of range (-25 to 0)`;
-      } else if (loc.includes("cooler") || loc.includes("fridge")) {
-        inRange = temp >= 33 && temp <= 41;
-        rangeNote = inRange ? "" : `Cooler temp ${temp}°${body.unit || "F"} is out of range (33-41°F)`;
+      if (range) {
+        inRange = temp >= range.min && temp <= range.max;
+        rangeNote = inRange ? "" : `${body.location} temp ${temp}°${body.unit || "F"} is out of range (${range.min} to ${range.max})`;
       }
 
       const logEntry = {

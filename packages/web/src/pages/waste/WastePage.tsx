@@ -7,7 +7,8 @@ import { PageLoader } from "../../components/LoadingSpinner";
 import { EmptyState } from "../../components/EmptyState";
 import { fullDate, currencyDollars } from "../../utils/format";
 import { HelpLabel } from "../../components/Tooltip";
-import { downloadCSV } from "../../utils/csvExport";
+import { ExportMenu } from "../../components/ExportMenu";
+import { Pagination, usePagination } from "../../components/Pagination";
 
 type SortField = "date" | "item" | "quantity" | "reason" | "cost";
 type SortDir = "asc" | "desc";
@@ -20,6 +21,7 @@ export function WastePage() {
   const [sortField, setSortField] = useState<SortField>("date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [showLogForm, setShowLogForm] = useState(false);
+  const { page, pageSize, setPage, setPageSize, paginate } = usePagination(0);
 
   // Manual entry form
   const [logForm, setLogForm] = useState({ ingredientId: "", quantity: "", reason: "expired", notes: "" });
@@ -136,17 +138,11 @@ export function WastePage() {
           >
             {showLogForm ? "Cancel" : "Log Waste"}
           </button>
-          <button
-            onClick={() => downloadCSV(
-              "waste-log.csv",
-              ["Date", "Item", "Quantity", "Unit", "Reason", "Estimated Cost"],
-              logs.map((w: any) => [w.timestamp || w.createdAt, w.ingredientName || w.itemName || "", w.quantity, w.unit || "", w.reason, w.estimatedCost || w.cost || 0])
-            )}
-            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-          >
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>
-            Export CSV
-          </button>
+          <ExportMenu
+            filename="waste-log"
+            headers={["Date", "Item", "Quantity", "Unit", "Reason", "Estimated Cost"]}
+            rows={logs.map((w: any) => [w.timestamp || w.createdAt, w.ingredientName || w.itemName || "", w.quantity, w.unit || "", w.reason, w.estimatedCost || w.cost || 0])}
+          />
           <select
             value={days}
             onChange={(e) => setDays(Number(e.target.value))}
@@ -289,32 +285,35 @@ export function WastePage() {
           {filtered.length === 0 ? (
             <EmptyState title="No waste entries" description={reasonFilter !== "All" ? `No "${reasonFilter}" entries in this period.` : "No waste has been logged in this period."} />
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-700/30">
-                    <SortHeader field="date" label="Date" />
-                    <SortHeader field="item" label="Item" />
-                    <SortHeader field="quantity" label="Qty" />
-                    <SortHeader field="reason" label="Reason" />
-                    <SortHeader field="cost" label="Cost" align="right" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.slice(0, 100).map((entry: any, i: number) => (
-                    <tr key={entry.wasteId || i} className="border-b border-slate-50 dark:border-slate-700/50 hover:bg-slate-50/50 dark:hover:bg-slate-700/30">
-                      <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{fullDate(entry.timestamp || entry.createdAt)}</td>
-                      <td className="px-4 py-3 text-sm font-medium text-slate-900 dark:text-slate-100">{entry.ingredientName || entry.itemName || "--"}</td>
-                      <td className="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">{entry.quantity} {entry.unit}</td>
-                      <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300 capitalize">{entry.reason}</td>
-                      <td className="px-4 py-3 text-sm text-right font-medium text-slate-900 dark:text-slate-100">
-                        {currencyDollars(entry.estimatedCost || entry.cost || 0)}
-                      </td>
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-700/30">
+                      <SortHeader field="date" label="Date" />
+                      <SortHeader field="item" label="Item" />
+                      <SortHeader field="quantity" label="Qty" />
+                      <SortHeader field="reason" label="Reason" />
+                      <SortHeader field="cost" label="Cost" align="right" />
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {paginate(filtered).map((entry: any, i: number) => (
+                      <tr key={entry.wasteId || i} className="border-b border-slate-50 dark:border-slate-700/50 hover:bg-slate-50/50 dark:hover:bg-slate-700/30">
+                        <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{fullDate(entry.timestamp || entry.createdAt)}</td>
+                        <td className="px-4 py-3 text-sm font-medium text-slate-900 dark:text-slate-100">{entry.ingredientName || entry.itemName || "--"}</td>
+                        <td className="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">{entry.quantity} {entry.unit}</td>
+                        <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300 capitalize">{entry.reason}</td>
+                        <td className="px-4 py-3 text-sm text-right font-medium text-slate-900 dark:text-slate-100">
+                          {currencyDollars(entry.estimatedCost || entry.cost || 0)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <Pagination currentPage={page} totalItems={filtered.length} pageSize={pageSize} onPageChange={setPage} onPageSizeChange={setPageSize} />
+            </>
           )}
         </div>
       </div>

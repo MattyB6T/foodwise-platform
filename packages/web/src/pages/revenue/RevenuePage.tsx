@@ -5,6 +5,7 @@ import { useStore } from "../../stores/StoreProvider";
 import { PageLoader } from "../../components/LoadingSpinner";
 import { EmptyState } from "../../components/EmptyState";
 import { Tooltip } from "../../components/Tooltip";
+import { Pagination, usePagination } from "../../components/Pagination";
 
 type Tab = "history" | "sources" | "log";
 type DateRange = 7 | 14 | 30 | 90;
@@ -48,6 +49,7 @@ export function RevenuePage() {
   const [editingSourceId, setEditingSourceId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [logForm, setLogForm] = useState({ sourceId: "", amount: "", date: new Date().toISOString().split("T")[0], note: "" });
+  const { page, pageSize, setPage, setPageSize, paginate } = usePagination(0);
 
   // Fetch sources
   const { data: sourcesData, isLoading: sourcesLoading } = useQuery({
@@ -304,7 +306,7 @@ export function RevenuePage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredEntries.map((entry: any) => (
+                    {paginate(filteredEntries).map((entry: any) => (
                       <tr
                         key={entry.entryId}
                         className="border-b border-slate-50 dark:border-slate-700/50 hover:bg-slate-50/50 dark:hover:bg-slate-700/30"
@@ -318,6 +320,7 @@ export function RevenuePage() {
                   </tbody>
                 </table>
               </div>
+              <Pagination currentPage={page} totalItems={filteredEntries.length} pageSize={pageSize} onPageChange={setPage} onPageSizeChange={setPageSize} />
             </div>
           )}
         </div>

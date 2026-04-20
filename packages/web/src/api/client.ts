@@ -219,7 +219,7 @@ export const api = {
   // Store Settings
   getStoreSettings: (storeId: string) =>
     request<any>("GET", `/stores/${storeId}/settings`),
-  updateStoreSettings: (storeId: string, body: { timeclock?: { maxShiftHours?: number; missedClockoutHours?: number; minBreakShiftHours?: number; flagShortShiftMinutes?: number } }) =>
+  updateStoreSettings: (storeId: string, body: { timeclock?: { maxShiftHours?: number; missedClockoutHours?: number; minBreakShiftHours?: number; flagShortShiftMinutes?: number }; tempRanges?: Record<string, { min: number; max: number; unit?: string }> }) =>
     request<any>("PUT", `/stores/${storeId}/settings`, body),
 
   // POS

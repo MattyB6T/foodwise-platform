@@ -6,7 +6,8 @@ import { StatusBadge } from "../../components/StatusBadge";
 import { PageLoader } from "../../components/LoadingSpinner";
 import { EmptyState } from "../../components/EmptyState";
 import { fullDate, currencyDollars } from "../../utils/format";
-import { downloadCSV } from "../../utils/csvExport";
+import { ExportMenu } from "../../components/ExportMenu";
+import { Pagination, usePagination } from "../../components/Pagination";
 import { CreateOrderPage } from "./CreateOrderPage";
 import { OrderDetailPage } from "./OrderDetailPage";
 
@@ -20,6 +21,7 @@ export function OrdersPage() {
   const [view, setView] = useState<View>({ type: "list" });
   const [sortField, setSortField] = useState<SortField>("date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const { page, pageSize, setPage, setPageSize, paginate } = usePagination(0);
 
   const { data, isLoading } = useQuery({
     queryKey: ["purchaseOrders", selectedStoreId, statusFilter],
@@ -99,17 +101,11 @@ export function OrdersPage() {
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">{orders.length} orders</p>
         </div>
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => downloadCSV(
-              "purchase-orders.csv",
-              ["Order ID", "Supplier", "Date", "Delivery Date", "Items", "Total", "Status"],
-              orders.map((o: any) => [o.orderId?.slice(0, 8), o.supplierName || "", fullDate(o.createdAt), o.expectedDeliveryDate || "", o.lines?.length || 0, o.totalCost || 0, o.status || "draft"])
-            )}
-            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-          >
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>
-            Export CSV
-          </button>
+          <ExportMenu
+            filename="purchase-orders"
+            headers={["Order ID", "Supplier", "Date", "Delivery Date", "Items", "Total", "Status"]}
+            rows={orders.map((o: any) => [o.orderId?.slice(0, 8), o.supplierName || "", fullDate(o.createdAt), o.expectedDeliveryDate || "", o.lines?.length || 0, o.totalCost || 0, o.status || "draft"])}
+          />
           <button
             onClick={() => setView({ type: "create" })}
             className="px-4 py-2.5 bg-blue-600 text-white font-semibold text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
@@ -159,7 +155,7 @@ export function OrdersPage() {
                 </tr>
               </thead>
               <tbody>
-                {sorted.map((order: any) => (
+                {paginate(sorted).map((order: any) => (
                   <tr
                     key={order.orderId}
                     onClick={() => setView({ type: "detail", order })}
@@ -187,6 +183,7 @@ export function OrdersPage() {
               </tbody>
             </table>
           </div>
+          <Pagination currentPage={page} totalItems={sorted.length} pageSize={pageSize} onPageChange={setPage} onPageSizeChange={setPageSize} />
         </div>
       )}
     </div>

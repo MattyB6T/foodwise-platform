@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../api/client";
 import { useStore } from "../../stores/StoreProvider";
@@ -6,6 +6,7 @@ import { PageLoader } from "../../components/LoadingSpinner";
 import { StatusBadge } from "../../components/StatusBadge";
 import { EmptyState } from "../../components/EmptyState";
 import { Tooltip, HelpLabel } from "../../components/Tooltip";
+import { Pagination, usePagination } from "../../components/Pagination";
 
 const LOCATIONS = ["Freezer", "Walk-in Cooler", "Prep Fridge", "Display Case"] as const;
 
@@ -35,6 +36,8 @@ export function TempLogsPage() {
   const queryClient = useQueryClient();
   const [days, setDays] = useState(7);
   const [showForm, setShowForm] = useState(false);
+  const [showRanges, setShowRanges] = useState(false);
+  const { page, pageSize, setPage, setPageSize, paginate } = usePagination(0);
 
   // Form state
   const [location, setLocation] = useState("");
@@ -43,6 +46,37 @@ export function TempLogsPage() {
   const [unit, setUnit] = useState<"F" | "C">("F");
   const [equipmentName, setEquipmentName] = useState("");
   const [notes, setNotes] = useState("");
+
+  // Temp range settings
+  const DEFAULT_RANGES: Record<string, { min: number; max: number; unit: string }> = {
+    freezer: { min: -25, max: 0, unit: "F" },
+    cooler: { min: 33, max: 41, unit: "F" },
+    fridge: { min: 33, max: 41, unit: "F" },
+    "display case": { min: 33, max: 41, unit: "F" },
+  };
+  const [tempRanges, setTempRanges] = useState(DEFAULT_RANGES);
+
+  const { data: settingsData } = useQuery({
+    queryKey: ["storeSettings", selectedStoreId],
+    queryFn: () => api.getStoreSettings(selectedStoreId!),
+    enabled: !!selectedStoreId,
+  });
+
+  useEffect(() => {
+    if (settingsData?.tempRanges) {
+      setTempRanges({ ...DEFAULT_RANGES, ...settingsData.tempRanges });
+    }
+  }, [settingsData]);
+
+  const saveRangesMutation = useMutation({
+    mutationFn: (ranges: Record<string, { min: number; max: number; unit?: string }>) =>
+      api.updateStoreSettings(selectedStoreId!, { tempRanges: ranges }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["storeSettings", selectedStoreId] });
+      queryClient.invalidateQueries({ queryKey: ["tempLogs", selectedStoreId] });
+      setShowRanges(false);
+    },
+  });
 
   const startDate = (() => {
     const d = new Date();
@@ -127,6 +161,13 @@ export function TempLogsPage() {
             <option value={30}>Last 30 days</option>
           </select>
           <button
+            onClick={() => setShowRanges(!showRanges)}
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z" /><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" /></svg>
+            Ranges
+          </button>
+          <button
             onClick={() => setShowForm(!showForm)}
             className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
           >
@@ -134,6 +175,58 @@ export function TempLogsPage() {
           </button>
         </div>
       </div>
+
+      {/* Temperature Range Settings */}
+      {showRanges && (
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 mb-6">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Safe Temperature Ranges</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {Object.entries(tempRanges).map(([key, range]) => (
+              <div key={key} className="border border-slate-200 dark:border-slate-600 rounded-lg p-3">
+                <p className="text-sm font-medium text-slate-900 dark:text-slate-100 capitalize mb-2">{key}</p>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <label className="block text-[10px] text-slate-500 dark:text-slate-400 mb-0.5">Min</label>
+                    <input
+                      type="number"
+                      value={range.min}
+                      onChange={(e) => setTempRanges({ ...tempRanges, [key]: { ...range, min: Number(e.target.value) } })}
+                      className={`${inputClass} w-full text-center`}
+                    />
+                  </div>
+                  <span className="text-slate-400 mt-4">–</span>
+                  <div className="flex-1">
+                    <label className="block text-[10px] text-slate-500 dark:text-slate-400 mb-0.5">Max</label>
+                    <input
+                      type="number"
+                      value={range.max}
+                      onChange={(e) => setTempRanges({ ...tempRanges, [key]: { ...range, max: Number(e.target.value) } })}
+                      className={`${inputClass} w-full text-center`}
+                    />
+                  </div>
+                  <span className="text-xs text-slate-400 mt-4">°{range.unit}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center gap-3 mt-4">
+            <button
+              onClick={() => saveRangesMutation.mutate(tempRanges)}
+              disabled={saveRangesMutation.isPending}
+              className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            >
+              {saveRangesMutation.isPending ? "Saving..." : "Save Ranges"}
+            </button>
+            <button
+              onClick={() => setShowRanges(false)}
+              className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
+            >
+              Cancel
+            </button>
+            {saveRangesMutation.isError && <span className="text-sm text-red-500">Failed to save</span>}
+          </div>
+        </div>
+      )}
 
       {/* Alert Banner */}
       {alertCount > 0 && (
@@ -344,7 +437,7 @@ export function TempLogsPage() {
                 </tr>
               </thead>
               <tbody>
-                {logs.map((log) => (
+                {paginate(logs).map((log) => (
                   <tr
                     key={log.logId}
                     className="border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors"
@@ -389,6 +482,7 @@ export function TempLogsPage() {
               </tbody>
             </table>
           </div>
+          <Pagination currentPage={page} totalItems={logs.length} pageSize={pageSize} onPageChange={setPage} onPageSizeChange={setPageSize} />
         </div>
       )}
     </div>

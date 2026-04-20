@@ -11,6 +11,13 @@ const DEFAULTS = {
   flagShortShiftMinutes: 6,
 };
 
+const DEFAULT_TEMP_RANGES: Record<string, { min: number; max: number; unit: string }> = {
+  freezer: { min: -25, max: 0, unit: "F" },
+  cooler: { min: 33, max: 41, unit: "F" },
+  fridge: { min: 33, max: 41, unit: "F" },
+  "display case": { min: 33, max: 41, unit: "F" },
+};
+
 export const handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
@@ -29,13 +36,15 @@ export const handler = async (
         new GetCommand({
           TableName: TABLES.STORES,
           Key: { storeId },
-          ProjectionExpression: "timeclockSettings",
+          ProjectionExpression: "timeclockSettings, tempRanges",
         })
       );
 
       const settings = result.Item?.timeclockSettings || {};
+      const tempRanges = result.Item?.tempRanges || DEFAULT_TEMP_RANGES;
       return success({
         timeclock: { ...DEFAULTS, ...settings },
+        tempRanges,
       });
     }
 
@@ -82,6 +91,29 @@ export const handler = async (
         );
 
         return success({ message: "Settings updated", timeclock: { ...DEFAULTS, ...settings } });
+      }
+
+      if (body.tempRanges && typeof body.tempRanges === "object") {
+        const ranges: Record<string, { min: number; max: number; unit: string }> = {};
+        for (const [key, val] of Object.entries(body.tempRanges)) {
+          const v = val as any;
+          if (v.min == null || v.max == null) continue;
+          const min = Number(v.min);
+          const max = Number(v.max);
+          if (min >= max) return error(`${key}: min must be less than max`, 400);
+          ranges[key] = { min, max, unit: v.unit || "F" };
+        }
+
+        await docClient.send(
+          new UpdateCommand({
+            TableName: TABLES.STORES,
+            Key: { storeId },
+            UpdateExpression: "SET tempRanges = :tr",
+            ExpressionAttributeValues: { ":tr": ranges },
+          })
+        );
+
+        return success({ message: "Temperature ranges updated", tempRanges: ranges });
       }
 
       return error("No recognized settings in request body", 400);

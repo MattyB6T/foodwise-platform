@@ -7,7 +7,8 @@ import { PageLoader } from "../../components/LoadingSpinner";
 import { EmptyState } from "../../components/EmptyState";
 import { currencyDollars } from "../../utils/format";
 import { Tooltip } from "../../components/Tooltip";
-import { downloadCSV } from "../../utils/csvExport";
+import { ExportMenu } from "../../components/ExportMenu";
+import { Pagination, usePagination } from "../../components/Pagination";
 
 type SortField = "name" | "category" | "quantity" | "costPerUnit" | "totalValue" | "stockStatus";
 type SortDir = "asc" | "desc";
@@ -18,6 +19,7 @@ export function InventoryPage() {
   const [category, setCategory] = useState("All");
   const [sortField, setSortField] = useState<SortField>("stockStatus");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const { page, pageSize, setPage, setPageSize, paginate } = usePagination(0);
 
   const { data, isLoading } = useQuery({
     queryKey: ["inventory", selectedStoreId],
@@ -99,17 +101,11 @@ export function InventoryPage() {
             {lowStockCount > 0 && <span className="text-red-600 font-semibold"> &middot; {lowStockCount} low stock <Tooltip content="Items below their minimum threshold. Set thresholds per item based on how fast you go through them." /></span>}
           </p>
         </div>
-        <button
-          onClick={() => downloadCSV(
-            "inventory.csv",
-            ["Name", "Category", "Quantity", "Unit", "Unit Cost", "Total Value", "Status"],
-            filtered.map((i: any) => [i.name, i.category, i.quantity, i.unit, i.costPerUnit || 0, ((i.quantity || 0) * (i.costPerUnit || 0)).toFixed(2), i.lowStockThreshold > 0 && i.quantity <= i.lowStockThreshold ? "Low Stock" : "OK"])
-          )}
-          className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-        >
-          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>
-          Export CSV
-        </button>
+        <ExportMenu
+          filename="inventory"
+          headers={["Name", "Category", "Quantity", "Unit", "Unit Cost", "Total Value", "Status"]}
+          rows={filtered.map((i: any) => [i.name, i.category, i.quantity, i.unit, i.costPerUnit || 0, ((i.quantity || 0) * (i.costPerUnit || 0)).toFixed(2), i.lowStockThreshold > 0 && i.quantity <= i.lowStockThreshold ? "Low Stock" : "OK"])}
+        />
       </div>
 
       {/* Toolbar */}
@@ -157,7 +153,7 @@ export function InventoryPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((item: any) => {
+                {paginate(filtered).map((item: any) => {
                   const isLow = item.lowStockThreshold > 0 && item.quantity <= item.lowStockThreshold;
                   const totalVal = (item.quantity || 0) * (item.costPerUnit || 0);
                   return (
@@ -184,6 +180,7 @@ export function InventoryPage() {
               </tbody>
             </table>
           </div>
+          <Pagination currentPage={page} totalItems={filtered.length} pageSize={pageSize} onPageChange={setPage} onPageSizeChange={setPageSize} />
         </div>
       )}
     </div>
