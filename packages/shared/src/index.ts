@@ -81,6 +81,91 @@ export interface Store {
   updatedAt: string;
 }
 
+// --- Subscription & Billing ---
+
+export type SubscriptionPlan = "free" | "starter" | "pro" | "enterprise";
+export type SubscriptionStatus =
+  | "trialing"
+  | "active"
+  | "past_due"
+  | "canceled"
+  | "unpaid";
+
+export interface Subscription {
+  ownerId: string;
+  stripeCustomerId: string;
+  stripeSubscriptionId?: string;
+  plan: SubscriptionPlan;
+  status: SubscriptionStatus;
+  maxStores: number;
+  trialEndsAt?: string;
+  currentPeriodEnd?: string;
+  cancelAtPeriodEnd?: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const PLAN_LIMITS: Record<
+  SubscriptionPlan,
+  { maxStores: number; maxStaff: number; features: string[] }
+> = {
+  free: {
+    maxStores: 1,
+    maxStaff: 3,
+    features: ["inventory", "waste-logging", "dashboard"],
+  },
+  starter: {
+    maxStores: 2,
+    maxStaff: 10,
+    features: [
+      "inventory",
+      "waste-logging",
+      "dashboard",
+      "recipes",
+      "prep-lists",
+      "temp-logs",
+      "reports",
+    ],
+  },
+  pro: {
+    maxStores: 5,
+    maxStaff: 50,
+    features: [
+      "inventory",
+      "waste-logging",
+      "dashboard",
+      "recipes",
+      "prep-lists",
+      "temp-logs",
+      "reports",
+      "pos-integration",
+      "ai-assistant",
+      "forecasting",
+      "scheduling",
+    ],
+  },
+  enterprise: {
+    maxStores: 100,
+    maxStaff: 999,
+    features: [
+      "inventory",
+      "waste-logging",
+      "dashboard",
+      "recipes",
+      "prep-lists",
+      "temp-logs",
+      "reports",
+      "pos-integration",
+      "ai-assistant",
+      "forecasting",
+      "scheduling",
+      "security-cameras",
+      "multi-location-analytics",
+      "api-access",
+    ],
+  },
+};
+
 // --- Inventory ---
 
 export interface InventoryItem {

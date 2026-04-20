@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { api } from "../../api/client";
 import { useStore } from "../../stores/StoreProvider";
 import { useAuth } from "../../auth/AuthProvider";
@@ -396,6 +397,21 @@ export function SettingsPage() {
                 <span className="text-xs text-slate-400 dark:text-slate-500 capitalize">{store.operatorType || "qsr"}</span>
               </div>
             ))}
+          </div>
+        </SectionCard>
+
+        {/* Billing */}
+        <SectionCard title="Billing & Subscription">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Manage your subscription plan, payment method, and billing history.
+            </p>
+            <Link
+              to="/settings/billing"
+              className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap ml-4"
+            >
+              Manage Plan
+            </Link>
           </div>
         </SectionCard>
 

@@ -1,9 +1,11 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { PutCommand, QueryCommand, GetCommand } from "@aws-sdk/lib-dynamodb";
 import { v4 as uuidv4 } from "uuid";
+import { z } from "zod";
 import { docClient, TABLES } from "../utils/dynamo";
 import { success, error } from "../utils/response";
 import { getUserClaims } from "../utils/auth";
+import { parseBody, safeString } from "../utils/validate";
 
 const DEFAULT_RANGES: Record<string, { min: number; max: number }> = {
   freezer: { min: -25, max: 0 },
@@ -21,14 +23,14 @@ function findRange(location: string, customRanges?: Record<string, { min: number
   return null;
 }
 
-interface TempLogBody {
-  location: string;
-  temperature: number;
-  unit: "F" | "C";
-  equipmentId?: string;
-  equipmentName?: string;
-  notes?: string;
-}
+const tempLogSchema = z.object({
+  location: safeString.pipe(z.string().min(1, "location is required")),
+  temperature: z.number().min(-100).max(500),
+  unit: z.enum(["F", "C"]).optional().default("F"),
+  equipmentId: z.string().max(128).optional(),
+  equipmentName: safeString.optional(),
+  notes: safeString.optional(),
+});
 
 export const handler = async (
   event: APIGatewayProxyEvent
@@ -76,12 +78,9 @@ export const handler = async (
     }
 
     if (method === "POST") {
-      if (!event.body) return error("Request body is required", 400);
-      const body: TempLogBody = JSON.parse(event.body);
-
-      if (!body.location || body.temperature === undefined) {
-        return error("location and temperature are required", 400);
-      }
+      const parsed = parseBody(event, tempLogSchema);
+      if (parsed.error) return parsed.error;
+      const body = parsed.data;
 
       const now = new Date().toISOString();
       const logId = uuidv4();

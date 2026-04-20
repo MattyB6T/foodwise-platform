@@ -288,4 +288,10 @@ export const api = {
     const query = qs.toString();
     return request<any>("GET", `/stores/${storeId}/incidents${query ? `?${query}` : ""}`);
   },
+
+  // Billing
+  getSubscription: () => request<any>("GET", "/billing"),
+  createCheckout: (plan: string) =>
+    request<any>("POST", "/billing/checkout", { plan }),
+  createPortal: () => request<any>("POST", "/billing/portal"),
 };

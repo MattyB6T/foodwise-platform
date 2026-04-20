@@ -4,7 +4,9 @@
   "private": true,
   "scripts": {
     "build": "tsc",
-    "test": "echo \"No tests yet\"",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "lint": "echo \"No linter configured yet\""
   },
   "dependencies": {
@@ -16,6 +18,7 @@
     "@aws-sdk/lib-dynamodb": "^3.500.0",
     "@aws-sdk/s3-request-presigner": "^3.1003.0",
     "@leantable/shared": "*",
+    "stripe": "^22.0.2",
     "uuid": "^9.0.0",
     "zod": "^4.3.6"
   },
@@ -23,6 +26,8 @@
     "@types/aws-lambda": "^8.10.131",
     "@types/node": "^20.11.0",
     "@types/uuid": "^9.0.0",
-    "typescript": "^5.4.0"
+    "@vitest/coverage-v8": "^4.1.4",
+    "typescript": "^5.4.0",
+    "vitest": "^4.1.4"
   }
 }

@@ -187,6 +187,18 @@ export class FoodwiseApiStack extends cdk.NestedStack {
       },
     });
 
+    // Billing (Stripe integration)
+    const billingFn = new NodejsFunction(this, "BillingFn", {
+      ...nodejsFnProps,
+      entry: path.join(handlersPath, "billing.ts"),
+      timeout: cdk.Duration.seconds(15),
+      environment: {
+        ...lambdaEnvironment,
+        SUBSCRIPTIONS_TABLE: core.subscriptionsTable.tableName,
+        STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || "",
+      },
+    });
+
     // Forecast Lambda (Python, Docker Image)
     const modelsCodePath = path.join(__dirname, "../../models");
 
@@ -583,6 +595,23 @@ export class FoodwiseApiStack extends cdk.NestedStack {
     const waitlistResource = this.api.root.addResource("waitlist");
     waitlistResource.addMethod("POST", new apigateway.LambdaIntegration(waitlistFn));
 
+    // GET/POST /billing (authenticated)
+    const billingResource = this.api.root.addResource("billing");
+    billingResource.addMethod("GET", new apigateway.LambdaIntegration(billingFn), authMethodOptions);
+    billingResource.addMethod("POST", new apigateway.LambdaIntegration(billingFn), authMethodOptions);
+
+    // POST /billing/checkout (authenticated)
+    const checkoutResource = billingResource.addResource("checkout");
+    checkoutResource.addMethod("POST", new apigateway.LambdaIntegration(billingFn), authMethodOptions);
+
+    // POST /billing/portal (authenticated)
+    const portalResource = billingResource.addResource("portal");
+    portalResource.addMethod("POST", new apigateway.LambdaIntegration(billingFn), authMethodOptions);
+
+    // POST /billing/webhook (public, no auth — Stripe webhook)
+    const billingWebhookResource = billingResource.addResource("webhook");
+    billingWebhookResource.addMethod("POST", new apigateway.LambdaIntegration(billingFn));
+
     // --- POS Webhook endpoints (public, no Cognito auth) ---
 
     // POST /webhooks/toast/{storeId}
@@ -629,6 +658,15 @@ export class FoodwiseApiStack extends cdk.NestedStack {
       new iam.PolicyStatement({
         actions: ["ses:SendEmail"],
         resources: ["*"],
+      })
+    );
+
+    // Billing
+    core.subscriptionsTable.grantReadWriteData(billingFn);
+    billingFn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["ssm:GetParameter"],
+        resources: ["arn:aws:ssm:*:*:parameter/foodwise/stripe-secret-key"],
       })
     );
 

@@ -36,6 +36,7 @@ export class FoodwiseCoreStack extends cdk.NestedStack {
   public readonly revenueSourcesTable: dynamodb.Table;
   public readonly revenueEntriesTable: dynamodb.Table;
   public readonly waitlistTable: dynamodb.Table;
+  public readonly subscriptionsTable: dynamodb.Table;
 
   public readonly userPool: cognito.UserPool;
   public readonly userPoolClient: cognito.UserPoolClient;
@@ -394,6 +395,23 @@ export class FoodwiseCoreStack extends cdk.NestedStack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
+    // --- Subscriptions Table ---
+
+    this.subscriptionsTable = new dynamodb.Table(this, "SubscriptionsTable", {
+      partitionKey: { name: "ownerId", type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    this.subscriptionsTable.addGlobalSecondaryIndex({
+      indexName: "stripeCustomerId-index",
+      partitionKey: {
+        name: "stripeCustomerId",
+        type: dynamodb.AttributeType.STRING,
+      },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
     // --- SSM Parameter: All table names in one JSON blob ---
     this.tableNamesParam = new ssm.StringParameter(this, "TableNamesParam", {
       parameterName: "/foodwise/table-names",
@@ -428,7 +446,7 @@ export class FoodwiseCoreStack extends cdk.NestedStack {
         REVENUE_ENTRIES: this.revenueEntriesTable.tableName,
         WAITLIST: this.waitlistTable.tableName,
       }),
-      description: "LeanTable DynamoDB table names — managed by CDK",
+      description: "LeanTable DynamoDB table names - managed by CDK",
     });
 
     // --- Cognito User Pool ---

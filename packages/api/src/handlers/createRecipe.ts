@@ -2,20 +2,24 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { PutCommand } from "@aws-sdk/lib-dynamodb";
 import { v4 as uuidv4 } from "uuid";
 import { Recipe, RecipeIngredient } from "@leantable/shared";
+import { z } from "zod";
 import { docClient, TABLES } from "../utils/dynamo";
 import { success, error } from "../utils/response";
 import { getUserClaims } from "../utils/auth";
+import { parseBody, safeString, price, quantity } from "../utils/validate";
 
-interface CreateRecipeBody {
-  name: string;
-  category: string;
-  sellingPrice: number;
-  ingredients: {
-    itemId: string;
-    quantity: number;
-    unit: string;
-  }[];
-}
+const ingredientSchema = z.object({
+  itemId: z.string().min(1, "itemId is required"),
+  quantity: quantity,
+  unit: z.string().min(1, "unit is required").max(50),
+});
+
+const createRecipeSchema = z.object({
+  name: safeString.pipe(z.string().min(1, "name is required")),
+  category: safeString.optional().default("uncategorized"),
+  sellingPrice: price,
+  ingredients: z.array(ingredientSchema).min(1, "At least one ingredient is required"),
+});
 
 export const handler = async (
   event: APIGatewayProxyEvent
@@ -23,27 +27,9 @@ export const handler = async (
   try {
     getUserClaims(event);
 
-    if (!event.body) {
-      return error("Request body is required", 400);
-    }
-
-    const body: CreateRecipeBody = JSON.parse(event.body);
-
-    if (!body.name || body.sellingPrice == null || !body.ingredients?.length) {
-      return error(
-        "name, sellingPrice, and ingredients are required",
-        400
-      );
-    }
-
-    for (const ing of body.ingredients) {
-      if (!ing.itemId || ing.quantity == null || !ing.unit) {
-        return error(
-          "Each ingredient requires itemId, quantity, and unit",
-          400
-        );
-      }
-    }
+    const parsed = parseBody(event, createRecipeSchema);
+    if (parsed.error) return parsed.error;
+    const body = parsed.data;
 
     const now = new Date().toISOString();
     const recipe: Recipe = {

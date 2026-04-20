@@ -1,25 +1,19 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { PutCommand, GetCommand } from "@aws-sdk/lib-dynamodb";
 import { v4 as uuidv4 } from "uuid";
-import { WasteLog, WasteReason, InventoryItem } from "@leantable/shared";
+import { WasteLog, InventoryItem } from "@leantable/shared";
+import { z } from "zod";
 import { docClient, TABLES } from "../utils/dynamo";
 import { success, error } from "../utils/response";
 import { getUserClaims } from "../utils/auth";
+import { parseBody, safeString, positiveNumber } from "../utils/validate";
 
-interface RecordWasteBody {
-  ingredientId: string;
-  quantity: number;
-  reason: WasteReason;
-  notes?: string;
-}
-
-const VALID_REASONS: WasteReason[] = [
-  "expired",
-  "damaged",
-  "over-prep",
-  "dropped",
-  "other",
-];
+const recordWasteSchema = z.object({
+  ingredientId: z.string().min(1, "ingredientId is required"),
+  quantity: positiveNumber,
+  reason: z.enum(["expired", "damaged", "over-prep", "dropped", "other"]),
+  notes: safeString.optional(),
+});
 
 export const handler = async (
   event: APIGatewayProxyEvent
@@ -32,26 +26,9 @@ export const handler = async (
       return error("storeId is required", 400);
     }
 
-    if (!event.body) {
-      return error("Request body is required", 400);
-    }
-
-    const body: RecordWasteBody = JSON.parse(event.body);
-
-    if (!body.ingredientId || !body.quantity || !body.reason) {
-      return error("ingredientId, quantity, and reason are required", 400);
-    }
-
-    if (body.quantity <= 0) {
-      return error("quantity must be greater than 0", 400);
-    }
-
-    if (!VALID_REASONS.includes(body.reason)) {
-      return error(
-        `reason must be one of: ${VALID_REASONS.join(", ")}`,
-        400
-      );
-    }
+    const parsed = parseBody(event, recordWasteSchema);
+    if (parsed.error) return parsed.error;
+    const body = parsed.data;
 
     // Fetch ingredient to get name and cost
     const ingredientResult = await docClient.send(

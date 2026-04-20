@@ -26,6 +26,7 @@ const ForecastPage = lazy(() => import("./pages/forecast/ForecastPage").then(m =
 const AssistantPage = lazy(() => import("./pages/assistant/AssistantPage").then(m => ({ default: m.AssistantPage })));
 const SettingsPage = lazy(() => import("./pages/settings/SettingsPage").then(m => ({ default: m.SettingsPage })));
 const ImportPage = lazy(() => import("./pages/import/ImportPage").then(m => ({ default: m.ImportPage })));
+const BillingPage = lazy(() => import("./pages/settings/BillingPage").then(m => ({ default: m.BillingPage })));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -84,6 +85,7 @@ export default function App() {
               <Route path="assistant" element={<Suspense fallback={<PageLoader />}><AssistantPage /></Suspense>} />
               <Route path="import" element={<Suspense fallback={<PageLoader />}><ImportPage /></Suspense>} />
               <Route path="settings" element={<Suspense fallback={<PageLoader />}><SettingsPage /></Suspense>} />
+              <Route path="settings/billing" element={<Suspense fallback={<PageLoader />}><BillingPage /></Suspense>} />
               {/* Redirects for old standalone routes */}
               <Route path="counts" element={<Navigate to="/inventory?tab=counts" replace />} />
               <Route path="expiration" element={<Navigate to="/inventory?tab=expiration" replace />} />
