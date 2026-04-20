@@ -1,10 +1,19 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../api/client";
 import { useStore } from "../../stores/StoreProvider";
 import { PageLoader } from "../../components/LoadingSpinner";
 import { EmptyState } from "../../components/EmptyState";
 import { currencyDollars } from "../../utils/format";
+
+interface ScannedIngredient {
+  name: string;
+  quantity: number;
+  unit: string;
+  matchedItemId: string | null;
+  matchedItemName: string | null;
+  matchConfidence: number;
+}
 
 interface Ingredient {
   itemId: string;
@@ -51,6 +60,10 @@ export function RecipesPage() {
   const [showModal, setShowModal] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [form, setForm] = useState<RecipeForm>({ ...emptyForm });
+  const [showScanModal, setShowScanModal] = useState(false);
+  const [scanPreview, setScanPreview] = useState<string | null>(null);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: recipesData, isLoading: recipesLoading } = useQuery({
     queryKey: ["recipes"],
@@ -75,6 +88,49 @@ export function RecipesPage() {
       setForm({ ...emptyForm });
     },
   });
+
+  const scanMutation = useMutation({
+    mutationFn: (imageBase64: string) => api.scanRecipe(selectedStoreId!, imageBase64),
+    onSuccess: (data) => {
+      // Pre-fill the recipe form with scanned data
+      const ingredients = (data.ingredients || []).map((ing: ScannedIngredient) => ({
+        itemId: ing.matchedItemId || "",
+        quantity: String(ing.quantity || ""),
+        unit: ing.unit || "",
+      }));
+      setForm({
+        name: data.name || "",
+        category: data.category || "",
+        sellingPrice: "",
+        ingredients: ingredients.length > 0 ? ingredients : [{ itemId: "", quantity: "", unit: "" }],
+      });
+      setShowScanModal(false);
+      setScanPreview(null);
+      setScanError(null);
+      setShowModal(true);
+    },
+    onError: (err: any) => {
+      setScanError(err?.message || "Failed to scan recipe. Try a clearer photo.");
+    },
+  });
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setScanError(null);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      setScanPreview(base64);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const handleScanSubmit = () => {
+    if (!scanPreview || !selectedStoreId) return;
+    scanMutation.mutate(scanPreview);
+  };
 
   const categories = useMemo(() => {
     const cats = new Set(recipes.map((r) => r.category));
@@ -183,13 +239,23 @@ export function RecipesPage() {
             {totalRecipes} recipes &middot; Avg margin: {avgMargin.toFixed(1)}%
           </p>
         </div>
-        <button
-          onClick={() => { setForm({ ...emptyForm }); setShowModal(true); }}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14" /></svg>
-          Add Recipe
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => { setScanPreview(null); setScanError(null); setShowScanModal(true); }}
+            disabled={!selectedStoreId}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="12" cy="13" r="4" /><path d="M5 7h.01M19 7h.01" /></svg>
+            Import from Photo
+          </button>
+          <button
+            onClick={() => { setForm({ ...emptyForm }); setShowModal(true); }}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14" /></svg>
+            Add Recipe
+          </button>
+        </div>
       </div>
 
       {/* Toolbar */}
@@ -393,6 +459,89 @@ export function RecipesPage() {
               >
                 {createMutation.isPending ? "Creating..." : "Create Recipe"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Scan Recipe Modal */}
+      {showScanModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => { if (!scanMutation.isPending) { setShowScanModal(false); setScanPreview(null); } }}>
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6 border-b border-slate-200 dark:border-slate-700">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Import Recipe from Photo</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                Upload a photo of a recipe card, cookbook page, or handwritten recipe
+              </p>
+            </div>
+            <div className="p-6">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+
+              {!scanPreview ? (
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-8 flex flex-col items-center gap-3 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors"
+                >
+                  <svg className="w-10 h-10 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14" />
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                  </svg>
+                  <span className="text-sm font-medium text-slate-600 dark:text-slate-300">Click to upload or take a photo</span>
+                  <span className="text-xs text-slate-400">JPG, PNG supported</span>
+                </button>
+              ) : (
+                <div className="space-y-4">
+                  <div className="relative rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-700">
+                    <img src={scanPreview} alt="Recipe preview" className="w-full max-h-64 object-contain" />
+                    {!scanMutation.isPending && (
+                      <button
+                        onClick={() => { setScanPreview(null); setScanError(null); }}
+                        className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1 hover:bg-black/70"
+                      >
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                      </button>
+                    )}
+                  </div>
+
+                  {scanMutation.isPending && (
+                    <div className="flex items-center justify-center gap-3 py-3">
+                      <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                      <span className="text-sm text-slate-600 dark:text-slate-300">Reading recipe with AI...</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {scanError && (
+                <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                  <p className="text-sm text-red-700 dark:text-red-400">{scanError}</p>
+                </div>
+              )}
+            </div>
+            <div className="p-6 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3">
+              <button
+                onClick={() => { setShowScanModal(false); setScanPreview(null); setScanError(null); }}
+                disabled={scanMutation.isPending}
+                className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors"
+              >
+                Cancel
+              </button>
+              {scanPreview && (
+                <button
+                  onClick={handleScanSubmit}
+                  disabled={scanMutation.isPending}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                >
+                  {scanMutation.isPending ? "Scanning..." : "Scan Recipe"}
+                </button>
+              )}
             </div>
           </div>
         </div>

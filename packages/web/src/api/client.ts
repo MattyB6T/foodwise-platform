@@ -255,6 +255,8 @@ export const api = {
   getRecipe: (recipeId: string) => request<any>("GET", `/recipes/${recipeId}`),
   createRecipe: (body: { name: string; category: string; sellingPrice: number; ingredients: { itemId: string; quantity: number; unit: string }[] }) =>
     request<any>("POST", "/recipes", body),
+  scanRecipe: (storeId: string, imageBase64: string) =>
+    request<any>("POST", `/stores/${storeId}/scan-recipe`, { imageBase64 }),
 
   // Suppliers
   getSuppliers: () => request<any>("GET", "/suppliers"),

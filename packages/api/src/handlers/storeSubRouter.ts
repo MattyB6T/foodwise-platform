@@ -18,6 +18,7 @@ import { handler as weeklyPlannerHandler } from "./weeklyPlanner";
 import { handler as userManagementHandler } from "./userManagement";
 import { handler as revenueHandler } from "./revenueRouter";
 import { handler as scanInvoiceHandler } from "./scanInvoice";
+import { handler as scanRecipeHandler } from "./scanRecipe";
 import { handler as bulkImportHandler } from "./bulkImport";
 import { handler as storeSettingsHandler } from "./storeSettings";
 import { error } from "../utils/response";
@@ -89,6 +90,9 @@ export const handler = async (
 
   // Temperature logs
   if (path.includes("/temp-logs")) return temperatureLogsHandler(event);
+
+  // Recipe scanning (OCR via Bedrock vision)
+  if (path.includes("/scan-recipe")) return scanRecipeHandler(event);
 
   // Invoice scanning (must come before supply chain /receive check)
   if (path.includes("/scan-invoice")) return scanInvoiceHandler(event);
